@@ -11,14 +11,14 @@ interface ServiceItem {
 }
 
 const serviceItems: ServiceItem[] = [
-  { label: 'Starter Pack', icon: 'cube-outline' },
-  { label: 'Marketing Kit', icon: 'megaphone-outline' },
-  { label: 'Business Setup', icon: 'briefcase-outline' },
-  { label: 'Expert Training', icon: 'school-outline' },
-  { label: 'Stock Supply', icon: 'layers-outline' },
-  { label: 'Ongoing Support', icon: 'people-outline' },
-  { label: 'Territory Rights', icon: 'location-outline' },
-  { label: 'Solar Products', icon: 'flash-outline' },
+  { label: 'Starter Kits', icon: 'cube-outline' },
+  { label: 'Solar Lighting', icon: 'bulb-outline' },
+  { label: 'Solar Products', icon: 'sunny-outline' },
+  { label: 'Home Solutions', icon: 'home-outline' },
+  { label: 'Power & Batteries', icon: 'battery-charging-outline' },
+  { label: 'Solar Accessories', icon: 'git-network-outline' },
+  { label: 'Tools & Installation', icon: 'construct-outline' },
+  { label: 'Business Opportunities', icon: 'rocket-outline' },
 ];
 
 export function InbuiltFranchiseServices() {

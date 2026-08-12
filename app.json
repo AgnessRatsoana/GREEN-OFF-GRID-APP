@@ -3,6 +3,7 @@
     "name": "green-off-grid-Mobile-APP",
     "slug": "green-off-grid-Mobile-APP",
     "version": "1.0.0",
+    "scheme": "green-off-grid-mobile-app",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -27,7 +28,8 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-font"
     ]
   }
 }

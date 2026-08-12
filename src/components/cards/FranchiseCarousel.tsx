@@ -16,6 +16,12 @@ import { appTheme } from '../../theme';
 interface SlideItem {
   id: string;
   imageSource: number;
+  subTitle: string;
+  mainTitle: string;
+  pointOne: string;
+  pointTwo: string;
+  primaryButtonText: string;
+  secondaryButtonText: string;
 }
 
 const CARD_HORIZONTAL_PADDING = appTheme.spacing.md;
@@ -25,11 +31,33 @@ const AUTO_ROTATE_INTERVAL_MS = 5000;
 const slides: SlideItem[] = [
   {
     id: 'slide-1',
-    imageSource: require('../../assets/images/customer-with-solarPanel.jpeg'),
+    imageSource: require('../../assets/images/franchise-outlet-4.jpeg'),
+    subTitle: 'Got a FRANCHISE ?',
+    mainTitle: "We've got your back",
+    pointOne: 'Get a franchise of your desire and become one of us',
+    pointTwo: 'With you every step of the franchise journey',
+    primaryButtonText: 'Full-time service',
+    secondaryButtonText: 'Schedule consultation',
   },
   {
     id: 'slide-2',
-    imageSource: require('../../assets/images/customer-with-solarPanel.jpeg'),
+    imageSource: require('../../assets/images/panellCorousel.jpg'),
+    subTitle: 'Accessories Spotlight',
+    mainTitle: 'Power every install with quality gear',
+    pointOne: 'Charge controllers, breakers and cables ready for your next job',
+    pointTwo: 'Stock trusted components for reliable off-grid performance',
+    primaryButtonText: 'Shop accessories',
+    secondaryButtonText: 'View top sellers',
+  },
+  {
+    id: 'slide-3',
+    imageSource: require('../../assets/images/sollarCorousel.jpg'),
+    subTitle: 'Accessory Deals',
+    mainTitle: 'From chargers to clamps, build smarter',
+    pointOne: 'Save on daily essentials without compromising performance',
+    pointTwo: 'Everything you need for clean, tidy and safe installations',
+    primaryButtonText: 'Browse new arrivals',
+    secondaryButtonText: 'Compare accessories',
   },
 ];
 
@@ -101,16 +129,16 @@ export function FranchiseCarousel() {
               />
 
               <LinearGradient
-                colors={['#24b8b8F0', '#24b8b8C8', '#24b8b869', '#24b8b800']}
-                locations={[0, 0.36, 0.6, 0.76]}
+                colors={['#24b8b8A6', '#24b8b87A', '#24b8b83D', '#24b8b800']}
+                locations={[0, 0.32, 0.56, 0.78]}
                 start={{ x: 0, y: 0.22 }}
                 end={{ x: 1, y: 0.04 }}
                 style={styles.gradientOverlay}
               />
 
               <View style={styles.contentArea}>
-                <Text style={styles.subTitle}>Got a FRANCHISE ?</Text>
-                <Text style={styles.mainTitle}>We've got your back</Text>
+                <Text style={styles.subTitle}>{slide.subTitle}</Text>
+                <Text style={styles.mainTitle}>{slide.mainTitle}</Text>
 
                 <View style={styles.iconRow}>
                   <Ionicons
@@ -118,9 +146,7 @@ export function FranchiseCarousel() {
                     size={18}
                     color={appTheme.colors.background}
                   />
-                  <Text style={styles.iconRowText}>
-                    Get a franchise of your desire and become one of us
-                  </Text>
+                  <Text style={styles.iconRowText}>{slide.pointOne}</Text>
                 </View>
 
                 <View style={styles.iconRowSecondary}>
@@ -129,14 +155,12 @@ export function FranchiseCarousel() {
                     size={18}
                     color={appTheme.colors.background}
                   />
-                  <Text style={styles.iconRowText}>
-                    With you every step of the franchise journey
-                  </Text>
+                  <Text style={styles.iconRowText}>{slide.pointTwo}</Text>
                 </View>
 
                 <View style={styles.buttonStack}>
                   <Pressable style={styles.primaryButton}>
-                    <Text style={styles.primaryButtonText}>Full-time service</Text>
+                    <Text style={styles.primaryButtonText}>{slide.primaryButtonText}</Text>
                   </Pressable>
 
                   <Pressable style={styles.secondaryButton}>
@@ -145,9 +169,7 @@ export function FranchiseCarousel() {
                       size={16}
                       color={appTheme.colors.background}
                     />
-                    <Text style={styles.secondaryButtonText}>
-                      Schedule consultation
-                    </Text>
+                    <Text style={styles.secondaryButtonText}>{slide.secondaryButtonText}</Text>
                   </Pressable>
                 </View>
               </View>

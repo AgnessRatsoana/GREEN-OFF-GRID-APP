@@ -1,24 +1,27 @@
 import { create } from 'zustand';
 
-import { AuthState, AuthTokens } from '../types/auth';
+import { AuthPayload, AuthState } from '../types/auth';
 
 interface AuthStore extends AuthState {
-  setTokens: (tokens: AuthTokens) => void;
-  clearTokens: () => void;
+  setSession: (payload: AuthPayload) => void;
+  clearSession: () => void;
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
   tokens: null,
   isAuthenticated: false,
-  setTokens: (tokens) => {
+  user: null,
+  setSession: ({ tokens, user }) => {
     set({
       tokens,
+      user,
       isAuthenticated: true,
     });
   },
-  clearTokens: () => {
+  clearSession: () => {
     set({
       tokens: null,
+      user: null,
       isAuthenticated: false,
     });
   },

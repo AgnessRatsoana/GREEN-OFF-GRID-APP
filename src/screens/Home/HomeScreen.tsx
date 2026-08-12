@@ -1,21 +1,27 @@
 import { DrawerActions, useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Image } from 'expo-image';
 import { useMemo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { FranchiseCarousel } from '../../components/cards/FranchiseCarousel';
+import { AccessoriesShowcaseSection } from '../../components/cards/AccessoriesShowcaseSection';
 import { ExistingClientChecklistSection } from '../../components/cards/ExistingClientChecklistSection';
 import { FranchiseOpportunitySection } from '../../components/cards/FranchiseOpportunitySection';
 import { FranchisePackages } from '../../components/cards/FranchisePackages';
 import { InbuiltFranchiseServices } from '../../components/cards/InbuiltFranchiseServices';
-import { FloatingBottomNav } from '../../components/common/FloatingBottomNav';
+import { MarketplaceAccessoriesSection } from '../../components/cards/MarketplaceAccessoriesSection';
 import { FloatingProfileMenuButton } from '../../components/common/FloatingProfileMenuButton';
+import { RootStackParamList } from '../../navigation/types';
+import { useAuthStore } from '../../store/authStore';
 import { appTheme } from '../../theme';
 
 export function HomeScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
+  const user = useAuthStore((s) => s.user);
 
   const textScale = useMemo(() => {
     if (width >= 430) {
@@ -41,12 +47,17 @@ export function HomeScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.profileMenuSection}>
+        <View style={styles.topRow}>
           <FloatingProfileMenuButton
             onPress={() => {
               navigation.dispatch(DrawerActions.openDrawer());
             }}
-            profileImageUri={require('../../assets/images/temp-demo-profile.jpeg')}
+            profileImageUri={user?.avatarUrl || null}
+          />
+          <Image
+            source={require('../../assets/images/Green-Off-Grid-Logo.jpg')}
+            style={styles.logo}
+            contentFit="contain"
           />
         </View>
 
@@ -81,14 +92,16 @@ export function HomeScreen() {
 
         <InbuiltFranchiseServices />
 
+        <AccessoriesShowcaseSection />
+
         <FranchisePackages />
 
         <FranchiseOpportunitySection />
 
+        <MarketplaceAccessoriesSection />
+
         <ExistingClientChecklistSection />
       </ScrollView>
-
-      <FloatingBottomNav activeKey="home" />
     </View>
   );
 }
@@ -101,11 +114,17 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: appTheme.spacing.md,
   },
-  profileMenuSection: {
-    marginBottom: appTheme.spacing.md,
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  logo: {
+    width: 138,
+    height: 50,
   },
   discoverySection: {
-    marginTop: appTheme.spacing.sm,
+    marginTop: appTheme.spacing.lg,
   },
   discoveryTitle: {
     color: appTheme.colors.textPrimary,

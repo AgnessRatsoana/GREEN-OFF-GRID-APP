@@ -90,7 +90,7 @@ export function FloatingProfileMenuButton({
             <Ionicons
               name="menu"
               size={ICON_SIZE}
-              color="#0f5e57"
+              color="#0f6464"
             />
           </View>
         </Animated.View>
@@ -104,9 +104,9 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginTop: appTheme.spacing.sm,
     borderRadius: 999,
-    backgroundColor: 'rgba(31, 156, 145, 0.14)',
+    backgroundColor: 'rgba(36, 184, 184, 0.14)',
     borderWidth: 1,
-    borderColor: 'rgba(31, 156, 145, 0.28)',
+    borderColor: 'rgba(36, 184, 184, 0.28)',
     paddingHorizontal: 8,
     paddingVertical: 8,
     ...appTheme.shadows.card,
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
     borderRadius: BUBBLE_SIZE / 2,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(31, 156, 145, 0.34)',
+    backgroundColor: 'rgba(36, 184, 184, 0.34)',
   },
   avatarImage: {
     width: BUBBLE_SIZE,

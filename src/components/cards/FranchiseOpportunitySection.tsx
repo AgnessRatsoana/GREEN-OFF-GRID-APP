@@ -9,16 +9,16 @@ interface OpportunityItem {
 
 const opportunityItems: OpportunityItem[] = [
   {
-    title: 'High-demand market',
-    body: 'Position your business in a fast-growing sector where sustainability, community impact and profitability now align.',
+    title: 'High-demand solar market',
+    body: 'Position your business in a fast-growing sector where franchise services and accessories both generate strong demand.',
   },
   {
-    title: 'Built-in support',
-    body: 'From branding to launch operations, every franchise partner receives practical support that shortens the learning curve.',
+    title: 'Built-in support and stock flow',
+    body: 'From branding to launch operations and product supply, our structure helps you sell confidently from day one.',
   },
   {
     title: 'Premium positioning',
-    body: 'Green of Grid is designed to feel modern, credible and investable for both entrepreneurs and corporate stakeholders.',
+    body: 'Green Off Grid is designed to feel modern, credible and investable for entrepreneurs, installers and corporate buyers.',
   },
 ];
 
@@ -51,9 +51,9 @@ const styles = StyleSheet.create({
     marginTop: appTheme.spacing.xl,
   },
   mainTitle: {
-    color: appTheme.colors.textPrimary,
-    fontSize: 25,
-    lineHeight: 34,
+    color: '#111111',
+    fontSize: 24,
+    lineHeight: 33,
     fontWeight: '800',
   },
   cardsColumn: {
@@ -63,8 +63,8 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: appTheme.colors.border,
-    backgroundColor: appTheme.colors.background,
+    borderColor: 'rgba(36,184,184,0.22)',
+    backgroundColor: '#f5fcfc',
     paddingHorizontal: appTheme.spacing.md,
     paddingVertical: appTheme.spacing.md,
     ...appTheme.shadows.card,

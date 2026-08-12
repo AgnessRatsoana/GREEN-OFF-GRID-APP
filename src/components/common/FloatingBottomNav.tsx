@@ -15,9 +15,10 @@ const navItems: Array<{ key: NavKey; icon: keyof typeof Ionicons.glyphMap }> = [
 
 interface FloatingBottomNavProps {
   activeKey?: NavKey;
+  onTabPress?: (key: NavKey) => void;
 }
 
-export function FloatingBottomNav({ activeKey = 'home' }: FloatingBottomNavProps) {
+export function FloatingBottomNav({ activeKey = 'home', onTabPress }: FloatingBottomNavProps) {
   const insets = useSafeAreaInsets();
 
   return (
@@ -40,6 +41,7 @@ export function FloatingBottomNav({ activeKey = 'home' }: FloatingBottomNavProps
                 styles.iconButton,
                 isActive ? styles.activeIconButton : styles.inactiveIconButton,
               ]}
+              onPress={() => onTabPress?.(item.key)}
             >
               <Ionicons
                 name={item.icon}
@@ -69,9 +71,9 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: appTheme.spacing.md,
     paddingVertical: appTheme.spacing.sm,
-    backgroundColor: 'rgba(31, 156, 145, 0.14)',
+    backgroundColor: 'rgba(36, 184, 184, 0.14)',
     borderWidth: 1,
-    borderColor: 'rgba(31, 156, 145, 0.28)',
+    borderColor: 'rgba(36, 184, 184, 0.28)',
   },
   iconButton: {
     width: 46,
@@ -81,9 +83,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   activeIconButton: {
-    backgroundColor: '#1f9c91',
+    backgroundColor: '#24b8b8',
   },
   inactiveIconButton: {
-    backgroundColor: '#176f67',
+    backgroundColor: '#8fd7d7',
   },
 });

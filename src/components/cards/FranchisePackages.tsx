@@ -1,68 +1,19 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Image } from 'expo-image';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { PACKAGES } from '../../data/packages';
+import { RootStackParamList } from '../../navigation/types';
+import { useFavouritesStore } from '../../store/favouritesStore';
 import { appTheme } from '../../theme';
 
-type PackageButtonVariant = 'teal' | 'purple';
-
-interface PackageItem {
-  id: string;
-  title: string;
-  imageSource: number;
-  bullets: string[];
-  price: string;
-  rating: string;
-  buttonLabel: string;
-  buttonVariant: PackageButtonVariant;
-}
-
-const packageItems: PackageItem[] = [
-  {
-    id: 'empower-kit',
-    title: 'EMPOWER KIT',
-    imageSource: require('../../assets/images/franchise-outlet-2.jpeg'),
-    bullets: [
-      'Ideal for small businesses',
-      'Complete off-grid kit',
-      'Marketing support',
-    ],
-    price: 'R191 000',
-    rating: '4.9',
-    buttonLabel: 'Select Package',
-    buttonVariant: 'teal',
-  },
-  {
-    id: 'innovative-pro',
-    title: 'INNOVATIVE PRO',
-    imageSource: require('../../assets/images/innovative-pro.jpg'),
-    bullets: [
-      'Scalable for medium ventures',
-      'Advanced energy management',
-      'Full brand materials',
-    ],
-    price: 'R350 000',
-    rating: '4.8',
-    buttonLabel: 'Select Package',
-    buttonVariant: 'purple',
-  },
-  {
-    id: 'ultimate-network',
-    title: 'ULTIMATE NETWORK',
-    imageSource: require('../../assets/images/ultimate-network-franchise.jpg'),
-    bullets: [
-      'Multi-location operations',
-      'Priority supply chain',
-      'Custom territory rights',
-    ],
-    price: 'R800 000',
-    rating: '5.0',
-    buttonLabel: 'Contact a Franchise Expert',
-    buttonVariant: 'purple',
-  },
-];
-
 export function FranchisePackages() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const toggle = useFavouritesStore((s) => s.toggle);
+  const isFavourite = useFavouritesStore((s) => s.isFavourite);
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Franchise Packages</Text>
@@ -72,13 +23,15 @@ export function FranchisePackages() {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.cardsRow}
       >
-        {packageItems.map((item) => {
+        {PACKAGES.map((item) => {
           const isTeal = item.buttonVariant === 'teal';
+          const saved = isFavourite(item.id);
 
           return (
-            <View
+            <Pressable
               key={item.id}
               style={styles.card}
+              onPress={() => navigation.navigate('PackageDetails', { packageId: item.id })}
             >
               <View style={styles.imageHalf}>
                 <Image
@@ -86,46 +39,51 @@ export function FranchisePackages() {
                   style={styles.image}
                   contentFit="cover"
                 />
+                <Pressable
+                  style={[styles.heartBtn, saved && styles.heartBtnActive]}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    toggle(item.id);
+                  }}
+                  hitSlop={8}
+                >
+                  <Ionicons
+                    name={saved ? 'heart' : 'heart-outline'}
+                    size={16}
+                    color={saved ? '#FFFFFF' : '#b89aff'}
+                  />
+                </Pressable>
               </View>
 
               <View style={styles.contentHalf}>
                 <Text style={styles.packageTitle}>{item.title}</Text>
 
                 <View style={styles.bulletList}>
-                  {item.bullets.map((bullet) => {
-                    return (
-                      <Text
-                        key={bullet}
-                        style={styles.bulletText}
-                      >
-                        - {bullet}
-                      </Text>
-                    );
-                  })}
+                  {item.bullets.map((bullet) => (
+                    <Text key={bullet} style={styles.bulletText}>
+                      - {bullet}
+                    </Text>
+                  ))}
                 </View>
 
                 <View style={styles.ratingRow}>
-                  <Ionicons
-                    name="star"
-                    size={12}
-                    color="#F4C542"
-                  />
+                  <Ionicons name="star" size={12} color="#F4C542" />
                   <Text style={styles.ratingText}>{item.rating}</Text>
                 </View>
 
                 <Text style={styles.fromText}>From</Text>
                 <Text style={styles.priceText}>{item.price}</Text>
 
-                <Pressable
+                <View
                   style={[
                     styles.button,
                     isTeal ? styles.tealButton : styles.purpleButton,
                   ]}
                 >
                   <Text style={styles.buttonText}>{item.buttonLabel}</Text>
-                </Pressable>
+                </View>
               </View>
-            </View>
+            </Pressable>
           );
         })}
       </ScrollView>
@@ -161,6 +119,24 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
+  },
+  heartBtn: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#b89aff',
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  heartBtnActive: {
+    backgroundColor: '#b89aff',
+    borderColor: '#b89aff',
   },
   contentHalf: {
     paddingHorizontal: appTheme.spacing.md,
