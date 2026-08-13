@@ -8,16 +8,21 @@ import { FloatingBottomNav } from './FloatingBottomNav';
 
 type GlobalFloatingBottomNavProps = {
   currentRouteName?: string;
+  isHidden?: boolean;
   navigationRef: NavigationContainerRefWithCurrent<RootStackParamList>;
 };
+
+const HIDDEN_ROUTE_NAMES: Set<string> = new Set([
+  ROUTES.LOGIN,
+  ROUTES.REGISTER,
+  ROUTES.FORGOT_PASSWORD,
+  ROUTES.RESET_PASSWORD,
+  ROUTES.ADMIN_DASHBOARD,
+]);
 
 function getActiveKey(routeName?: string): 'home' | 'saved' | 'notifications' | 'packages' {
   if (routeName === ROUTES.FAVOURITES) {
     return 'saved';
-  }
-
-  if (routeName === ROUTES.MESSAGES) {
-    return 'notifications';
   }
 
   if (routeName === ROUTES.PACKAGES || routeName === ROUTES.PACKAGE_DETAILS) {
@@ -29,11 +34,16 @@ function getActiveKey(routeName?: string): 'home' | 'saved' | 'notifications' | 
 
 export function GlobalFloatingBottomNav({
   currentRouteName,
+  isHidden = false,
   navigationRef,
 }: GlobalFloatingBottomNavProps) {
   const insets = useSafeAreaInsets();
 
-  if (!currentRouteName) {
+  if (!currentRouteName || isHidden) {
+    return null;
+  }
+
+  if ([...HIDDEN_ROUTE_NAMES].includes(currentRouteName as string)) {
     return null;
   }
 
@@ -57,7 +67,7 @@ export function GlobalFloatingBottomNav({
           }
 
           if (key === 'notifications') {
-            navigationRef.navigate(ROUTES.MAIN_DRAWER, { screen: ROUTES.MESSAGES } as never);
+            // No dedicated notifications screen exists yet; Messages is accessed via the side menu.
             return;
           }
 

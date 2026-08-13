@@ -15,6 +15,7 @@ import { appTheme } from './src/theme';
 export default function App() {
   const [isHydrating, setIsHydrating] = useState(true);
   const [currentRouteName, setCurrentRouteName] = useState<string | undefined>();
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const setSession = useAuthStore((s) => s.setSession);
   const clearSession = useAuthStore((s) => s.clearSession);
 
@@ -84,9 +85,13 @@ export default function App() {
     <GestureHandlerRootView style={styles.container}>
       <SafeAreaProvider>
         <StatusBar style="dark" />
-        <AppNavigation onRouteChange={setCurrentRouteName} />
+        <AppNavigation
+          onRouteChange={setCurrentRouteName}
+          onDrawerStateChange={setIsDrawerOpen}
+        />
         <GlobalFloatingBottomNav
           currentRouteName={currentRouteName}
+          isHidden={isDrawerOpen}
           navigationRef={navigationRef}
         />
       </SafeAreaProvider>

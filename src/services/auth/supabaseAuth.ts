@@ -79,6 +79,7 @@ export async function registerWithSupabase(
         full_name: fullName,
         role: 'client',
       },
+      emailRedirectTo: 'green-off-grid-mobile-app://login',
     },
   });
 
@@ -220,19 +221,34 @@ export async function handleRecoveryUrl(url: string): Promise<boolean> {
   const params = parseRecoveryUrl(url);
   const accessToken = params.access_token;
   const refreshToken = params.refresh_token;
+  const tokenHash = params.token_hash;
+  const type = params.type;
 
-  if (!accessToken || !refreshToken) {
-    return false;
+  if (accessToken && refreshToken) {
+    const { error } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return true;
   }
 
-  const { error } = await supabase.auth.setSession({
-    access_token: accessToken,
-    refresh_token: refreshToken,
-  });
+  if (tokenHash && type) {
+    const { error } = await supabase.auth.verifyOtp({
+      type: type as 'signup' | 'recovery' | 'email' | 'invite' | 'email_change' | 'magiclink',
+      token_hash: tokenHash,
+    });
 
-  if (error) {
-    throw new Error(error.message);
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return true;
   }
 
-  return true;
+  return false;
 }

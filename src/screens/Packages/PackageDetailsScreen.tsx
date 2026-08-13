@@ -16,7 +16,8 @@ export function PackageDetailsScreen() {
   const route = useRoute<RouteProp<RootStackParamList, typeof ROUTES.PACKAGE_DETAILS>>();
   const insets = useSafeAreaInsets();
   const toggle = useFavouritesStore((s) => s.toggle);
-  const isFavourite = useFavouritesStore((s) => s.isFavourite);
+  const favourites = useFavouritesStore((s) => s.favourites);
+  const isFavourite = (id: string) => favourites.includes(id);
 
   const pkg = PACKAGES.find((p) => p.id === route.params?.packageId);
 
@@ -119,7 +120,10 @@ export function PackageDetailsScreen() {
         </View>
 
         {/* CTA */}
-        <Pressable style={[styles.cta, isTeal ? styles.tealCta : styles.purpleCta]}>
+        <Pressable
+          style={[styles.cta, isTeal ? styles.tealCta : styles.purpleCta]}
+          onPress={() => navigation.navigate(ROUTES.APPLICATION_FORM, { packageId: pkg.id })}
+        >
           <Text style={styles.ctaText}>{pkg.buttonLabel}</Text>
           <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
         </Pressable>

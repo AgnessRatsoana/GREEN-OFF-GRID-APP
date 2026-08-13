@@ -13,6 +13,11 @@ export type RootStackParamList = {
   [ROUTES.PACKAGES]: undefined;
   [ROUTES.PRODUCT_DETAILS]: { productId: string };
   [ROUTES.PACKAGE_DETAILS]: { packageId: string };
+  [ROUTES.APPLICATION_FORM]: { packageId: string };
+  [ROUTES.APPLICATION_STATUS]: { packageId?: string; status?: string };
+  [ROUTES.RETAIL_OUTLET]: undefined;
+  [ROUTES.CHECKOUT]: undefined;
+  [ROUTES.ORDER_CONFIRMATION]: { orderId: string };
 };
 
 export type MainDrawerParamList = {

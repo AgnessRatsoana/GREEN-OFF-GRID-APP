@@ -22,6 +22,7 @@ export function AppDrawerContent({ navigation }: DrawerContentComponentProps) {
       { key: ROUTES.PROFILE, label: 'Profile', icon: 'person-outline' as const },
       { key: ROUTES.MESSAGES, label: 'Messages', icon: 'chatbubble-ellipses-outline' as const },
       { key: ROUTES.PACKAGES, label: 'Marketplace', icon: 'storefront-outline' as const },
+      { key: ROUTES.RETAIL_OUTLET, label: 'Retail Outlet', icon: 'business-outline' as const },
       { key: ROUTES.FAVOURITES, label: 'Favourites', icon: 'heart-outline' as const },
     ];
 
@@ -53,7 +54,8 @@ export function AppDrawerContent({ navigation }: DrawerContentComponentProps) {
                 onPress={() => {
                     if (
                       item.key === ROUTES.PACKAGES ||
-                    item.key === ROUTES.FAVOURITES
+                    item.key === ROUTES.FAVOURITES ||
+                    item.key === ROUTES.RETAIL_OUTLET
                     ) {
                     navigation.getParent()?.navigate(item.key as never);
                     navigation.closeDrawer();

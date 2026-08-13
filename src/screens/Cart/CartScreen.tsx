@@ -2,12 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Image } from 'expo-image';
+import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ROUTES } from '../../constants/routes';
 import { MARKETPLACE_PRODUCTS } from '../../data/marketplace';
-import { PACKAGES } from '../../data/packages';
 import { RootStackParamList } from '../../navigation/types';
 import { useCartStore, type CartLine } from '../../store/cartStore';
 import { appTheme } from '../../theme';
@@ -19,14 +19,14 @@ function formatCurrency(value: number) {
 export function CartScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
-  const items = useCartStore((s) => s.items);
+  const allItems = useCartStore((s) => s.items);
+  const items = useMemo(() => allItems.filter((item) => item.type === 'accessory'), [allItems]);
   const addItem = useCartStore((s) => s.addItem);
   const removeItem = useCartStore((s) => s.removeItem);
   const clearCart = useCartStore((s) => s.clearCart);
 
   const cartIds = new Set(items.map((item) => item.id));
   const recommendedProducts = MARKETPLACE_PRODUCTS.filter((product) => !cartIds.has(product.id)).slice(0, 4);
-  const recommendedPackages = PACKAGES.filter((pkg) => !cartIds.has(pkg.id)).slice(0, 2);
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalAmount = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -57,9 +57,17 @@ export function CartScreen() {
           <Text style={styles.summaryLabel}>Cart total</Text>
           <Text style={styles.summaryTotal}>{formatCurrency(totalAmount)}</Text>
           {items.length ? (
-            <Pressable style={styles.clearBtn} onPress={clearCart}>
-              <Text style={styles.clearBtnText}>Clear cart</Text>
-            </Pressable>
+            <>
+              <Pressable style={styles.clearBtn} onPress={clearCart}>
+                <Text style={styles.clearBtnText}>Clear cart</Text>
+              </Pressable>
+              <Pressable
+                style={styles.checkoutBtn}
+                onPress={() => navigation.navigate(ROUTES.CHECKOUT)}
+              >
+                <Text style={styles.checkoutBtnText}>Proceed to checkout</Text>
+              </Pressable>
+            </>
           ) : null}
         </View>
 
@@ -68,7 +76,7 @@ export function CartScreen() {
           <View style={styles.emptyCard}>
             <Ionicons name="cart-outline" size={42} color="#89a3a3" />
             <Text style={styles.emptyTitle}>Your cart is empty</Text>
-            <Text style={styles.emptyBody}>Add accessories or packages to see them here.</Text>
+            <Text style={styles.emptyBody}>Add accessories to see them here.</Text>
             <Pressable style={styles.shopBtn} onPress={() => navigation.navigate(ROUTES.PACKAGES)}>
               <Text style={styles.shopBtnText}>Go to marketplace</Text>
             </Pressable>
@@ -77,7 +85,7 @@ export function CartScreen() {
           items.map((item) => (
             <View key={item.id} style={styles.itemCard}>
               <View style={styles.itemTextWrap}>
-                <Text style={styles.itemType}>{item.type === 'franchise' ? 'Package' : 'Accessory'}</Text>
+                <Text style={styles.itemType}>Accessory</Text>
                 <Text style={styles.itemName}>{item.name}</Text>
                 <Text style={styles.itemPrice}>{formatCurrency(item.price)}</Text>
               </View>
@@ -117,24 +125,6 @@ export function CartScreen() {
                 </Pressable>
               </View>
             </View>
-          ))}
-        </View>
-
-        <Text style={styles.sectionTitle}>Recommended packages</Text>
-        <View style={styles.packageColumn}>
-          {recommendedPackages.map((pkg) => (
-            <Pressable
-              key={pkg.id}
-              style={styles.packageCard}
-              onPress={() => navigation.navigate(ROUTES.PACKAGE_DETAILS, { packageId: pkg.id })}
-            >
-              <Image source={pkg.imageSource} style={styles.packageImage} contentFit="cover" />
-              <View style={styles.packageContent}>
-                <Text style={styles.packageTitle}>{pkg.title}</Text>
-                <Text style={styles.packagePrice}>{pkg.price}</Text>
-                <Text style={styles.packageCta}>View package</Text>
-              </View>
-            </Pressable>
           ))}
         </View>
       </ScrollView>
@@ -217,6 +207,19 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '700',
+  },
+  checkoutBtn: {
+    marginTop: appTheme.spacing.sm,
+    borderRadius: 16,
+    backgroundColor: '#24b8b8',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  checkoutBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
   },
   sectionTitle: {
     color: '#1a3f3f',
@@ -351,44 +354,5 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '700',
-  },
-  packageColumn: {
-    rowGap: appTheme.spacing.sm,
-  },
-  packageCard: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(36,184,184,0.18)',
-    backgroundColor: '#FFFFFF',
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    minHeight: 124,
-  },
-  packageImage: {
-    width: 120,
-    height: '100%',
-  },
-  packageContent: {
-    flex: 1,
-    padding: appTheme.spacing.sm,
-    justifyContent: 'center',
-  },
-  packageTitle: {
-    color: '#1a3f3f',
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  packagePrice: {
-    color: '#0f6464',
-    fontSize: 18,
-    fontWeight: '900',
-    marginTop: 4,
-  },
-  packageCta: {
-    color: '#24b8b8',
-    fontSize: 12,
-    fontWeight: '700',
-    marginTop: 4,
   },
 });

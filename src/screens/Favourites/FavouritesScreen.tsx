@@ -9,6 +9,7 @@ import { ROUTES } from '../../constants/routes';
 import { MARKETPLACE_PRODUCTS } from '../../data/marketplace';
 import { PACKAGES } from '../../data/packages';
 import { RootStackParamList } from '../../navigation/types';
+import { useCartStore } from '../../store/cartStore';
 import { useFavouritesStore } from '../../store/favouritesStore';
 import { appTheme } from '../../theme';
 
@@ -17,10 +18,12 @@ export function FavouritesScreen() {
   const insets = useSafeAreaInsets();
   const favourites = useFavouritesStore((s) => s.favourites);
   const toggle = useFavouritesStore((s) => s.toggle);
+  const addItem = useCartStore((s) => s.addItem);
 
   const savedPackages = PACKAGES.filter((p) => favourites.includes(p.id));
   const savedProducts = MARKETPLACE_PRODUCTS.filter((p) => favourites.includes(p.id));
   const totalSaved = savedPackages.length + savedProducts.length;
+
 
   return (
     <View style={styles.root}>
@@ -53,73 +56,87 @@ export function FavouritesScreen() {
           </Text>
 
           {savedProducts.length ? <Text style={styles.groupTitle}>Accessories</Text> : null}
-          {savedProducts.map((item) => {
-            return (
-              <Pressable
-                key={item.id}
-                style={styles.productCard}
-                onPress={() => navigation.navigate(ROUTES.PRODUCT_DETAILS, { productId: item.id })}
-              >
-                <View style={styles.imageWrap}>
-                  <Image source={require('../../assets/images/demoAccesories.jpg')} style={styles.image} contentFit="cover" />
+          {savedProducts.length ? (
+            <View style={styles.accessoriesRow}>
+              {savedProducts.map((item) => {
+                const rating = (item as typeof item & { rating?: number }).rating ?? 4.8;
+
+                return (
                   <Pressable
-                    style={styles.heartBtn}
-                    onPress={(e) => { e.stopPropagation(); toggle(item.id); }}
-                    hitSlop={8}
+                    key={item.id}
+                    style={styles.accessoryCard}
+                    onPress={() => navigation.navigate(ROUTES.PRODUCT_DETAILS, { productId: item.id })}
                   >
-                    <Ionicons name="heart" size={16} color="#FFFFFF" />
+                    <View style={styles.accessoryImageWrap}>
+                      <Image source={require('../../assets/images/demoAccesories.jpg')} style={styles.accessoryImage} contentFit="cover" />
+                      <Pressable
+                        style={[styles.heartBtn, styles.heartBtnActive]}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          toggle(item.id);
+                        }}
+                        hitSlop={8}
+                      >
+                        <Ionicons name="heart" size={16} color="#FFFFFF" />
+                      </Pressable>
+                      <View style={styles.ratingBadge}>
+                        <Ionicons name="star" size={11} color="#F4C542" />
+                        <Text style={styles.ratingBadgeText}>{rating.toFixed(1)}</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.accessoryContent}>
+                      <Text style={styles.productName}>{item.name}</Text>
+                      {item.description ? <Text style={styles.productDescription}>{item.description}</Text> : null}
+                      <Text style={styles.categoryText}>{item.category || 'General'}</Text>
+                      <View style={styles.cardFooter}>
+                        <Text style={styles.priceText}>R {item.price.toLocaleString()}</Text>
+                        <Pressable
+                          style={styles.addButton}
+                          onPress={() => addItem({ id: item.id, name: item.name, price: item.price, type: 'accessory' })}
+                        >
+                          <Text style={styles.addButtonText}>Add</Text>
+                        </Pressable>
+                      </View>
+                    </View>
                   </Pressable>
-                </View>
+                );
+              })}
+            </View>
+          ) : null}
 
-                <View style={styles.content}>
-                  <Text style={styles.packageTitle}>{item.name}</Text>
-                  {item.description ? <Text style={styles.bulletText}>{item.description}</Text> : null}
-
-                  <View style={styles.ratingRow}>
-                    <Ionicons name="star" size={12} color="#F4C542" />
-                    <Text style={styles.ratingText}>4.8</Text>
-                  </View>
-
-                  <View style={styles.priceRow}>
-                    <Text style={styles.fromText}>Price </Text>
-                    <Text style={styles.priceText}>R {item.price.toLocaleString()}</Text>
-                  </View>
-
-                  <View style={styles.tealBtn}>
-                    <Text style={styles.btnText}>{item.category || 'General'}</Text>
-                  </View>
-                </View>
-              </Pressable>
-            );
-          })}
-
-          {savedPackages.length ? <Text style={styles.groupTitle}>Packages</Text> : null}
+          {savedPackages.length ? <Text style={[styles.groupTitle, styles.franchiseLabel]}>Packages</Text> : null}
           {savedPackages.map((item) => {
             const isTeal = item.buttonVariant === 'teal';
+
             return (
               <Pressable
                 key={item.id}
-                style={styles.card}
+                style={styles.franchiseCard}
                 onPress={() => navigation.navigate(ROUTES.PACKAGE_DETAILS, { packageId: item.id })}
               >
-                <View style={styles.imageWrap}>
-                  <Image source={item.imageSource} style={styles.image} contentFit="cover" />
-                  {/* Remove from favourites */}
+                <View style={styles.franchiseImageWrap}>
+                  <Image source={item.imageSource} style={styles.franchiseImage} contentFit="cover" />
                   <Pressable
-                    style={styles.heartBtn}
-                    onPress={(e) => { e.stopPropagation(); toggle(item.id); }}
+                    style={[styles.heartBtn, styles.heartBtnActive]}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      toggle(item.id);
+                    }}
                     hitSlop={8}
                   >
                     <Ionicons name="heart" size={16} color="#FFFFFF" />
                   </Pressable>
                 </View>
 
-                <View style={styles.content}>
-                  <Text style={styles.packageTitle}>{item.title}</Text>
+                <View style={styles.franchiseContent}>
+                  <Text style={styles.franchiseTitle}>{item.title}</Text>
 
                   <View style={styles.bulletList}>
-                    {item.bullets.map((b) => (
-                      <Text key={b} style={styles.bulletText}>• {b}</Text>
+                    {item.bullets.map((bullet) => (
+                      <Text key={bullet} style={styles.bulletText}>
+                        - {bullet}
+                      </Text>
                     ))}
                   </View>
 
@@ -128,14 +145,18 @@ export function FavouritesScreen() {
                     <Text style={styles.ratingText}>{item.rating}</Text>
                   </View>
 
-                  <View style={styles.priceRow}>
-                    <Text style={styles.fromText}>From </Text>
-                    <Text style={styles.priceText}>{item.price}</Text>
-                  </View>
+                  <Text style={styles.fromText}>From</Text>
+                  <Text style={styles.priceText}>{item.price}</Text>
 
-                  <View style={[styles.btn, isTeal ? styles.tealBtn : styles.purpleBtn]}>
+                  <Pressable
+                    style={[styles.btn, isTeal ? styles.tealBtn : styles.purpleBtn]}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      navigation.navigate(ROUTES.APPLICATION_FORM, { packageId: item.id });
+                    }}
+                  >
                     <Text style={styles.btnText}>{item.buttonLabel}</Text>
-                  </View>
+                  </Pressable>
                 </View>
               </Pressable>
             );
@@ -223,86 +244,176 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginTop: 4,
   },
-  productCard: {
+  franchiseLabel: {
+    marginTop: 8,
+  },
+  accessoriesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: 12,
+  },
+  accessoryCard: {
+    width: '48%',
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
     overflow: 'hidden',
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: 'rgba(36,184,184,0.2)',
+    borderColor: 'rgba(36,184,184,0.18)',
   },
-  card: {
-    borderRadius: 20,
-    overflow: 'hidden',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: 'rgba(36,184,184,0.2)',
-  },
-  imageWrap: {
-    height: 180,
+  accessoryImageWrap: {
+    height: 160,
     width: '100%',
+    position: 'relative',
   },
-  image: {
+  accessoryImage: {
     width: '100%',
     height: '100%',
   },
+  accessoryContent: {
+    padding: appTheme.spacing.md,
+  },
+  productName: {
+    color: '#111111',
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: '800',
+  },
+  productDescription: {
+    color: '#5a7474',
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 6,
+  },
+  categoryText: {
+    color: '#24b8b8',
+    fontSize: 11,
+    lineHeight: 16,
+    fontWeight: '700',
+    marginTop: 8,
+    textTransform: 'uppercase',
+  },
+  cardFooter: {
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  addButton: {
+    borderRadius: 999,
+    backgroundColor: '#24b8b8',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+  addButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '700',
+  },
   heartBtn: {
     position: 'absolute',
-    top: 12,
-    left: 12,
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#b89aff',
+    top: 10,
+    left: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#b89aff',
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
   },
-  content: {
-    padding: appTheme.spacing.md,
+  heartBtnActive: {
+    backgroundColor: '#b89aff',
+    borderColor: '#b89aff',
   },
-  packageTitle: {
-    color: '#1a3f3f',
+  ratingBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    columnGap: 3,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  ratingBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  franchiseCard: {
+    borderRadius: 24,
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(36,184,184,0.18)',
+    position: 'relative',
+  },
+  franchiseImageWrap: {
+    height: 170,
+    width: '100%',
+    position: 'relative',
+  },
+  franchiseImage: {
+    width: '100%',
+    height: '100%',
+  },
+  franchiseContent: {
+    paddingHorizontal: appTheme.spacing.md,
+    paddingTop: appTheme.spacing.md,
+    paddingBottom: appTheme.spacing.md,
+  },
+  franchiseTitle: {
+    color: '#111111',
     fontSize: 18,
+    lineHeight: 24,
     fontWeight: '800',
-    marginBottom: appTheme.spacing.sm,
   },
   bulletList: {
+    marginTop: appTheme.spacing.sm,
     rowGap: 4,
-    marginBottom: appTheme.spacing.sm,
   },
   bulletText: {
-    color: '#547171',
+    color: '#111111',
     fontSize: 13,
     lineHeight: 18,
+    fontWeight: '400',
   },
   ratingRow: {
+    marginTop: appTheme.spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
     columnGap: 4,
-    marginBottom: 6,
   },
   ratingText: {
-    color: '#4d6a6a',
+    color: '#111111',
     fontSize: 12,
+    lineHeight: 16,
     fontWeight: '600',
   },
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    marginBottom: appTheme.spacing.sm,
-  },
   fromText: {
-    color: '#6a8383',
-    fontSize: 12,
+    marginTop: 2,
+    color: '#C7C7C7',
+    fontSize: 11,
+    lineHeight: 14,
+    fontWeight: '400',
   },
   priceText: {
-    color: '#163e3e',
+    color: '#111111',
     fontSize: 20,
+    lineHeight: 24,
     fontWeight: '800',
   },
   btn: {
+    marginTop: appTheme.spacing.sm,
     borderRadius: 999,
     paddingVertical: 11,
+    paddingHorizontal: appTheme.spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -314,7 +425,8 @@ const styles = StyleSheet.create({
   },
   btnText: {
     color: '#FFFFFF',
-    fontSize: 13,
+    fontSize: 12,
+    lineHeight: 16,
     fontWeight: '700',
   },
 });

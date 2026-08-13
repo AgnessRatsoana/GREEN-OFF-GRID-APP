@@ -19,7 +19,8 @@ export function ProductDetailsScreen() {
   const insets = useSafeAreaInsets();
   const addItem = useCartStore((s) => s.addItem);
   const toggle = useFavouritesStore((s) => s.toggle);
-  const isFavourite = useFavouritesStore((s) => s.isFavourite);
+  const favourites = useFavouritesStore((s) => s.favourites);
+  const isFavourite = (id: string) => favourites.includes(id);
 
   const product = MARKETPLACE_PRODUCTS.find((p) => p.id === route.params?.productId);
 

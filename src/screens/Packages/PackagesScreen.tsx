@@ -28,7 +28,8 @@ export function PackagesScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
   const toggle = useFavouritesStore((s) => s.toggle);
-  const isFavourite = useFavouritesStore((s) => s.isFavourite);
+  const favourites = useFavouritesStore((s) => s.favourites);
+  const isFavourite = (id: string) => favourites.includes(id);
   const addItem = useCartStore((s) => s.addItem);
   const cartCount = useCartStore((s) => s.items.reduce((sum, item) => sum + item.quantity, 0));
 
@@ -261,9 +262,15 @@ export function PackagesScreen() {
                   <Text style={styles.fromText}>From</Text>
                   <Text style={styles.priceText}>{item.price}</Text>
 
-                  <View style={[styles.btn, isTeal ? styles.tealBtn : styles.purpleBtn]}>
+                  <Pressable
+                    style={[styles.btn, isTeal ? styles.tealBtn : styles.purpleBtn]}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      navigation.navigate(ROUTES.APPLICATION_FORM, { packageId: item.id });
+                    }}
+                  >
                     <Text style={styles.btnText}>{item.buttonLabel}</Text>
-                  </View>
+                  </Pressable>
                 </View>
               </Pressable>
             );

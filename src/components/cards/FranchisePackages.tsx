@@ -12,7 +12,8 @@ import { appTheme } from '../../theme';
 export function FranchisePackages() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const toggle = useFavouritesStore((s) => s.toggle);
-  const isFavourite = useFavouritesStore((s) => s.isFavourite);
+  const favourites = useFavouritesStore((s) => s.favourites);
+  const isFavourite = (id: string) => favourites.includes(id);
 
   return (
     <View style={styles.container}>

@@ -14,4 +14,9 @@ export const ROUTES = {
   PACKAGES: 'Marketplace',
   PRODUCT_DETAILS: 'ProductDetails',
   PACKAGE_DETAILS: 'PackageDetails',
+  APPLICATION_FORM: 'PackageApplication',
+  APPLICATION_STATUS: 'ApplicationStatus',
+  RETAIL_OUTLET: 'RetailOutlet',
+  CHECKOUT: 'Checkout',
+  ORDER_CONFIRMATION: 'OrderConfirmation',
 } as const;

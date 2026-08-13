@@ -17,7 +17,8 @@ export function MarketplaceAccessoriesSection() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const addItem = useCartStore((s) => s.addItem);
   const toggle = useFavouritesStore((s) => s.toggle);
-  const isFavourite = useFavouritesStore((s) => s.isFavourite);
+  const favourites = useFavouritesStore((s) => s.favourites);
+  const isFavourite = (id: string) => favourites.includes(id);
 
   const openProduct = (productId: string) => {
     navigation.navigate(ROUTES.PACKAGES);
