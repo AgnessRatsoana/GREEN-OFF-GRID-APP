@@ -7,8 +7,10 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ROUTES } from '../../constants/routes';
 import { MARKETPLACE_PRODUCTS } from '../../data/marketplace';
 import { RootStackParamList } from '../../navigation/types';
+import { useAuthStore } from '../../store/authStore';
 import { useFavouritesStore } from '../../store/favouritesStore';
 import { appTheme } from '../../theme';
+import { getBusinessPrice } from '../../utils/pricing';
 
 const accessoryItems = MARKETPLACE_PRODUCTS.slice(8, 16);
 const discountTags: Record<string, string> = {
@@ -19,6 +21,7 @@ const discountTags: Record<string, string> = {
 
 export function AccessoriesShowcaseSection() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const isBusiness = useAuthStore((s) => s.user?.accountType === 'business');
   const toggle = useFavouritesStore((s) => s.toggle);
   const favourites = useFavouritesStore((s) => s.favourites);
   const isFavourite = (id: string) => favourites.includes(id);
@@ -69,7 +72,14 @@ export function AccessoriesShowcaseSection() {
             <View style={styles.cardBody}>
               <Text style={styles.category}>{item.category || 'General'}</Text>
               <Text numberOfLines={2} style={styles.cardTitle}>{item.name}</Text>
-              <Text style={styles.price}>R {item.price.toLocaleString()}</Text>
+              {isBusiness ? (
+                <View style={styles.priceRow}>
+                  <Text style={styles.originalPriceStrike}>R {item.price.toLocaleString()}</Text>
+                  <Text style={styles.price}>R {getBusinessPrice(item.price).toLocaleString()}</Text>
+                </View>
+              ) : (
+                <Text style={styles.price}>R {item.price.toLocaleString()}</Text>
+              )}
             </View>
           </Pressable>
         ))}
@@ -202,5 +212,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 18,
     fontWeight: '900',
+  },
+  priceRow: {
+    marginTop: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    columnGap: 6,
+  },
+  originalPriceStrike: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 11,
+    textDecorationLine: 'line-through',
   },
 });

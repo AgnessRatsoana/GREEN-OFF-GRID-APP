@@ -9,14 +9,17 @@ import { ROUTES } from '../../constants/routes';
 import { MARKETPLACE_PRODUCTS } from '../../data/marketplace';
 import { PACKAGES } from '../../data/packages';
 import { RootStackParamList } from '../../navigation/types';
+import { useAuthStore } from '../../store/authStore';
 import { useCartStore } from '../../store/cartStore';
 import { useFavouritesStore } from '../../store/favouritesStore';
 import { appTheme } from '../../theme';
+import { getBusinessPrice } from '../../utils/pricing';
 
 export function ProductDetailsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, typeof ROUTES.PRODUCT_DETAILS>>();
   const insets = useSafeAreaInsets();
+  const isBusiness = useAuthStore((s) => s.user?.accountType === 'business');
   const addItem = useCartStore((s) => s.addItem);
   const toggle = useFavouritesStore((s) => s.toggle);
   const favourites = useFavouritesStore((s) => s.favourites);
@@ -65,11 +68,18 @@ export function ProductDetailsScreen() {
         {product.description ? <Text style={styles.productDescription}>{product.description}</Text> : null}
         <Text style={styles.metaText}>Category: {product.category || 'General'}</Text>
         <Text style={styles.metaText}>SKU: {product.sku || 'N/A'}</Text>
-        <Text style={styles.priceText}>R {product.price.toLocaleString()}</Text>
+        {isBusiness ? (
+          <View style={styles.priceRow}>
+            <Text style={styles.originalPriceStrike}>R {product.price.toLocaleString()}</Text>
+            <Text style={styles.priceText}>R {getBusinessPrice(product.price).toLocaleString()}</Text>
+          </View>
+        ) : (
+          <Text style={styles.priceText}>R {product.price.toLocaleString()}</Text>
+        )}
 
         <Pressable
           style={styles.addButton}
-          onPress={() => addItem({ id: product.id, name: product.name, price: product.price, type: 'accessory' })}
+          onPress={() => addItem({ id: product.id, name: product.name, price: isBusiness ? getBusinessPrice(product.price) : product.price, type: 'accessory' })}
         >
           <Text style={styles.addButtonText}>Add to Cart</Text>
         </Pressable>
@@ -232,6 +242,17 @@ const styles = StyleSheet.create({
     lineHeight: 32,
     fontWeight: '900',
     marginTop: 6,
+  },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    columnGap: 8,
+    marginTop: 6,
+  },
+  originalPriceStrike: {
+    color: '#9fb1b1',
+    fontSize: 16,
+    textDecorationLine: 'line-through',
   },
   addButton: {
     marginTop: 8,

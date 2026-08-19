@@ -9,6 +9,10 @@ export interface AuthUser {
   email: string;
   avatarUrl?: string | null;
   role?: 'admin' | 'client';
+  accountType?: 'individual' | 'business';
+  businessName?: string | null;
+  businessRegistrationNumber?: string | null;
+  contactNumber?: string | null;
 }
 
 export interface AuthPayload {

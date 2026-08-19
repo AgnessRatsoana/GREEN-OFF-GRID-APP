@@ -21,6 +21,10 @@ export function RegisterScreen() {
   const [name, setName] = useState<string>('');
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
+  const [accountType, setAccountType] = useState<'individual' | 'business'>('individual');
+  const [businessName, setBusinessName] = useState<string>('');
+  const [businessRegistrationNumber, setBusinessRegistrationNumber] = useState<string>('');
+  const [contactNumber, setContactNumber] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -28,6 +32,11 @@ export function RegisterScreen() {
   const handleRegister = async () => {
     if (!name.trim() || !email.trim() || !password.trim()) {
       setError('Please complete all fields.');
+      return;
+    }
+
+    if (accountType === 'business' && (!businessName.trim() || !businessRegistrationNumber.trim() || !contactNumber.trim())) {
+      setError('Please complete all business details.');
       return;
     }
 
@@ -40,6 +49,14 @@ export function RegisterScreen() {
         email.trim().toLowerCase(),
         password,
         name.trim(),
+        accountType,
+        accountType === 'business'
+          ? {
+              businessName: businessName.trim(),
+              businessRegistrationNumber: businessRegistrationNumber.trim(),
+              contactNumber: contactNumber.trim(),
+            }
+          : undefined,
       );
 
       if (payload) {
@@ -97,6 +114,49 @@ export function RegisterScreen() {
           style={styles.input}
           placeholderTextColor="#7b8a8a"
         />
+
+        <Text style={styles.fieldLabel}>Account Type</Text>
+        <View style={styles.accountTypeRow}>
+          <Pressable
+            style={[styles.accountTypeOption, accountType === 'individual' && styles.accountTypeOptionActive]}
+            onPress={() => setAccountType('individual')}
+          >
+            <Text style={[styles.accountTypeText, accountType === 'individual' && styles.accountTypeTextActive]}>Individual</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.accountTypeOption, accountType === 'business' && styles.accountTypeOptionActive]}
+            onPress={() => setAccountType('business')}
+          >
+            <Text style={[styles.accountTypeText, accountType === 'business' && styles.accountTypeTextActive]}>Business</Text>
+          </Pressable>
+        </View>
+
+        {accountType === 'business' ? (
+          <>
+            <TextInput
+              placeholder="Business name"
+              value={businessName}
+              onChangeText={setBusinessName}
+              style={styles.input}
+              placeholderTextColor="#7b8a8a"
+            />
+            <TextInput
+              placeholder="Business registration number"
+              value={businessRegistrationNumber}
+              onChangeText={setBusinessRegistrationNumber}
+              style={styles.input}
+              placeholderTextColor="#7b8a8a"
+            />
+            <TextInput
+              placeholder="Contact number"
+              keyboardType="phone-pad"
+              value={contactNumber}
+              onChangeText={setContactNumber}
+              style={styles.input}
+              placeholderTextColor="#7b8a8a"
+            />
+          </>
+        ) : null}
 
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
     {success ? <Text style={styles.successText}>{success}</Text> : null}
@@ -166,6 +226,37 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#d14444',
     fontSize: 13,
+  },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#123f3f',
+    marginTop: 4,
+  },
+  accountTypeRow: {
+    flexDirection: 'row',
+    columnGap: appTheme.spacing.sm,
+  },
+  accountTypeOption: {
+    flex: 1,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(36, 184, 184, 0.28)',
+    paddingVertical: appTheme.spacing.sm,
+    alignItems: 'center',
+    backgroundColor: '#fbffff',
+  },
+  accountTypeOptionActive: {
+    backgroundColor: '#24b8b8',
+    borderColor: '#24b8b8',
+  },
+  accountTypeText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#213232',
+  },
+  accountTypeTextActive: {
+    color: '#FFFFFF',
   },
   successText: {
     color: '#0f6464',

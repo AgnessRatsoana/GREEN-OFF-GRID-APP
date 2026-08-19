@@ -80,6 +80,7 @@ export async function syncProfileSnapshot(): Promise<void> {
 
   const metadata = data.user.user_metadata ?? {};
   const role = metadata.role === 'admin' ? 'admin' : 'client';
+  const accountType = metadata.account_type === 'business' ? 'business' : 'individual';
 
   await supabase.from('profiles').upsert({
     id: data.user.id,
@@ -87,6 +88,10 @@ export async function syncProfileSnapshot(): Promise<void> {
     full_name: (metadata.full_name as string | undefined) || (metadata.name as string | undefined) || 'User',
     avatar_url: (metadata.avatar_url as string | undefined) || null,
     role,
+    account_type: accountType,
+    business_name: (metadata.business_name as string | undefined) || null,
+    business_registration_number: (metadata.business_registration_number as string | undefined) || null,
+    contact_number: (metadata.contact_number as string | undefined) || null,
     last_seen_at: new Date().toISOString(),
   });
 }

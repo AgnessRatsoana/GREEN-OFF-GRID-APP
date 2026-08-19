@@ -7,14 +7,17 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ROUTES } from '../../constants/routes';
 import { MARKETPLACE_PRODUCTS } from '../../data/marketplace';
 import { RootStackParamList } from '../../navigation/types';
+import { useAuthStore } from '../../store/authStore';
 import { useCartStore } from '../../store/cartStore';
 import { useFavouritesStore } from '../../store/favouritesStore';
 import { appTheme } from '../../theme';
+import { getBusinessPrice } from '../../utils/pricing';
 
 const homeAccessories = MARKETPLACE_PRODUCTS.slice(0, 8);
 
 export function MarketplaceAccessoriesSection() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const isBusiness = useAuthStore((s) => s.user?.accountType === 'business');
   const addItem = useCartStore((s) => s.addItem);
   const toggle = useFavouritesStore((s) => s.toggle);
   const favourites = useFavouritesStore((s) => s.favourites);
@@ -62,10 +65,17 @@ export function MarketplaceAccessoriesSection() {
               {item.description ? <Text style={styles.productDescription}>{item.description}</Text> : null}
               <Text style={styles.categoryText}>{item.category || 'General'}</Text>
               <View style={styles.cardFooter}>
-                <Text style={styles.priceText}>R {item.price.toLocaleString()}</Text>
+                {isBusiness ? (
+                  <View style={styles.priceRow}>
+                    <Text style={styles.originalPriceStrike}>R {item.price.toLocaleString()}</Text>
+                    <Text style={styles.priceText}>R {getBusinessPrice(item.price).toLocaleString()}</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.priceText}>R {item.price.toLocaleString()}</Text>
+                )}
                 <Pressable
                   style={styles.addButton}
-                  onPress={() => addItem({ id: item.id, name: item.name, price: item.price, type: 'accessory' })}
+                  onPress={() => addItem({ id: item.id, name: item.name, price: isBusiness ? getBusinessPrice(item.price) : item.price, type: 'accessory' })}
                 >
                   <Text style={styles.addButtonText}>Add</Text>
                 </Pressable>
@@ -181,6 +191,16 @@ const styles = StyleSheet.create({
     fontSize: 18,
     lineHeight: 22,
     fontWeight: '800',
+  },
+  priceRow: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    rowGap: 2,
+  },
+  originalPriceStrike: {
+    color: '#9fb1b1',
+    fontSize: 11,
+    textDecorationLine: 'line-through',
   },
   addButton: {
     borderRadius: 999,

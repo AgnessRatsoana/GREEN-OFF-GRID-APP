@@ -37,6 +37,35 @@ export async function createYocoCheckout(
   return { orderId: data.orderId, redirectUrl: data.redirectUrl };
 }
 
+export interface OrderRecord {
+  id: string;
+  items: YocoCheckoutItem[];
+  amountCents: number;
+  status: OrderStatus;
+  createdAt: string;
+}
+
+export async function listRecentOrders(limit = 5): Promise<OrderRecord[]> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from('orders')
+    .select('id,items,amount_cents,status,created_at')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data || []).map((row) => ({
+    id: row.id,
+    items: (row.items as YocoCheckoutItem[]) || [],
+    amountCents: row.amount_cents,
+    status: row.status,
+    createdAt: row.created_at,
+  }));
+}
+
 export async function getOrderStatus(orderId: string): Promise<OrderStatus> {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase

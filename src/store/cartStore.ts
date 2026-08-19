@@ -10,21 +10,21 @@ export type CartLine = {
 
 interface CartStore {
   items: CartLine[];
-  addItem: (item: { id: string; name: string; price: number; type: 'accessory' | 'franchise' }) => void;
+  addItem: (item: { id: string; name: string; price: number; type: 'accessory' | 'franchise' }, quantity?: number) => void;
   removeItem: (id: string) => void;
   clearCart: () => void;
 }
 
 export const useCartStore = create<CartStore>((set) => ({
   items: [],
-  addItem: ({ id, name, price, type }) =>
+  addItem: ({ id, name, price, type }, quantity = 1) =>
     set((state) => {
       const existing = state.items.find((entry) => entry.id === id);
 
       if (existing) {
         return {
           items: state.items.map((entry) =>
-            entry.id === id ? { ...entry, quantity: entry.quantity + 1 } : entry,
+            entry.id === id ? { ...entry, quantity: entry.quantity + quantity } : entry,
           ),
         };
       }
@@ -32,7 +32,7 @@ export const useCartStore = create<CartStore>((set) => ({
       return {
         items: [
           ...state.items,
-          { id, name, price, quantity: 1, type },
+          { id, name, price, quantity, type },
         ],
       };
     }),

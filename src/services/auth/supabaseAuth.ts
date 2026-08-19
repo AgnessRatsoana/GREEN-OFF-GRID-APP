@@ -10,6 +10,7 @@ function mapUser(user: {
   const metadata = user.user_metadata ?? {};
   const fullName = (metadata.full_name as string | undefined) || (metadata.name as string | undefined) || 'User';
   const role = metadata.role === 'admin' ? 'admin' : 'client';
+  const accountType = metadata.account_type === 'business' ? 'business' : 'individual';
 
   return {
     id: user.id,
@@ -17,6 +18,10 @@ function mapUser(user: {
     email: user.email || '',
     avatarUrl: (metadata.avatar_url as string | undefined) || null,
     role,
+    accountType,
+    businessName: (metadata.business_name as string | undefined) || null,
+    businessRegistrationNumber: (metadata.business_registration_number as string | undefined) || null,
+    contactNumber: (metadata.contact_number as string | undefined) || null,
   };
 }
 
@@ -69,6 +74,8 @@ export async function registerWithSupabase(
   email: string,
   password: string,
   fullName: string,
+  accountType: 'individual' | 'business' = 'individual',
+  businessDetails?: { businessName?: string; businessRegistrationNumber?: string; contactNumber?: string },
 ): Promise<AuthPayload | null> {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase.auth.signUp({
@@ -78,6 +85,10 @@ export async function registerWithSupabase(
       data: {
         full_name: fullName,
         role: 'client',
+        account_type: accountType,
+        business_name: businessDetails?.businessName || null,
+        business_registration_number: businessDetails?.businessRegistrationNumber || null,
+        contact_number: businessDetails?.contactNumber || null,
       },
       emailRedirectTo: 'green-off-grid-mobile-app://login',
     },

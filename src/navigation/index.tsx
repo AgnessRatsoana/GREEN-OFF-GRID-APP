@@ -48,17 +48,18 @@ function isMainDrawerOpen(state: NavigationState | PartialState<NavigationState>
 }
 
 export function AppNavigation({ onRouteChange, onDrawerStateChange }: AppNavigationProps) {
-  const reportState = () => {
-    onRouteChange?.(navigationRef.getCurrentRoute()?.name);
-    onDrawerStateChange?.(isMainDrawerOpen(navigationRef.getRootState()));
-  };
-
   return (
     <NavigationContainer
       linking={linking}
       ref={navigationRef}
-      onReady={reportState}
-      onStateChange={reportState}
+      onReady={() => {
+        onRouteChange?.(navigationRef.getCurrentRoute()?.name);
+        onDrawerStateChange?.(isMainDrawerOpen(navigationRef.getRootState()));
+      }}
+      onStateChange={(state) => {
+        onRouteChange?.(navigationRef.getCurrentRoute()?.name);
+        onDrawerStateChange?.(isMainDrawerOpen(state));
+      }}
     >
       <RootStackNavigator />
     </NavigationContainer>
