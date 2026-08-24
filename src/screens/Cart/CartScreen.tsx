@@ -86,18 +86,40 @@ export function CartScreen() {
             <View key={item.id} style={styles.itemCard}>
               <View style={styles.itemTextWrap}>
                 <Text style={styles.itemType}>Accessory</Text>
-                <Text style={styles.itemName}>{item.name}</Text>
-                <Text style={styles.itemPrice}>{formatCurrency(item.price)}</Text>
-              </View>
 
-              <View style={styles.qtyControls}>
-                <Pressable style={styles.qtyBtn} onPress={() => removeItem(item.id)}>
-                  <Ionicons name="remove" size={16} color="#0f6464" />
-                </Pressable>
-                <Text style={styles.qtyValue}>{item.quantity}</Text>
-                <Pressable style={styles.qtyBtn} onPress={() => increaseQty(item)}>
-                  <Ionicons name="add" size={16} color="#0f6464" />
-                </Pressable>
+                <Text style={styles.itemName}>{item.name}</Text>
+
+                <Text style={styles.itemPrice}>
+                  {formatCurrency(item.price)}
+                </Text>
+
+                <Text style={styles.quantityLabel}>Quantity</Text>
+
+                <View style={styles.qtyControls}>
+                  <Pressable
+                    style={styles.qtyBtn}
+                    onPress={() => removeItem(item.id)}
+                  >
+                    <Ionicons name="remove" size={16} color="#0f6464" />
+                  </Pressable>
+
+                  <Text style={styles.qtyValue}>
+                    {item.quantity}
+                  </Text>
+
+                  <Pressable
+                    style={styles.qtyBtn}
+                    onPress={() => increaseQty(item)}
+                  >
+                    <Ionicons name="add" size={16} color="#0f6464" />
+                  </Pressable>
+                </View>
+
+                <Text style={styles.totalLabel}>Total</Text>
+
+                <Text style={styles.itemTotal}>
+                  {formatCurrency(item.price * item.quantity)}
+                </Text>
               </View>
             </View>
           ))
@@ -264,13 +286,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(36,184,184,0.18)',
     backgroundColor: '#FFFFFF',
     padding: appTheme.spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
   },
   itemTextWrap: {
-    flex: 1,
-    paddingRight: appTheme.spacing.sm,
+    width: '100%',
   },
   itemType: {
     color: '#24b8b8',
@@ -289,10 +307,31 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 4,
   },
+  quantityLabel: {
+    color: '#597575',
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 12,
+  },
+
+  totalLabel: {
+    color: '#597575',
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 12,
+  },
+
+  itemTotal: {
+    color: '#0f6464',
+    fontSize: 18,
+    fontWeight: '900',
+    marginTop: 2,
+  },
   qtyControls: {
     flexDirection: 'row',
     alignItems: 'center',
     columnGap: 8,
+    marginTop: 6,
   },
   qtyBtn: {
     width: 30,

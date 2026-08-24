@@ -75,9 +75,27 @@ export function MarketplaceAccessoriesSection() {
                 )}
                 <Pressable
                   style={styles.addButton}
-                  onPress={() => addItem({ id: item.id, name: item.name, price: isBusiness ? getBusinessPrice(item.price) : item.price, type: 'accessory' })}
+                  onPress={(e) => {
+                    e.stopPropagation();
+
+                    if (isBusiness) {
+                      openProduct(item.id);
+                    } else {
+                      addItem(
+                        {
+                          id: item.id,
+                          name: item.name,
+                          price: item.price,
+                          type: 'accessory',
+                        },
+                        1
+                      );
+                    }
+                  }}
                 >
-                  <Text style={styles.addButtonText}>Add</Text>
+                  <Text style={styles.addButtonText}>
+                    {isBusiness ? 'View' : 'Add'}
+                  </Text>
                 </Pressable>
               </View>
             </View>

@@ -1,3 +1,5 @@
+import React, { useState } from 'react';
+
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -21,6 +23,8 @@ export function ProductDetailsScreen() {
   const insets = useSafeAreaInsets();
   const isBusiness = useAuthStore((s) => s.user?.accountType === 'business');
   const addItem = useCartStore((s) => s.addItem);
+
+  const [quantity, setQuantity] = useState(10);
   const toggle = useFavouritesStore((s) => s.toggle);
   const favourites = useFavouritesStore((s) => s.favourites);
   const isFavourite = (id: string) => favourites.includes(id);
@@ -77,11 +81,53 @@ export function ProductDetailsScreen() {
           <Text style={styles.priceText}>R {product.price.toLocaleString()}</Text>
         )}
 
+        {isBusiness && (
+          <View style={styles.quantitySection}>
+            <Text style={styles.quantityLabel}>Quantity</Text>
+
+            <View style={styles.quantityControls}>
+              <Pressable
+                style={styles.quantityButton}
+                onPress={() => setQuantity((prev) => Math.max(1, prev - 1))}
+              >
+                <Text style={styles.quantityButtonText}>−</Text>
+              </Pressable>
+
+              <Text style={styles.quantityValue}>{quantity}</Text>
+
+              <Pressable
+                style={styles.quantityButton}
+                onPress={() => setQuantity((prev) => prev + 1)}
+              >
+                <Text style={styles.quantityButtonText}>+</Text>
+              </Pressable>
+            </View>
+
+            <Text style={styles.totalLabel}>Total</Text>
+
+            <Text style={styles.totalPrice}>
+              R {(getBusinessPrice(product.price) * quantity).toLocaleString()}
+            </Text>
+          </View>
+        )}
+
         <Pressable
           style={styles.addButton}
-          onPress={() => addItem({ id: product.id, name: product.name, price: isBusiness ? getBusinessPrice(product.price) : product.price, type: 'accessory' })}
+          onPress={() =>
+            addItem(
+              {
+                id: product.id,
+                name: product.name,
+                price: isBusiness ? getBusinessPrice(product.price) : product.price,
+                type: 'accessory',
+              },
+              isBusiness ? quantity : 1
+            )
+          }
         >
-          <Text style={styles.addButtonText}>Add to Cart</Text>
+          <Text style={styles.addButtonText}>
+            {isBusiness ? 'Add bulk order' : 'Add to Cart'}
+          </Text>
         </Pressable>
 
         <Text style={styles.sectionTitle}>More accessories</Text>
@@ -253,6 +299,61 @@ const styles = StyleSheet.create({
     color: '#9fb1b1',
     fontSize: 16,
     textDecorationLine: 'line-through',
+  },
+  quantitySection: {
+    marginTop: 8,
+  },
+
+  quantityLabel: {
+    color: '#1a3f3f',
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+
+  quantityControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+
+  quantityButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(36,184,184,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+
+  quantityButtonText: {
+    color: '#1a3f3f',
+    fontSize: 24,
+    fontWeight: '700',
+  },
+
+  quantityValue: {
+    minWidth: 50,
+    textAlign: 'center',
+    color: '#111111',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+
+  totalLabel: {
+    color: '#1a3f3f',
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+
+  totalPrice: {
+    color: '#111111',
+    fontSize: 22,
+    fontWeight: '900',
+    marginBottom: 4,
   },
   addButton: {
     marginTop: 8,
