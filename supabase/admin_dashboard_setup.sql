@@ -117,3 +117,169 @@ drop trigger if exists trg_auth_user_created_profile on auth.users;
 create trigger trg_auth_user_created_profile
 after insert on auth.users
 for each row execute function public.handle_new_user_profile();
+
+
+-- ============================================================
+-- ADMIN DASHBOARD EXTENSION
+-- Adds marketing users and client account types.
+-- ============================================================
+
+-- Allow the new "marketing" role.
+alter table public.profiles
+drop constraint if exists profiles_role_check;
+
+alter table public.profiles
+add constraint profiles_role_check
+check (role in ('admin', 'client', 'marketing'));
+
+
+-- Account type for normal customers.
+-- Business users will have account_type = 'business'.
+-- Individual users will have account_type = 'individual'.
+alter table public.profiles
+add column if not exists account_type text
+not null default 'individual'
+check (account_type in ('individual', 'business'));
+
+
+-- Business information.
+alter table public.profiles
+add column if not exists business_name text;
+
+alter table public.profiles
+add column if not exists business_registration_number text;
+
+alter table public.profiles
+add column if not exists contact_number text;
+
+
+-- Marketing team information.
+alter table public.profiles
+add column if not exists must_reset_password boolean
+not null default false;
+
+alter table public.profiles
+add column if not exists invited_at timestamptz;
+
+alter table public.profiles
+add column if not exists last_login_at timestamptz;
+
+
+-- ============================================================
+-- UPDATE PROFILE CREATION
+-- ============================================================
+
+create or replace function public.handle_new_user_profile()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.profiles (
+    id,
+    email,
+    full_name,
+    role,
+    account_type,
+    business_name,
+    business_registration_number,
+    contact_number,
+    last_seen_at
+  )
+  values (
+    new.id,
+    coalesce(new.email, ''),
+    coalesce(new.raw_user_meta_data->>'full_name', 'User'),
+
+    case
+      when new.raw_user_meta_data->>'role' = 'admin'
+        then 'admin'
+      when new.raw_user_meta_data->>'role' = 'marketing'
+        then 'marketing'
+      else 'client'
+    end,
+
+    case
+      when new.raw_user_meta_data->>'account_type' = 'business'
+        then 'business'
+      else 'individual'
+    end,
+
+    new.raw_user_meta_data->>'business_name',
+
+    new.raw_user_meta_data->>'business_registration_number',
+
+    new.raw_user_meta_data->>'contact_number',
+
+    now()
+  )
+
+  on conflict (id) do update
+  set
+    email = excluded.email,
+    full_name = excluded.full_name,
+    role = excluded.role,
+    account_type = excluded.account_type,
+    business_name = excluded.business_name,
+    business_registration_number = excluded.business_registration_number,
+    contact_number = excluded.contact_number,
+    updated_at = now();
+
+  return new;
+end;
+$$;
+
+
+-- Re-create the trigger so it uses the updated function.
+drop trigger if exists trg_auth_user_created_profile on auth.users;
+
+create trigger trg_auth_user_created_profile
+after insert on auth.users
+for each row
+execute function public.handle_new_user_profile();
+
+
+-- ============================================================
+-- ADMIN ACCESS TO MARKETING USERS
+-- ============================================================
+
+drop policy if exists "admins_update_all_profiles" on public.profiles;
+
+create policy "admins_update_all_profiles"
+on public.profiles
+for update
+to authenticated
+using (
+  exists (
+    select 1
+    from public.profiles p
+    where p.id = auth.uid()
+    and p.role = 'admin'
+  )
+)
+with check (
+  exists (
+    select 1
+    from public.profiles p
+    where p.id = auth.uid()
+    and p.role = 'admin'
+  )
+);
+
+
+-- Admins can insert profiles when enrolling marketing staff.
+drop policy if exists "admins_insert_profiles" on public.profiles;
+
+create policy "admins_insert_profiles"
+on public.profiles
+for insert
+to authenticated
+with check (
+  exists (
+    select 1
+    from public.profiles p
+    where p.id = auth.uid()
+    and p.role = 'admin'
+  )
+);

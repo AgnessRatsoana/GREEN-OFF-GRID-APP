@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useEffect, useState } from 'react';
+import { useAuthStore } from '../../store/authStore';
 import {
   ActivityIndicator,
   Pressable,
@@ -20,11 +21,21 @@ import {
 import { appTheme } from '../../theme';
 
 export function AdminDashboardScreen() {
+
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
+
+  const isAdmin = useAuthStore((state) => state.user?.role === 'admin');
+
   const [metrics, setMetrics] = useState<AdminDashboardMetrics | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!isAdmin) {
+      navigation.goBack();
+    }
+  }, [isAdmin, navigation]);
 
   const loadMetrics = async () => {
     try {
@@ -41,8 +52,10 @@ export function AdminDashboardScreen() {
   };
 
   useEffect(() => {
-    loadMetrics();
-  }, []);
+    if (isAdmin) {
+      loadMetrics();
+    }
+  }, [isAdmin]);
 
   return (
     <View style={[styles.root, { paddingTop: insets.top + 14 }]}>
