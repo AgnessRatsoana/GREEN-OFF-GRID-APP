@@ -100,41 +100,41 @@ export function LoginScreen() {
 
       setSession(payload);
 
-      /*
-       * ADMIN ROUTING
-       */
-      if (
-        payload.user.role === 'admin'
-      ) {
-        console.log(
-          '➡️ ADMIN DETECTED'
-        );
+      
+       /*
+ * ADMIN ROUTING
+ */
+if (payload.user.role === 'admin') {
+  console.log('➡️ ADMIN DETECTED');
+  console.log('➡️ RESETTING navigation to Admin Dashboard');
 
-        console.log(
-          '➡️ Navigating to Admin Dashboard'
-        );
+  navigation.reset({
+    index: 0,
+    routes: [
+      {
+        name: ROUTES.ADMIN_DASHBOARD,
+      },
+    ],
+  });
 
-        navigation.replace(
-          ROUTES.ADMIN_DASHBOARD
-        );
+  return;
+}
 
-        return;
-      }
+/*
+ * NORMAL CLIENT ROUTING
+ */
+console.log('➡️ CLIENT DETECTED');
+console.log('➡️ RESETTING navigation to Main Drawer');
 
-      /*
-       * NORMAL CLIENT ROUTING
-       */
-      console.log(
-        '➡️ Client detected'
-      );
-
-      console.log(
-        '➡️ Navigating to Main Drawer'
-      );
-
-      navigation.replace(
-        ROUTES.MAIN_DRAWER
-      );
+navigation.reset({
+  index: 0,
+  routes: [
+    {
+      name: ROUTES.MAIN_DRAWER,
+    },
+  ],
+});
+      
     } catch (err) {
       console.error(
         'LOGIN ERROR:',

@@ -72,6 +72,7 @@ export async function appendActivityLog(
 
 export async function syncProfileSnapshot(): Promise<void> {
   const supabase = getSupabaseClient();
+
   const { data, error } = await supabase.auth.getUser();
 
   if (error || !data.user) {
@@ -79,19 +80,101 @@ export async function syncProfileSnapshot(): Promise<void> {
   }
 
   const metadata = data.user.user_metadata ?? {};
-  const role = metadata.role === 'admin' ? 'admin' : 'client';
-  const accountType = metadata.account_type === 'business' ? 'business' : 'individual';
 
-  await supabase.from('profiles').upsert({
+  /*
+   * IMPORTANT:
+   * Do NOT overwrite the role stored in profiles.
+   *
+   * The profiles table is the source of truth for whether
+   * a user is an admin or client.
+   *
+   * Previously this function did:
+   *
+   *   metadata.role === 'admin' ? 'admin' : 'client'
+   *
+   * and then upserted that value into profiles.
+   *
+   * If metadata.role was missing, an existing admin could
+   * accidentally be changed back to client.
+   */
+
+  const profileData = {
     id: data.user.id,
     email: data.user.email || '',
-    full_name: (metadata.full_name as string | undefined) || (metadata.name as string | undefined) || 'User',
-    avatar_url: (metadata.avatar_url as string | undefined) || null,
-    role,
-    account_type: accountType,
-    business_name: (metadata.business_name as string | undefined) || null,
-    business_registration_number: (metadata.business_registration_number as string | undefined) || null,
-    contact_number: (metadata.contact_number as string | undefined) || null,
+    full_name:
+      (metadata.full_name as string | undefined) ||
+      (metadata.name as string | undefined) ||
+      'User',
+    avatar_url:
+      (metadata.avatar_url as string | undefined) || null,
+
+    account_type:
+      metadata.account_type === 'business'
+        ? 'business'
+        : 'individual',
+
+    business_name:
+      (metadata.business_name as string | undefined) || null,
+
+    business_registration_number:
+      (metadata.business_registration_number as string | undefined) ||
+      null,
+
+    contact_number:
+      (metadata.contact_number as string | undefined) || null,
+
     last_seen_at: new Date().toISOString(),
-  });
+  };
+
+  /*
+   * Update the existing profile without touching role.
+   */
+  const { data: existingProfile, error: profileError } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', data.user.id)
+    .maybeSingle();
+
+  if (profileError) {
+    console.warn(
+      'Unable to check existing profile:',
+      profileError.message,
+    );
+    return;
+  }
+
+  if (existingProfile) {
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update(profileData)
+      .eq('id', data.user.id);
+
+    if (updateError) {
+      console.warn(
+        'Unable to update profile snapshot:',
+        updateError.message,
+      );
+    }
+
+    return;
+  }
+
+  /*
+   * Only create a new profile when one does not already exist.
+   *
+   * New users are clients by default.
+   */
+  const { error: insertError } = await supabase
+    .from('profiles')
+    .insert({
+      ...profileData,
+      role: 'client',
+    });
+
+  if (insertError) {
+    console.warn(
+      'Unable to create profile snapshot:',
+      insertError.message,
+    );
+  }
 }
