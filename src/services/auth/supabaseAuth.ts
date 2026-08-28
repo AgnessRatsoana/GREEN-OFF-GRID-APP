@@ -45,8 +45,10 @@ function mapUser(
    * in Supabase to actually reach the application.
    */
   const role =
-    profile?.role === 'admin'
-      ? 'admin'
+  profile?.role === 'admin'
+    ? 'admin'
+    : profile?.role === 'marketing'
+      ? 'marketing'
       : 'client';
 
   const accountType =

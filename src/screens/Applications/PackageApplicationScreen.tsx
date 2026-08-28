@@ -17,7 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ROUTES } from '../../constants/routes';
 import { PACKAGES } from '../../data/packages';
 import { RootStackParamList } from '../../navigation/types';
-import { useApplicationsStore } from '../../store/applicationsStore';
+import { createApplication } from '../../services/applications/applications';
 import { appTheme } from '../../theme';
 
 type Stage = 'details' | 'location' | 'review';
@@ -49,7 +49,7 @@ export function PackageApplicationScreen() {
   const [budget, setBudget] = useState('');
   const [notes, setNotes] = useState('');
   const [submitted, setSubmitted] = useState(false);
-  const addApplication = useApplicationsStore((s) => s.addApplication);
+
 
   if (!pkg) {
     return (
@@ -81,14 +81,48 @@ export function PackageApplicationScreen() {
     }
   };
 
-  const handleSubmit = () => {
-    setSubmitted(true);
-    addApplication(pkg.id, 'Submitted');
-    navigation.navigate(ROUTES.APPLICATION_STATUS, {
+  const handleSubmit = async () => {
+  try {
+    setSubmitted(false);
+
+    const application = await createApplication({
       packageId: pkg.id,
-      status: 'Submitted',
+      packageTitle: pkg.title,
+
+      fullName,
+      email,
+      phone,
+
+      businessName,
+
+      city,
+      province,
+
+      projectType: projectType as
+        | 'Residential'
+        | 'Commercial'
+        | 'Industrial',
+
+      budget,
+      notes,
     });
-  };
+
+    setSubmitted(true);
+
+    navigation.navigate(ROUTES.APPLICATION_STATUS, {
+      applicationId: application.id,
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : 'Unable to submit your application.';
+
+    console.error('Application submission failed:', message);
+
+    setSubmitted(false);
+  }
+};
 
   return (
     <KeyboardAvoidingView

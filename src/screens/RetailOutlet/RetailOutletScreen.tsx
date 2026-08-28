@@ -62,9 +62,8 @@ export function RetailOutletScreen() {
                     key={pkg.id}
                     style={styles.appliedCard}
                     onPress={() =>
-                      navigation.navigate(ROUTES.APPLICATION_STATUS, {
+                      navigation.navigate(ROUTES.APPLICATION_FORM, {
                         packageId: pkg.id,
-                        status: application?.status,
                       })
                     }
                   >

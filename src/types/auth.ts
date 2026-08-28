@@ -8,7 +8,7 @@ export interface AuthUser {
   name: string;
   email: string;
   avatarUrl?: string | null;
-  role?: 'admin' | 'client';
+  role?: 'admin' | 'marketing' | 'client';
   accountType?: 'individual' | 'business';
   businessName?: string | null;
   businessRegistrationNumber?: string | null;
