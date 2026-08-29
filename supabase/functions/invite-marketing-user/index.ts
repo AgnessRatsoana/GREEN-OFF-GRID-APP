@@ -19,17 +19,21 @@ function jsonResponse(
   body: Record<string, unknown>,
   status = 200,
 ) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      ...corsHeaders,
-      'Content-Type': 'application/json',
+  return new Response(
+    JSON.stringify(body),
+    {
+      status,
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json',
+      },
     },
-  });
+  );
 }
 
 function generateTemporaryPassword(): string {
-  const randomPart = crypto.randomUUID()
+  const randomPart = crypto
+    .randomUUID()
     .replace(/-/g, '')
     .slice(0, 12);
 
@@ -45,32 +49,32 @@ Deno.serve(async (req) => {
 
   if (req.method !== 'POST') {
     return jsonResponse(
-      { error: 'Method not allowed.' },
+      {
+        error: 'Method not allowed.',
+      },
       405,
     );
   }
 
   try {
-    const authHeader =
-      req.headers.get('Authorization') ?? '';
-
-    const accessToken =
-      authHeader.replace('Bearer ', '').trim();
-
-    if (!accessToken) {
-      return jsonResponse(
-        { error: 'Authentication required.' },
-        401,
-      );
-    }
+    /*
+     * ============================================================
+     * SERVER CONFIGURATION
+     * ============================================================
+     */
 
     const supabaseUrl =
       Deno.env.get('SUPABASE_URL') ?? '';
 
     const serviceRoleKey =
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+      Deno.env.get(
+        'SUPABASE_SERVICE_ROLE_KEY',
+      ) ?? '';
 
-    if (!supabaseUrl || !serviceRoleKey) {
+    if (
+      !supabaseUrl ||
+      !serviceRoleKey
+    ) {
       return jsonResponse(
         {
           error:
@@ -81,44 +85,88 @@ Deno.serve(async (req) => {
     }
 
     /*
-     * Server-side Supabase client.
-     *
-     * The service role key NEVER goes into
-     * the mobile application.
+     * ============================================================
+     * AUTHENTICATION
+     * ============================================================
      */
-    const supabase = createClient(
-      supabaseUrl,
-      serviceRoleKey,
-    );
 
-    /*
-     * Verify administrator access token.
-     */
-    const {
-      data: userResult,
-      error: userError,
-    } = await supabase.auth.getUser(accessToken);
+    const authHeader =
+      req.headers.get('Authorization') ?? '';
 
-    if (userError || !userResult.user) {
+    const accessToken =
+      authHeader
+        .replace('Bearer ', '')
+        .trim();
+
+    if (!accessToken) {
       return jsonResponse(
-        { error: 'Invalid authentication.' },
+        {
+          error:
+            'Authentication required.',
+        },
         401,
       );
     }
 
-    const adminUser = userResult.user;
+    /*
+     * Service-role client.
+     *
+     * This key NEVER goes into the mobile app.
+     */
+
+    const supabase =
+      createClient(
+        supabaseUrl,
+        serviceRoleKey,
+      );
 
     /*
-     * Confirm caller is an administrator.
+     * Verify the administrator's
+     * access token.
      */
+
+    const {
+      data: userResult,
+      error: userError,
+    } =
+      await supabase.auth.getUser(
+        accessToken,
+      );
+
+    if (
+      userError ||
+      !userResult.user
+    ) {
+      return jsonResponse(
+        {
+          error:
+            'Invalid authentication.',
+        },
+        401,
+      );
+    }
+
+    const adminUser =
+      userResult.user;
+
+    /*
+     * ============================================================
+     * ADMIN CHECK
+     * ============================================================
+     */
+
     const {
       data: adminProfile,
       error: adminProfileError,
-    } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', adminUser.id)
-      .single();
+    } =
+      await supabase
+        .from('profiles')
+        .select('role')
+        .eq(
+          'id',
+          adminUser.id,
+        )
+        .single();
 
     if (
       adminProfileError ||
@@ -133,25 +181,44 @@ Deno.serve(async (req) => {
       );
     }
 
+    /*
+     * ============================================================
+     * REQUEST BODY
+     * ============================================================
+     */
+
     const body =
-      (await req.json()) as InviteMarketingUserRequest;
+      (await req.json()) as
+        InviteMarketingUserRequest;
 
     const email =
-      body.email?.trim().toLowerCase();
+      body.email
+        ?.trim()
+        .toLowerCase();
 
     const fullName =
-      body.fullName?.trim();
+      body.fullName
+        ?.trim();
 
     const employeeNumber =
-      body.employeeNumber?.trim();
+      body.employeeNumber
+        ?.trim();
 
     const contactNumber =
-      body.contactNumber?.trim() || null;
+      body.contactNumber
+        ?.trim() || null;
 
     /*
-     * Validate required fields.
+     * ============================================================
+     * VALIDATION
+     * ============================================================
      */
-    if (!email || !fullName || !employeeNumber) {
+
+    if (
+      !email ||
+      !fullName ||
+      !employeeNumber
+    ) {
       return jsonResponse(
         {
           error:
@@ -161,13 +228,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    /*
-     * Basic email validation.
-     */
     const emailPattern =
       /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if (!emailPattern.test(email)) {
+    if (
+      !emailPattern.test(email)
+    ) {
       return jsonResponse(
         {
           error:
@@ -178,16 +244,26 @@ Deno.serve(async (req) => {
     }
 
     /*
-     * Check employee number.
+     * ============================================================
+     * EMPLOYEE NUMBER CHECK
+     * ============================================================
      */
+
     const {
       data: existingEmployee,
-      error: employeeLookupError,
-    } = await supabase
-      .from('profiles')
-      .select('id,email')
-      .eq('employee_number', employeeNumber)
-      .maybeSingle();
+      error:
+        employeeLookupError,
+    } =
+      await supabase
+        .from('profiles')
+        .select(
+          'id,email,role',
+        )
+        .eq(
+          'employee_number',
+          employeeNumber,
+        )
+        .maybeSingle();
 
     if (employeeLookupError) {
       throw new Error(
@@ -206,36 +282,94 @@ Deno.serve(async (req) => {
     }
 
     /*
-     * Generate temporary credentials.
+     * ============================================================
+     * EMAIL CHECK
+     * ============================================================
      */
+
+    const {
+      data: existingEmail,
+      error: existingEmailError,
+    } =
+      await supabase
+        .from('profiles')
+        .select(
+          'id,email,role',
+        )
+        .eq(
+          'email',
+          email,
+        )
+        .maybeSingle();
+
+    if (existingEmailError) {
+      throw new Error(
+        existingEmailError.message,
+      );
+    }
+
+    if (existingEmail) {
+      return jsonResponse(
+        {
+          error:
+            'An account already exists for this email address.',
+        },
+        409,
+      );
+    }
+
+    /*
+     * ============================================================
+     * TEMPORARY CREDENTIALS
+     * ============================================================
+     */
+
     const temporaryPassword =
       generateTemporaryPassword();
 
     /*
-     * Temporary access expires after 24 hours.
+     * Temporary access lasts
+     * 24 hours.
      */
+
     const temporaryAccessExpiresAt =
       new Date(
         Date.now() +
-          24 * 60 * 60 * 1000,
+          24 *
+            60 *
+            60 *
+            1000,
       ).toISOString();
 
     /*
-     * Create Supabase Auth account.
+     * ============================================================
+     * CREATE SUPABASE AUTH ACCOUNT
+     * ============================================================
      */
+
     const {
       data: createdUser,
       error: createUserError,
     } =
       await supabase.auth.admin.createUser({
         email,
-        password: temporaryPassword,
-        email_confirm: true,
+
+        password:
+          temporaryPassword,
+
+        email_confirm:
+          true,
 
         user_metadata: {
-          full_name: fullName,
-          role: 'marketing',
-          account_type: 'individual',
+          full_name:
+            fullName,
+
+          role:
+            'marketing',
+
+          account_type:
+            'individual',
+
           employee_number:
             employeeNumber,
         },
@@ -259,49 +393,61 @@ Deno.serve(async (req) => {
       createdUser.user;
 
     /*
-     * Create marketing employee profile.
+     * ============================================================
+     * CREATE EMPLOYEE PROFILE
+     * ============================================================
      */
+
     const {
       error: profileError,
-    } = await supabase
-      .from('profiles')
-      .upsert({
-        id: marketingUser.id,
-        email,
-        full_name: fullName,
-        role: 'marketing',
-        account_type: 'individual',
+    } =
+      await supabase
+        .from('profiles')
+        .upsert({
+          id:
+            marketingUser.id,
 
-        contact_number:
-          contactNumber,
+          email,
 
-        employee_number:
-          employeeNumber,
+          full_name:
+            fullName,
 
-        employee_profile_completed:
-          false,
+          role:
+            'marketing',
 
-        must_reset_password:
-          true,
+          account_type:
+            'individual',
 
-        invited_at:
-          new Date().toISOString(),
+          contact_number:
+            contactNumber,
 
-        temporary_access_expires_at:
-          temporaryAccessExpiresAt,
+          employee_number:
+            employeeNumber,
 
-        intruder_flagged:
-          false,
+          employee_profile_completed:
+            false,
 
-        intruder_flagged_at:
-          null,
-      });
+          must_reset_password:
+            true,
+
+          invited_at:
+            new Date().toISOString(),
+
+          temporary_access_expires_at:
+            temporaryAccessExpiresAt,
+
+          intruder_flagged:
+            false,
+
+          intruder_flagged_at:
+            null,
+        });
 
     /*
      * If profile creation fails,
-     * remove the Auth account so we don't
-     * leave an incomplete employee behind.
+     * remove the Auth account.
      */
+
     if (profileError) {
       await supabase.auth.admin.deleteUser(
         marketingUser.id,
@@ -313,41 +459,69 @@ Deno.serve(async (req) => {
     }
 
     /*
-     * Record invitation in activity log.
+     * ============================================================
+     * ACTIVITY LOG
+     * ============================================================
      */
-    await supabase
-      .from('activity_logs')
-      .insert({
-        event_type:
-          'admin.marketing_user_invited',
 
-        actor_id:
-          adminUser.id,
+    const {
+      error: activityLogError,
+    } =
+      await supabase
+        .from('activity_logs')
+        .insert({
+          event_type:
+            'admin.marketing_user_invited',
 
-        actor_email:
-          adminUser.email ?? null,
+          actor_id:
+            adminUser.id,
 
-        metadata: {
-          invited_user_id:
-            marketingUser.id,
+          actor_email:
+            adminUser.email ??
+            null,
 
-          invited_email:
-            email,
+          metadata: {
+            invited_user_id:
+              marketingUser.id,
 
-          employee_number:
-            employeeNumber,
+            invited_email:
+              email,
 
-          temporary_access_expires_at:
-            temporaryAccessExpiresAt,
-        },
-      });
+            employee_number:
+              employeeNumber,
+
+            temporary_access_expires_at:
+              temporaryAccessExpiresAt,
+
+            invitation_method:
+              'manual',
+          },
+        });
 
     /*
-     * Return temporary credentials to the
-     * administrator.
-     *
-     * No email provider is required.
+     * Activity logging should not
+     * prevent a successfully created
+     * employee from accessing the app.
      */
+
+    if (activityLogError) {
+      console.error(
+        'Activity log error:',
+        activityLogError,
+      );
+    }
+
+    /*
+     * ============================================================
+     * RETURN CREDENTIALS TO ADMIN
+     * ============================================================
+     *
+     * The temporary password is returned
+     * ONLY to the authenticated administrator.
+     *
+     * It is NOT stored in the profiles table.
+     */
+
     return jsonResponse({
       success: true,
 
@@ -362,8 +536,14 @@ Deno.serve(async (req) => {
 
       temporaryPassword,
 
+      emailSent:
+        false,
+
+      invitationMethod:
+        'manual',
+
       message:
-        'Marketing employee created successfully. Provide the temporary credentials to the employee.',
+        'Marketing employee created successfully. Use Copy Invitation or Share Invitation to provide the temporary credentials to the employee.',
     });
 
   } catch (error) {

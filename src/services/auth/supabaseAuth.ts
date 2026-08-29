@@ -27,6 +27,15 @@ function mapUser(
     business_name?: string | null;
     business_registration_number?: string | null;
     contact_number?: string | null;
+
+    employee_number?: string | null;
+    employee_profile_completed?: boolean;
+    must_reset_password?: boolean;
+    temporary_access_expires_at?: string | null;
+    intruder_flagged?: boolean;
+    intruder_flagged_at?: string | null;
+    invited_at?: string | null;
+    last_login_at?: string | null;
   } | null
 ): AuthUser {
   const metadata = user.user_metadata ?? {};
@@ -45,11 +54,11 @@ function mapUser(
    * in Supabase to actually reach the application.
    */
   const role =
-  profile?.role === 'admin'
-    ? 'admin'
-    : profile?.role === 'marketing'
-      ? 'marketing'
-      : 'client';
+    profile?.role === 'admin'
+      ? 'admin'
+      : profile?.role === 'marketing'
+        ? 'marketing'
+        : 'client';
 
   const accountType =
     profile?.account_type === 'business'
@@ -86,6 +95,30 @@ function mapUser(
       profile?.contact_number ||
       (metadata.contact_number as string | undefined) ||
       null,
+
+    employeeNumber:
+      profile?.employee_number || null,
+
+    employeeProfileCompleted:
+      profile?.employee_profile_completed ?? false,
+
+    mustResetPassword:
+      profile?.must_reset_password ?? false,
+
+    temporaryAccessExpiresAt:
+      profile?.temporary_access_expires_at || null,
+
+    intruderFlagged:
+      profile?.intruder_flagged ?? false,
+
+    intruderFlaggedAt:
+      profile?.intruder_flagged_at || null,
+
+    invitedAt:
+      profile?.invited_at || null,
+
+    lastLoginAt:
+      profile?.last_login_at || null,
   };
 }
 
@@ -98,14 +131,22 @@ async function getUserProfile(userId: string) {
   const { data, error } = await supabase
     .from('profiles')
     .select(`
-      role,
-      account_type,
-      full_name,
-      avatar_url,
-      business_name,
-      business_registration_number,
-      contact_number
-    `)
+  role,
+  account_type,
+  full_name,
+  avatar_url,
+  business_name,
+  business_registration_number,
+  contact_number,
+  employee_number,
+  employee_profile_completed,
+  must_reset_password,
+  temporary_access_expires_at,
+  intruder_flagged,
+  intruder_flagged_at,
+  invited_at,
+  last_login_at
+`)
     .eq('id', userId)
     .single();
 
@@ -463,6 +504,219 @@ export async function updatePassword(
 }
 
 /**
+ * Complete the first-time password setup for a marketing employee.
+ *
+ * This:
+ * 1. Updates the Supabase Auth password.
+ * 2. Clears must_reset_password.
+ * 3. Keeps the employee logged in.
+ *
+ * The employee profile itself is completed separately.
+ */
+export async function completeEmployeePasswordSetup(
+  newPassword: string
+): Promise<void> {
+  const supabase = getSupabaseClient();
+
+  if (!newPassword.trim()) {
+    throw new Error(
+      'Please provide a new password.'
+    );
+  }
+
+  if (newPassword.trim().length < 8) {
+    throw new Error(
+      'Your new password must be at least 8 characters long.'
+    );
+  }
+
+  /*
+   * ============================================================
+   * UPDATE SUPABASE AUTH PASSWORD
+   * ============================================================
+   */
+
+  const {
+    data: updatedUser,
+    error: passwordError,
+  } = await supabase.auth.updateUser({
+    password: newPassword,
+  });
+
+  if (passwordError) {
+    throw new Error(
+      passwordError.message
+    );
+  }
+
+  if (!updatedUser.user) {
+    throw new Error(
+      'Password was not updated. Please try again.'
+    );
+  }
+
+  /*
+   * ============================================================
+   * GET CURRENT USER
+   * ============================================================
+   */
+
+  const {
+    data: sessionData,
+    error: sessionError,
+  } = await supabase.auth.getSession();
+
+  if (sessionError) {
+    throw new Error(
+      sessionError.message
+    );
+  }
+
+  const currentUser =
+    sessionData.session?.user;
+
+  if (!currentUser) {
+    throw new Error(
+      'Your session could not be restored. Please log in again.'
+    );
+  }
+
+  /*
+   * ============================================================
+   * VERIFY MARKETING EMPLOYEE
+   * ============================================================
+   */
+
+  const { data: profile, error: profileError } =
+    await supabase
+      .from('profiles')
+      .select(`
+        id,
+        role,
+        employee_number,
+        employee_profile_completed,
+        must_reset_password,
+        temporary_access_expires_at
+      `)
+      .eq('id', currentUser.id)
+      .single();
+
+  if (profileError) {
+    throw new Error(
+      `Unable to load employee profile: ${profileError.message}`
+    );
+  }
+
+  if (profile?.role !== 'marketing') {
+    throw new Error(
+      'This password setup is only available for marketing employees.'
+    );
+  }
+
+  /*
+   * ============================================================
+   * CHECK TEMPORARY ACCESS EXPIRY
+   * ============================================================
+   */
+
+  if (
+    profile.temporary_access_expires_at
+  ) {
+    const expiresAt =
+      new Date(
+        profile.temporary_access_expires_at
+      );
+
+    if (
+      !Number.isNaN(
+        expiresAt.getTime()
+      ) &&
+      expiresAt.getTime() <
+        Date.now()
+    ) {
+      throw new Error(
+        'Your temporary access has expired. Please contact your administrator.'
+      );
+    }
+  }
+
+  /*
+   * ============================================================
+   * COMPLETE PASSWORD SETUP
+   * ============================================================
+   */
+
+  const {
+    error: updateProfileError,
+  } = await supabase
+    .from('profiles')
+    .update({
+      must_reset_password: false,
+      last_login_at:
+        new Date().toISOString(),
+      last_seen_at:
+        new Date().toISOString(),
+    })
+    .eq(
+      'id',
+      currentUser.id
+    );
+
+  if (updateProfileError) {
+    throw new Error(
+      `Password was changed, but employee setup could not be completed: ${updateProfileError.message}`
+    );
+  }
+
+  /*
+   * ============================================================
+   * ACTIVITY LOG
+   * ============================================================
+   */
+
+  try {
+    await appendActivityLog(
+      'auth.employee_password_setup_completed',
+      {
+        employee_number:
+          profile.employee_number,
+      }
+    );
+  } catch {
+    /*
+     * Activity logging must never
+     * block successful authentication.
+     */
+  }
+
+  console.log(
+    '========================================'
+  );
+
+  console.log(
+    'MARKETING EMPLOYEE PASSWORD SETUP'
+  );
+
+  console.log(
+    'Employee:',
+    currentUser.email
+  );
+
+  console.log(
+    'Employee Number:',
+    profile.employee_number
+  );
+
+  console.log(
+    'must_reset_password → false'
+  );
+
+  console.log(
+    '========================================'
+  );
+}
+
+/**
  * Restore the currently authenticated session.
  */
 export async function hydrateCurrentSession(): Promise<AuthPayload | null> {
@@ -567,12 +821,12 @@ export async function handleRecoveryUrl(
       await supabase.auth.verifyOtp({
         type:
           type as
-            | 'signup'
-            | 'recovery'
-            | 'email'
-            | 'invite'
-            | 'email_change'
-            | 'magiclink',
+          | 'signup'
+          | 'recovery'
+          | 'email'
+          | 'invite'
+          | 'email_change'
+          | 'magiclink',
 
         token_hash: tokenHash,
       });

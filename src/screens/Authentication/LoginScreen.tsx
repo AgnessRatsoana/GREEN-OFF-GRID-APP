@@ -1,3 +1,4 @@
+
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -45,6 +46,12 @@ export function LoginScreen() {
     useState(false);
 
   const handleLogin = async () => {
+    /*
+     * ============================================================
+     * VALIDATION
+     * ============================================================
+     */
+
     if (
       !email.trim() ||
       !password.trim()
@@ -60,28 +67,44 @@ export function LoginScreen() {
       setIsSubmitting(true);
       setError(null);
 
+      /*
+       * ==========================================================
+       * SUPABASE LOGIN
+       * ==========================================================
+       */
+
       const payload =
         await loginWithSupabase(
           email.trim().toLowerCase(),
           password
         );
 
+      /*
+       * ==========================================================
+       * LOGIN DEBUG
+       * ==========================================================
+       */
+
       console.log(
-        '===== LOGIN DEBUG ====='
+        '========================================'
       );
 
       console.log(
-        'Logged in email:',
+        '===== GREEN OFF-GRID LOGIN DEBUG ====='
+      );
+
+      console.log(
+        'Email:',
         payload.user.email
       );
 
       console.log(
-        'Logged in role:',
+        'Role:',
         payload.user.role
       );
 
       console.log(
-        'Account type:',
+        'Account Type:',
         payload.user.accountType
       );
 
@@ -91,8 +114,34 @@ export function LoginScreen() {
       );
 
       console.log(
-        '======================='
+        'Employee Number:',
+        payload.user.employeeNumber
       );
+
+      console.log(
+        'Must Reset Password:',
+        payload.user.mustResetPassword
+      );
+
+      console.log(
+        'Employee Profile Completed:',
+        payload.user.employeeProfileCompleted
+      );
+
+      console.log(
+        'Temporary Access Expires:',
+        payload.user.temporaryAccessExpiresAt
+      );
+
+      console.log(
+        '========================================'
+      );
+
+      /*
+       * ==========================================================
+       * SAVE SESSION
+       * ==========================================================
+       */
 
       await saveAuthTokens(
         payload.tokens
@@ -100,42 +149,191 @@ export function LoginScreen() {
 
       setSession(payload);
 
-      
-       /*
- * ADMIN ROUTING
- */
-if (payload.user.role === 'admin') {
-  console.log('➡️ ADMIN DETECTED');
-  console.log('➡️ RESETTING navigation to Admin Dashboard');
+      /*
+       * ==========================================================
+       * ROLE-BASED ROUTING
+       * ==========================================================
+       */
 
-  navigation.reset({
-    index: 0,
-    routes: [
-      {
-        name: ROUTES.ADMIN_DASHBOARD,
-      },
-    ],
-  });
+      const user =
+        payload.user;
 
-  return;
-}
+      /*
+       * ==========================================================
+       * ADMIN
+       * ==========================================================
+       *
+       * Admin users go directly to the Admin Dashboard.
+       */
 
-/*
- * NORMAL CLIENT ROUTING
- */
-console.log('➡️ CLIENT DETECTED');
-console.log('➡️ RESETTING navigation to Main Drawer');
+      if (
+        user.role === 'admin'
+      ) {
+        console.log(
+          '➡️ ADMIN DETECTED'
+        );
 
-navigation.reset({
-  index: 0,
-  routes: [
-    {
-      name: ROUTES.MAIN_DRAWER,
-    },
-  ],
-});
-      
+        console.log(
+          '➡️ ROUTING → ADMIN DASHBOARD'
+        );
+
+        navigation.reset({
+          index: 0,
+          routes: [
+            {
+              name:
+                ROUTES.ADMIN_DASHBOARD,
+            },
+          ],
+        });
+
+        return;
+      }
+
+      /*
+       * ==========================================================
+       * MARKETING EMPLOYEE
+       * ==========================================================
+       *
+       * Marketing employees do NOT go to the customer MainDrawer.
+       */
+
+      if (
+        user.role === 'marketing'
+      ) {
+        console.log(
+          '➡️ MARKETING EMPLOYEE DETECTED'
+        );
+
+        /*
+         * --------------------------------------------------------
+         * FIRST LOGIN
+         * --------------------------------------------------------
+         *
+         * The admin-created temporary password must be changed
+         * before the employee can continue.
+         */
+
+        if (
+          user.mustResetPassword === true
+        ) {
+          console.log(
+            '➡️ TEMPORARY PASSWORD DETECTED'
+          );
+
+          console.log(
+            '➡️ ROUTING → RESET PASSWORD'
+          );
+
+          navigation.reset({
+            index: 0,
+            routes: [
+              {
+                name:
+                  ROUTES.RESET_PASSWORD,
+              },
+            ],
+          });
+
+          return;
+        }
+
+        /*
+         * --------------------------------------------------------
+         * PROFILE NOT COMPLETED
+         * --------------------------------------------------------
+         *
+         * The employee has already changed their password,
+         * but the employee profile screen has not been built yet.
+         */
+
+        if (
+          user.employeeProfileCompleted !== true
+        ) {
+          console.log(
+            '➡️ MARKETING PROFILE INCOMPLETE'
+          );
+
+          console.log(
+            '⚠️ Employee Profile screen is not built yet.'
+          );
+
+          /*
+           * IMPORTANT:
+           *
+           * We intentionally do not send the employee
+           * to MainDrawer because MainDrawer is the
+           * customer application.
+           *
+           * The next screen we build will be:
+           *
+           * EmployeeProfileScreen
+           */
+
+          setError(
+            'Your password has been updated. Employee profile setup will be available next.'
+          );
+
+          return;
+        }
+
+        /*
+         * --------------------------------------------------------
+         * MARKETING DASHBOARD
+         * --------------------------------------------------------
+         *
+         * This will be connected after we build the
+         * Marketing Dashboard screen and route.
+         */
+
+        console.log(
+          '➡️ MARKETING EMPLOYEE FULLY ONBOARDED'
+        );
+
+        console.log(
+          '⚠️ Marketing Dashboard has not been built yet.'
+        );
+
+        setError(
+          'Your employee account is ready. Marketing Dashboard setup is coming next.'
+        );
+
+        return;
+      }
+
+      /*
+       * ==========================================================
+       * NORMAL CLIENT
+       * ==========================================================
+       *
+       * Individual and business customers continue
+       * through the existing customer application.
+       */
+
+      console.log(
+        '➡️ CLIENT DETECTED'
+      );
+
+      console.log(
+        '➡️ ROUTING → MAIN DRAWER'
+      );
+
+      navigation.reset({
+        index: 0,
+        routes: [
+          {
+            name:
+              ROUTES.MAIN_DRAWER,
+          },
+        ],
+      });
     } catch (err) {
+      /*
+       * ==========================================================
+       * LOGIN ERROR
+       * ==========================================================
+       */
+
       console.error(
         'LOGIN ERROR:',
         err
@@ -170,31 +368,46 @@ navigation.reset({
     >
       <Pressable
         style={styles.backButton}
-        onPress={() =>
-          navigation.goBack()
-        }
+        onPress={() => {
+          if (
+            navigation.canGoBack()
+          ) {
+            navigation.goBack();
+          }
+        }}
       >
         <Ionicons
           name="arrow-back"
           size={20}
           color={
-            appTheme.colors.primaryAccent
+            appTheme.colors
+              .primaryAccent
           }
         />
       </Pressable>
 
-      <View style={styles.headerSection}>
-        <Text style={styles.title}>
+      <View
+        style={
+          styles.headerSection
+        }
+      >
+        <Text
+          style={styles.title}
+        >
           Welcome Back
         </Text>
 
-        <Text style={styles.subtitle}>
+        <Text
+          style={styles.subtitle}
+        >
           Log in to continue with your
           franchise journey.
         </Text>
       </View>
 
-      <View style={styles.formSection}>
+      <View
+        style={styles.formSection}
+      >
         <TextInput
           placeholder="Email"
           keyboardType="email-address"
@@ -218,7 +431,9 @@ navigation.reset({
         />
 
         {error ? (
-          <Text style={styles.errorText}>
+          <Text
+            style={styles.errorText}
+          >
             {error}
           </Text>
         ) : null}
@@ -229,8 +444,12 @@ navigation.reset({
             isSubmitting &&
               styles.loginButtonDisabled,
           ]}
-          onPress={handleLogin}
-          disabled={isSubmitting}
+          onPress={
+            handleLogin
+          }
+          disabled={
+            isSubmitting
+          }
         >
           {isSubmitting ? (
             <ActivityIndicator
@@ -255,7 +474,9 @@ navigation.reset({
           }
         >
           <Text
-            style={styles.switchText}
+            style={
+              styles.switchText
+            }
           >
             New here?{' '}
             <Text
@@ -276,7 +497,9 @@ navigation.reset({
           }
         >
           <Text
-            style={styles.forgotText}
+            style={
+              styles.forgotText
+            }
           >
             Forgot password?
           </Text>
@@ -286,110 +509,118 @@ navigation.reset({
   );
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal:
-      appTheme.spacing.md,
-  },
+const styles =
+  StyleSheet.create({
+    root: {
+      flex: 1,
+      backgroundColor:
+        '#FFFFFF',
+      paddingHorizontal:
+        appTheme.spacing.md,
+    },
 
-  backButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor:
-      'rgba(36, 184, 184, 0.3)',
-    backgroundColor: '#f4fcfc',
-  },
+    backButton: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      alignItems: 'center',
+      justifyContent:
+        'center',
+      borderWidth: 1,
+      borderColor:
+        'rgba(36, 184, 184, 0.3)',
+      backgroundColor:
+        '#f4fcfc',
+    },
 
-  headerSection: {
-    marginTop:
-      appTheme.spacing.lg,
-    rowGap:
-      appTheme.spacing.xs,
-  },
+    headerSection: {
+      marginTop:
+        appTheme.spacing.lg,
+      rowGap:
+        appTheme.spacing.xs,
+    },
 
-  title: {
-    fontSize: 30,
-    fontWeight: '800',
-    color: '#0d3d3d',
-  },
+    title: {
+      fontSize: 30,
+      fontWeight: '800',
+      color: '#0d3d3d',
+    },
 
-  subtitle: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: '#4c6969',
-  },
+    subtitle: {
+      fontSize: 15,
+      lineHeight: 22,
+      color: '#4c6969',
+    },
 
-  formSection: {
-    marginTop:
-      appTheme.spacing.xl,
-    rowGap:
-      appTheme.spacing.sm,
-  },
+    formSection: {
+      marginTop:
+        appTheme.spacing.xl,
+      rowGap:
+        appTheme.spacing.sm,
+    },
 
-  input: {
-    borderWidth: 1,
-    borderColor:
-      'rgba(36, 184, 184, 0.28)',
-    borderRadius: 16,
-    paddingHorizontal:
-      appTheme.spacing.md,
-    paddingVertical:
-      appTheme.spacing.sm,
-    fontSize: 15,
-    color: '#213232',
-    backgroundColor: '#fbffff',
-  },
+    input: {
+      borderWidth: 1,
+      borderColor:
+        'rgba(36, 184, 184, 0.28)',
+      borderRadius: 16,
+      paddingHorizontal:
+        appTheme.spacing.md,
+      paddingVertical:
+        appTheme.spacing.sm,
+      fontSize: 15,
+      color: '#213232',
+      backgroundColor:
+        '#fbffff',
+    },
 
-  errorText: {
-    color: '#d14444',
-    fontSize: 13,
-  },
+    errorText: {
+      color: '#d14444',
+      fontSize: 13,
+    },
 
-  loginButton: {
-    marginTop:
-      appTheme.spacing.sm,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical:
-      appTheme.spacing.sm,
-    backgroundColor: '#24b8b8',
-  },
+    loginButton: {
+      marginTop:
+        appTheme.spacing.sm,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent:
+        'center',
+      paddingVertical:
+        appTheme.spacing.sm,
+      backgroundColor:
+        '#24b8b8',
+    },
 
-  loginButtonDisabled: {
-    opacity: 0.7,
-  },
+    loginButtonDisabled: {
+      opacity: 0.7,
+    },
 
-  loginButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
+    loginButtonText: {
+      color: '#FFFFFF',
+      fontSize: 16,
+      fontWeight: '700',
+    },
 
-  switchText: {
-    marginTop:
-      appTheme.spacing.sm,
-    textAlign: 'center',
-    color: '#4c6969',
-  },
+    switchText: {
+      marginTop:
+        appTheme.spacing.sm,
+      textAlign: 'center',
+      color: '#4c6969',
+    },
 
-  switchTextStrong: {
-    color: '#b89aff',
-    fontWeight: '700',
-  },
+    switchTextStrong: {
+      color: '#b89aff',
+      fontWeight: '700',
+    },
 
-  forgotText: {
-    marginTop:
-      appTheme.spacing.xs,
-    textAlign: 'center',
-    color: '#0f6464',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-});
+    forgotText: {
+      marginTop:
+        appTheme.spacing.xs,
+      textAlign: 'center',
+      color: '#0f6464',
+      fontSize: 13,
+      fontWeight: '700',
+    },
+  });
+

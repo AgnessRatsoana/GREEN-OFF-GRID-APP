@@ -1,6 +1,5 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-
 import { ROUTES } from '../constants/routes';
 
 import { AdminDashboardScreen } from '../screens/Admin/AdminDashboardScreen';
@@ -25,9 +24,16 @@ import { ProductDetailsScreen } from '../screens/Packages/ProductDetailsScreen';
 
 import { RetailOutletScreen } from '../screens/RetailOutlet/RetailOutletScreen';
 
+import { MarketingDashboardScreen } from '../screens/Marketing/MarketingDashboardScreen';
+import { MarketingProductsScreen } from '../screens/Marketing/Products/MarketingProductsScreen';
+
+import { AddProductScreen } from '../screens/Marketing/Products/AddProductScreen';
+
 import { AppDrawerNavigator } from './AppDrawerNavigator';
 import { ModalHostScreen } from './ModalHostScreen';
 import { RootStackParamList } from './types';
+
+
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -85,6 +91,35 @@ export function RootStackNavigator() {
         options={{
           animation: 'fade',
           gestureEnabled: false,
+        }}
+      />
+
+      {/* =========================
+          MARKETING
+      ========================== */}
+
+      <Stack.Screen
+        name={ROUTES.MARKETING_DASHBOARD}
+        component={MarketingDashboardScreen}
+        options={{
+          animation: 'fade',
+          gestureEnabled: false,
+        }}
+      />
+
+      <Stack.Screen
+        name={ROUTES.MARKETING_PRODUCTS}
+        component={MarketingProductsScreen}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+
+      <Stack.Screen
+        name={ROUTES.ADD_PRODUCT}
+        component={AddProductScreen}
+        options={{
+          animation: 'slide_from_right',
         }}
       />
 
