@@ -26,6 +26,8 @@ import { RetailOutletScreen } from '../screens/RetailOutlet/RetailOutletScreen';
 
 import { MarketingDashboardScreen } from '../screens/Marketing/MarketingDashboardScreen';
 import { MarketingProductsScreen } from '../screens/Marketing/Products/MarketingProductsScreen';
+import { MarketingPackagesScreen } from '../screens/Marketing/Packages/MarketingPackagesScreen';
+
 
 import { AddProductScreen } from '../screens/Marketing/Products/AddProductScreen';
 
@@ -33,7 +35,7 @@ import { AppDrawerNavigator } from './AppDrawerNavigator';
 import { ModalHostScreen } from './ModalHostScreen';
 import { RootStackParamList } from './types';
 
-
+import { EmployeeProfileScreen } from '../screens/Authentication/EmployeeProfileScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -81,6 +83,15 @@ export function RootStackNavigator() {
         }}
       />
 
+      <Stack.Screen
+        name={ROUTES.EMPLOYEE_PROFILE}
+        component={EmployeeProfileScreen}
+        options={{
+          animation: 'slide_from_right',
+          gestureEnabled: false,
+        }}
+      />
+
       {/* =========================
           ADMIN
       ========================== */}
@@ -110,6 +121,14 @@ export function RootStackNavigator() {
       <Stack.Screen
         name={ROUTES.MARKETING_PRODUCTS}
         component={MarketingProductsScreen}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+
+      <Stack.Screen
+        name={ROUTES.MARKETING_PACKAGES}
+        component={MarketingPackagesScreen}
         options={{
           animation: 'slide_from_right',
         }}

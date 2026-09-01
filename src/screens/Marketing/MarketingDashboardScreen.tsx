@@ -1,8 +1,12 @@
 
 import { Ionicons } from '@expo/vector-icons';
 import {
-    useNavigation,
-} from '@react-navigation/native';
+    useCallback,
+    useEffect,
+    useState,
+} from 'react';
+
+import { useNavigation } from '@react-navigation/native';
 import type {
     NativeStackNavigationProp,
 } from '@react-navigation/native-stack';
@@ -19,6 +23,7 @@ import {
 import { ROUTES } from '../../constants/routes';
 import { RootStackParamList } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
+import { fetchMarketingDashboardStats } from '../../services/marketing/dashboard';
 
 type NavigationProp =
     NativeStackNavigationProp<RootStackParamList>;
@@ -124,6 +129,51 @@ export function MarketingDashboardScreen() {
     const user = useAuthStore(
         (state) => state.user
     );
+
+    const [stats, setStats] = useState({
+        products: 0,
+        packages: 0,
+        applications: 0,
+        activity: 0,
+    });
+
+    const [isLoadingStats, setIsLoadingStats] =
+        useState(true);
+
+    const [statsError, setStatsError] =
+        useState<string | null>(null);
+
+    const loadDashboardStats = useCallback(
+        async () => {
+            try {
+                setIsLoadingStats(true);
+                setStatsError(null);
+
+                const dashboardStats =
+                    await fetchMarketingDashboardStats();
+
+                setStats(dashboardStats);
+            } catch (error) {
+                console.error(
+                    'MARKETING DASHBOARD STATS ERROR:',
+                    error,
+                );
+
+                setStatsError(
+                    error instanceof Error
+                        ? error.message
+                        : 'Unable to load dashboard statistics.',
+                );
+            } finally {
+                setIsLoadingStats(false);
+            }
+        },
+        [],
+    );
+
+    useEffect(() => {
+        loadDashboardStats();
+    }, [loadDashboardStats]);
 
     const employeeName =
         user?.name?.trim() || 'Marketing Employee';
@@ -244,32 +294,88 @@ export function MarketingDashboardScreen() {
                 <View style={styles.statsGrid}>
                     <StatCard
                         title="Products"
-                        value="0"
+                        value={
+                            isLoadingStats
+                                ? '...'
+                                : String(stats.products)
+                        }
                         description="Catalogue items"
                         icon="cube-outline"
+                        onPress={() => {
+                            navigation.navigate(
+                                ROUTES.MARKETING_PRODUCTS,
+                            );
+                        }}
                     />
 
                     <StatCard
                         title="Packages"
-                        value="0"
+                        value={
+                            isLoadingStats
+                                ? '...'
+                                : String(stats.packages)
+                        }
                         description="Franchise packages"
                         icon="briefcase-outline"
+                        onPress={() => {
+                            navigation.navigate(
+                                ROUTES.MARKETING_PACKAGES
+                            );
+                        }}
                     />
 
                     <StatCard
                         title="Applications"
-                        value="0"
+                        value={
+                            isLoadingStats
+                                ? '...'
+                                : String(stats.applications)
+                        }
                         description="Customer applications"
                         icon="document-text-outline"
+                        onPress={() => {
+                            console.log(
+                                'Applications selected',
+                            );
+                        }}
                     />
 
                     <StatCard
                         title="Activity"
-                        value="0"
+                        value={
+                            isLoadingStats
+                                ? '...'
+                                : String(stats.activity)
+                        }
                         description="Recent actions"
                         icon="time-outline"
+                        onPress={() => {
+                            console.log(
+                                'Activity selected',
+                            );
+                        }}
+
+
+
                     />
+
+
                 </View>
+
+                {statsError ? (
+                    <View style={styles.statsError}>
+                        <Ionicons
+                            name="alert-circle-outline"
+                            size={18}
+                            color={COLORS.danger}
+                        />
+
+                        <Text style={styles.statsErrorText}>
+                            {statsError}
+                        </Text>
+                    </View>
+                ) : null}
+
 
                 {/* =====================================================
             CATALOGUE MANAGEMENT
@@ -302,8 +408,9 @@ export function MarketingDashboardScreen() {
                         description="Manage packages, pricing and package information."
                         icon="briefcase-outline"
                         onPress={() => {
-                            // Packages management screen will be
-                            // connected here.
+                            navigation.navigate(
+                                ROUTES.MARKETING_PACKAGES
+                            );
                         }}
                     />
 
@@ -806,6 +913,26 @@ const styles = StyleSheet.create({
         height: 1,
         backgroundColor: COLORS.border,
         marginLeft: 69,
+    },
+
+    statsError: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        padding: 12,
+        marginTop: -16,
+        marginBottom: 20,
+        borderRadius: 12,
+        backgroundColor: '#FFF3F3',
+        borderWidth: 1,
+        borderColor: '#F2CACA',
+    },
+
+    statsErrorText: {
+        flex: 1,
+        fontSize: 12,
+        lineHeight: 17,
+        color: COLORS.danger,
     },
 
     /* ----------------------------------------------------------

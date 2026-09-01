@@ -287,16 +287,21 @@ export function LoginScreen() {
          */
 
         console.log(
-          '➡️ MARKETING EMPLOYEE FULLY ONBOARDED'
-        );
+  '➡️ MARKETING EMPLOYEE FULLY ONBOARDED'
+);
 
-        console.log(
-          '⚠️ Marketing Dashboard has not been built yet.'
-        );
+console.log(
+  '➡️ ROUTING → MARKETING DASHBOARD'
+);
 
-        setError(
-          'Your employee account is ready. Marketing Dashboard setup is coming next.'
-        );
+navigation.reset({
+  index: 0,
+  routes: [
+    {
+      name: ROUTES.MARKETING_DASHBOARD,
+    },
+  ],
+});
 
         return;
       }

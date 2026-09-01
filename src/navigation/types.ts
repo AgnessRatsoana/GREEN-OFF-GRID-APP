@@ -13,8 +13,9 @@ export type RootStackParamList = {
 
   [ROUTES.MARKETING_DASHBOARD]: undefined;
   [ROUTES.MARKETING_PRODUCTS]: undefined;
+  [ROUTES.MARKETING_PACKAGES]: undefined;
   [ROUTES.ADD_PRODUCT]: undefined;
-  [ROUTES.MARKETING_PRODUCTS]: undefined;
+  
 
   [ROUTES.FAVOURITES]: undefined;
   [ROUTES.CART]: undefined;

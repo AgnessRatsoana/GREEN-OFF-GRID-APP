@@ -10,6 +10,7 @@ export const ROUTES = {
   ADMIN_DASHBOARD: 'AdminDashboard',
   MARKETING_DASHBOARD: 'MarketingDashboard',
   MARKETING_PRODUCTS: 'MarketingProducts',
+  MARKETING_PACKAGES: 'MarketingPackages',
   ADD_PRODUCT: 'AddProduct',
 
   LOGIN: 'Login',
