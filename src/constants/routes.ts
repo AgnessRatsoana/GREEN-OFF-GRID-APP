@@ -32,4 +32,6 @@ export const ROUTES = {
 
   CHECKOUT: 'Checkout',
   ORDER_CONFIRMATION: 'OrderConfirmation',
+
+  
 } as const;

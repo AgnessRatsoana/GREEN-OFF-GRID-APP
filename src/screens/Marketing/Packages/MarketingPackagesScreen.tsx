@@ -1,4 +1,5 @@
 
+
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -19,7 +20,7 @@ import {
   View,
 } from 'react-native';
 
-import { RootStackParamList } from '../../../navigation/types';
+import type { RootStackParamList } from '../../../navigation/types';
 
 import {
   createMarketingPackage,
@@ -28,6 +29,11 @@ import {
   updateMarketingPackage,
   type MarketingPackage,
 } from '../../../services/marketing/packages';
+
+import {
+  pickMarketingImage,
+  uploadMarketingImage,
+} from '../../../services/marketing/media';
 
 type NavigationProp =
   NativeStackNavigationProp<RootStackParamList>;
@@ -53,15 +59,20 @@ export function MarketingPackagesScreen() {
   const [error, setError] = useState<string | null>(null);
 
   /* ============================================================
-     MODAL STATE
+     CREATE / EDIT MODAL
   ============================================================ */
 
-  const [isModalVisible, setIsModalVisible] =
-    useState(false);
-
+  const [isModalVisible, setIsModalVisible] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const [editingPackage, setEditingPackage] =
+    useState<MarketingPackage | null>(null);
+
+  /* ============================================================
+     DETAILS MODAL
+  ============================================================ */
+
+  const [detailsPackage, setDetailsPackage] =
     useState<MarketingPackage | null>(null);
 
   /* ============================================================
@@ -79,8 +90,12 @@ export function MarketingPackagesScreen() {
   const [formButtonVariant, setFormButtonVariant] =
     useState<ButtonVariant>('teal');
   const [formImageUrl, setFormImageUrl] = useState('');
-  const [formIsActive, setFormIsActive] =
-    useState(true);
+  const [selectedImageUri, setSelectedImageUri] =
+  useState<string | null>(null);
+
+const [isUploadingImage, setIsUploadingImage] =
+  useState(false);
+  const [formIsActive, setFormIsActive] = useState(true);
   const [formDisplayOrder, setFormDisplayOrder] =
     useState('');
 
@@ -156,6 +171,8 @@ export function MarketingPackagesScreen() {
     setFormButtonLabel('Select Package');
     setFormButtonVariant('teal');
     setFormImageUrl('');
+    setSelectedImageUri(null);
+    setIsUploadingImage(false);
     setFormIsActive(true);
     setFormDisplayOrder('');
     setEditingPackage(null);
@@ -177,9 +194,7 @@ export function MarketingPackagesScreen() {
           ) + 1
         : 1;
 
-    setFormDisplayOrder(
-      String(nextDisplayOrder),
-    );
+    setFormDisplayOrder(String(nextDisplayOrder));
 
     setIsModalVisible(true);
   };
@@ -191,6 +206,8 @@ export function MarketingPackagesScreen() {
   const openEditModal = (
     packageItem: MarketingPackage,
   ) => {
+    setDetailsPackage(null);
+
     setEditingPackage(packageItem);
 
     setFormTitle(packageItem.title);
@@ -209,6 +226,8 @@ export function MarketingPackagesScreen() {
     setFormImageUrl(
       packageItem.imageUrl ?? '',
     );
+    setSelectedImageUri(null);
+    setIsUploadingImage(false);
     setFormIsActive(packageItem.isActive);
     setFormDisplayOrder(
       String(packageItem.displayOrder),
@@ -218,7 +237,7 @@ export function MarketingPackagesScreen() {
   };
 
   /* ============================================================
-     CLOSE MODAL
+     CLOSE FORM MODAL
   ============================================================ */
 
   const closeModal = () => {
@@ -240,6 +259,7 @@ export function MarketingPackagesScreen() {
         'Missing Information',
         'Please enter a package title.',
       );
+
       return false;
     }
 
@@ -248,6 +268,7 @@ export function MarketingPackagesScreen() {
         'Missing Information',
         'Please enter a package description.',
       );
+
       return false;
     }
 
@@ -262,6 +283,7 @@ export function MarketingPackagesScreen() {
         'Invalid Price',
         'Please enter a valid package price.',
       );
+
       return false;
     }
 
@@ -277,6 +299,7 @@ export function MarketingPackagesScreen() {
         'Invalid Rating',
         'Rating must be between 0 and 5.',
       );
+
       return false;
     }
 
@@ -293,6 +316,7 @@ export function MarketingPackagesScreen() {
         'Invalid Display Order',
         'Display order must be a whole number greater than 0.',
       );
+
       return false;
     }
 
@@ -310,11 +334,25 @@ export function MarketingPackagesScreen() {
 
     try {
       setIsSaving(true);
+      setError(null);
 
       const bullets = formBullets
         .split('\n')
         .map((bullet) => bullet.trim())
         .filter(Boolean);
+
+      let imageUrl = formImageUrl.trim();
+
+      if (selectedImageUri) {
+        try {
+          setIsUploadingImage(true);
+          imageUrl = await uploadMarketingImage(
+            selectedImageUri,
+          );
+        } finally {
+          setIsUploadingImage(false);
+        }
+      }
 
       const commonData = {
         title: formTitle.trim(),
@@ -326,8 +364,7 @@ export function MarketingPackagesScreen() {
           formButtonLabel.trim() ||
           'Select Package',
         buttonVariant: formButtonVariant,
-        imageUrl:
-          formImageUrl.trim() || null,
+        imageUrl: imageUrl || null,
         isActive: formIsActive,
         displayOrder: Number(
           formDisplayOrder,
@@ -342,11 +379,23 @@ export function MarketingPackagesScreen() {
           });
 
         setPackages((current) =>
-          current.map((item) =>
-            item.id === updated.id
-              ? updated
-              : item,
-          ),
+          current
+            .map((item) =>
+              item.id === updated.id
+                ? updated
+                : item,
+            )
+            .sort(
+              (a, b) =>
+                a.displayOrder -
+                b.displayOrder,
+            ),
+        );
+
+        setDetailsPackage((current) =>
+          current?.id === updated.id
+            ? updated
+            : current,
         );
 
         Alert.alert(
@@ -389,6 +438,7 @@ export function MarketingPackagesScreen() {
       );
     } finally {
       setIsSaving(false);
+      setIsUploadingImage(false);
     }
   };
 
@@ -421,7 +471,6 @@ export function MarketingPackagesScreen() {
           style: nextStatus
             ? 'default'
             : 'destructive',
-
           onPress: async () => {
             try {
               const updated =
@@ -451,6 +500,12 @@ export function MarketingPackagesScreen() {
                     ? updated
                     : item,
                 ),
+              );
+
+              setDetailsPackage((current) =>
+                current?.id === updated.id
+                  ? updated
+                  : current,
               );
             } catch (statusError) {
               console.error(
@@ -489,7 +544,6 @@ export function MarketingPackagesScreen() {
         {
           text: 'Delete',
           style: 'destructive',
-
           onPress: async () => {
             try {
               await deleteMarketingPackage(
@@ -499,9 +553,12 @@ export function MarketingPackagesScreen() {
               setPackages((current) =>
                 current.filter(
                   (item) =>
-                    item.id !== packageItem.id,
+                    item.id !==
+                    packageItem.id,
                 ),
               );
+
+              setDetailsPackage(null);
 
               Alert.alert(
                 'Package Deleted',
@@ -533,27 +590,7 @@ export function MarketingPackagesScreen() {
   const handlePackagePress = (
     packageItem: MarketingPackage,
   ) => {
-    Alert.alert(
-      packageItem.title,
-      packageItem.description,
-      [
-        {
-          text: 'Close',
-          style: 'cancel',
-        },
-        {
-          text: 'Edit',
-          onPress: () =>
-            openEditModal(packageItem),
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () =>
-            handleDeletePackage(packageItem),
-        },
-      ],
-    );
+    setDetailsPackage(packageItem);
   };
 
   /* ============================================================
@@ -630,7 +667,9 @@ export function MarketingPackagesScreen() {
 
     return (
       <View
-        style={styles.packageImagePlaceholder}
+        style={
+          styles.packageImagePlaceholder
+        }
       >
         <Ionicons
           name="briefcase-outline"
@@ -638,6 +677,36 @@ export function MarketingPackagesScreen() {
           color={COLORS.muted}
         />
       </View>
+    );
+  };
+
+  /* ============================================================
+     DETAILS IMAGE
+  ============================================================ */
+
+  const renderDetailsImage = () => {
+    if (!detailsPackage?.imageUrl) {
+      return (
+        <View
+          style={styles.detailsImagePlaceholder}
+        >
+          <Ionicons
+            name="briefcase-outline"
+            size={42}
+            color={COLORS.muted}
+          />
+        </View>
+      );
+    }
+
+    return (
+      <Image
+        source={{
+          uri: detailsPackage.imageUrl,
+        }}
+        style={styles.detailsImage}
+        resizeMode="cover"
+      />
     );
   };
 
@@ -668,9 +737,7 @@ export function MarketingPackagesScreen() {
           />
         }
       >
-        {/* =====================================================
-            HEADER
-        ====================================================== */}
+        {/* HEADER */}
 
         <View style={styles.header}>
           <View style={styles.headerTop}>
@@ -711,8 +778,8 @@ export function MarketingPackagesScreen() {
           </View>
 
           <Text style={styles.subtitle}>
-            Manage the packages available to
-            prospective Green Off-Grid
+            Manage the packages available
+            to prospective Green Off-Grid
             franchisees.
           </Text>
 
@@ -740,9 +807,7 @@ export function MarketingPackagesScreen() {
           </Pressable>
         </View>
 
-        {/* =====================================================
-            SUMMARY
-        ====================================================== */}
+        {/* SUMMARY */}
 
         <View style={styles.summaryCard}>
           <View
@@ -842,9 +907,7 @@ export function MarketingPackagesScreen() {
           </View>
         </View>
 
-        {/* =====================================================
-            SEARCH
-        ====================================================== */}
+        {/* SEARCH */}
 
         <View
           style={styles.searchContainer}
@@ -884,16 +947,19 @@ export function MarketingPackagesScreen() {
           ) : null}
         </View>
 
-        {/* =====================================================
-            FILTERS
-        ====================================================== */}
+        {/* FILTERS */}
 
         <View style={styles.filterRow}>
           {(
-            ['All', 'Active', 'Inactive'] as const
+            [
+              'All',
+              'Active',
+              'Inactive',
+            ] as const
           ).map((filter) => {
             const selected =
-              selectedFilter === filter;
+              selectedFilter ===
+              filter;
 
             return (
               <Pressable
@@ -904,7 +970,9 @@ export function MarketingPackagesScreen() {
                     styles.filterButtonSelected,
                 ]}
                 onPress={() =>
-                  setSelectedFilter(filter)
+                  setSelectedFilter(
+                    filter,
+                  )
                 }
               >
                 <Text
@@ -921,12 +989,12 @@ export function MarketingPackagesScreen() {
           })}
         </View>
 
-        {/* =====================================================
-            ERROR
-        ====================================================== */}
+        {/* ERROR */}
 
         {error ? (
-          <View style={styles.errorCard}>
+          <View
+            style={styles.errorCard}
+          >
             <Ionicons
               name="alert-circle-outline"
               size={19}
@@ -955,9 +1023,7 @@ export function MarketingPackagesScreen() {
           </View>
         ) : null}
 
-        {/* =====================================================
-            SECTION
-        ====================================================== */}
+        {/* SECTION */}
 
         <View
           style={styles.sectionHeader}
@@ -970,20 +1036,21 @@ export function MarketingPackagesScreen() {
             </Text>
 
             <Text
-              style={styles.sectionSubtitle}
+              style={
+                styles.sectionSubtitle
+              }
             >
               {filteredPackages.length}{' '}
               package
-              {filteredPackages.length === 1
+              {filteredPackages.length ===
+              1
                 ? ''
                 : 's'} displayed
             </Text>
           </View>
         </View>
 
-        {/* =====================================================
-            LOADING
-        ====================================================== */}
+        {/* LOADING / EMPTY / LIST */}
 
         {isLoading ? (
           <View
@@ -1003,7 +1070,9 @@ export function MarketingPackagesScreen() {
           </View>
         ) : filteredPackages.length ===
           0 ? (
-          <View style={styles.emptyCard}>
+          <View
+            style={styles.emptyCard}
+          >
             <View
               style={styles.emptyIcon}
             >
@@ -1037,8 +1106,12 @@ export function MarketingPackagesScreen() {
               (packageItem) => (
                 <View
                   key={packageItem.id}
-                  style={styles.packageCard}
+                  style={
+                    styles.packageCard
+                  }
                 >
+                  {/* CLICKABLE CARD */}
+
                   <Pressable
                     style={({ pressed }) => [
                       styles.packageContent,
@@ -1151,7 +1224,9 @@ export function MarketingPackagesScreen() {
                         {packageItem.bullets
                           .slice(0, 3)
                           .map(
-                            (bullet) => (
+                            (
+                              bullet,
+                            ) => (
                               <View
                                 key={
                                   bullet
@@ -1208,13 +1283,33 @@ export function MarketingPackagesScreen() {
                             )}
                           </Text>
                         </View>
+
+                        <View
+                          style={
+                            styles.viewDetailsHint
+                          }
+                        >
+                          <Text
+                            style={
+                              styles.viewDetailsText
+                            }
+                          >
+                            View details
+                          </Text>
+
+                          <Ionicons
+                            name="chevron-forward"
+                            size={14}
+                            color={
+                              COLORS.teal
+                            }
+                          />
+                        </View>
                       </View>
                     </View>
                   </Pressable>
 
-                  {/* =================================================
-                      MANAGEMENT ACTIONS
-                  ================================================== */}
+                  {/* MANAGEMENT ACTIONS */}
 
                   <View
                     style={
@@ -1324,9 +1419,7 @@ export function MarketingPackagesScreen() {
           </View>
         )}
 
-        {/* =====================================================
-            MANAGEMENT NOTE
-        ====================================================== */}
+        {/* MANAGEMENT NOTE */}
 
         <View
           style={styles.managementNote}
@@ -1388,9 +1481,7 @@ export function MarketingPackagesScreen() {
                 </Text>
 
                 <Text
-                  style={
-                    styles.modalTitle
-                  }
+                  style={styles.modalTitle}
                 >
                   {editingPackage
                     ? 'Edit Franchise Package'
@@ -1478,9 +1569,7 @@ export function MarketingPackagesScreen() {
               </Text>
 
               <Text
-                style={
-                  styles.formHint
-                }
+                style={styles.formHint}
               >
                 Enter one benefit per line.
               </Text>
@@ -1507,9 +1596,7 @@ export function MarketingPackagesScreen() {
               {/* PRICE + RATING */}
 
               <View
-                style={
-                  styles.formRow
-                }
+                style={styles.formRow}
               >
                 <View
                   style={styles.formHalf}
@@ -1595,12 +1682,13 @@ export function MarketingPackagesScreen() {
               </Text>
 
               <View
-                style={
-                  styles.variantRow
-                }
+                style={styles.variantRow}
               >
                 {(
-                  ['teal', 'purple'] as const
+                  [
+                    'teal',
+                    'purple',
+                  ] as const
                 ).map((variant) => {
                   const selected =
                     formButtonVariant ===
@@ -1623,8 +1711,7 @@ export function MarketingPackagesScreen() {
                       <View
                         style={[
                           styles.variantDot,
-                          variant ===
-                          'teal'
+                          variant === 'teal'
                             ? styles.tealVariantDot
                             : styles.purpleVariantDot,
                         ]}
@@ -1652,22 +1739,124 @@ export function MarketingPackagesScreen() {
               <Text
                 style={styles.formLabel}
               >
-                Image URL
+                Package Image
               </Text>
 
-              <TextInput
-                value={formImageUrl}
-                onChangeText={
-                  setFormImageUrl
+              <Text
+                style={styles.formHint}
+              >
+                Choose an image from your computer or device media library.
+              </Text>
+
+              {selectedImageUri ? (
+                <Image
+                  source={{
+                    uri: selectedImageUri,
+                  }}
+                  style={
+                    styles.formImagePreview
+                  }
+                  resizeMode="cover"
+                />
+              ) : formImageUrl ? (
+                <Image
+                  source={{
+                    uri: formImageUrl,
+                  }}
+                  style={
+                    styles.formImagePreview
+                  }
+                  resizeMode="cover"
+                />
+              ) : (
+                <View
+                  style={
+                    styles.formImagePlaceholder
+                  }
+                >
+                  <Ionicons
+                    name="image-outline"
+                    size={34}
+                    color={COLORS.muted}
+                  />
+
+                  <Text
+                    style={
+                      styles.formImagePlaceholderText
+                    }
+                  >
+                    No image selected
+                  </Text>
+                </View>
+              )}
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.imagePickerButton,
+                  pressed && styles.pressed,
+                  (isUploadingImage || isSaving) &&
+                    styles.disabledButton,
+                ]}
+                disabled={
+                  isUploadingImage || isSaving
                 }
-                placeholder="https://..."
-                placeholderTextColor={
-                  COLORS.muted
-                }
-                style={styles.formInput}
-                autoCapitalize="none"
-                keyboardType="url"
-              />
+                onPress={async () => {
+                  try {
+                    const uri =
+                      await pickMarketingImage();
+
+                    if (uri) {
+                      setSelectedImageUri(uri);
+                    }
+                  } catch (pickerError) {
+                    console.error(
+                      'IMAGE PICKER ERROR:',
+                      pickerError,
+                    );
+
+                    Alert.alert(
+                      'Image Selection Failed',
+                      pickerError instanceof Error
+                        ? pickerError.message
+                        : 'Unable to select the image.',
+                    );
+                  }
+                }}
+              >
+                <Ionicons
+                  name="cloud-upload-outline"
+                  size={19}
+                  color={COLORS.white}
+                />
+
+                <Text
+                  style={
+                    styles.imagePickerButtonText
+                  }
+                >
+                  {selectedImageUri
+                    ? 'Choose Different Image'
+                    : 'Choose Image'}
+                </Text>
+              </Pressable>
+
+              {selectedImageUri ? (
+                <Text
+                  style={
+                    styles.selectedImageText
+                  }
+                >
+                  New image selected. It will be uploaded when you save the package.
+                </Text>
+              ) : formImageUrl ? (
+                <Text
+                  style={
+                    styles.selectedImageText
+                  }
+                >
+                  Current package image
+                </Text>
+              ) : null}
 
               {/* DISPLAY ORDER */}
 
@@ -1840,6 +2029,475 @@ export function MarketingPackagesScreen() {
                 </Text>
               </Pressable>
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ==========================================================
+          PACKAGE DETAILS MODAL
+      =========================================================== */}
+
+      <Modal
+        visible={detailsPackage !== null}
+        animationType="slide"
+        transparent
+        onRequestClose={() =>
+          setDetailsPackage(null)
+        }
+      >
+        <View
+          style={styles.detailsOverlay}
+        >
+          <View
+            style={styles.detailsContainer}
+          >
+            <View
+              style={styles.detailsHeader}
+            >
+              <View>
+                <Text
+                  style={
+                    styles.detailsEyebrow
+                  }
+                >
+                  PACKAGE DETAILS
+                </Text>
+
+                <Text
+                  style={
+                    styles.detailsHeaderTitle
+                  }
+                >
+                  Marketing Catalogue
+                </Text>
+              </View>
+
+              <Pressable
+                style={
+                  styles.modalCloseButton
+                }
+                onPress={() =>
+                  setDetailsPackage(null)
+                }
+              >
+                <Ionicons
+                  name="close"
+                  size={22}
+                  color={COLORS.text}
+                />
+              </Pressable>
+            </View>
+
+            {detailsPackage ? (
+              <ScrollView
+                style={
+                  styles.detailsScroll
+                }
+                contentContainerStyle={
+                  styles.detailsContent
+                }
+                showsVerticalScrollIndicator={
+                  false
+              }
+              >
+                {renderDetailsImage()}
+
+                <View
+                  style={
+                    styles.detailsTitleRow
+                  }
+                >
+                  <View
+                    style={
+                      styles.detailsTitleContainer
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.detailsTitle
+                      }
+                    >
+                      {
+                        detailsPackage.title
+                      }
+                    </Text>
+
+                    <View
+                      style={
+                        styles.detailsRating
+                      }
+                    >
+                      <Ionicons
+                        name="star"
+                        size={16}
+                        color={
+                          COLORS.star
+                        }
+                      />
+
+                      <Text
+                        style={
+                          styles.detailsRatingText
+                        }
+                      >
+                        {detailsPackage.rating.toFixed(
+                          1,
+                        )}{' '}
+                        / 5
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View
+                    style={[
+                      styles.detailsStatus,
+                      detailsPackage.isActive
+                        ? styles.activeBadge
+                        : styles.inactiveBadge,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.statusDot,
+                        detailsPackage.isActive
+                          ? styles.activeDot
+                          : styles.inactiveDot,
+                      ]}
+                    />
+
+                    <Text
+                      style={[
+                        styles.statusText,
+                        detailsPackage.isActive
+                          ? styles.activeText
+                          : styles.inactiveText,
+                      ]}
+                    >
+                      {detailsPackage.isActive
+                        ? 'Active'
+                        : 'Inactive'}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* INVESTMENT */}
+
+                <View
+                  style={
+                    styles.investmentCard
+                  }
+                >
+                  <View>
+                    <Text
+                      style={
+                        styles.investmentLabel
+                      }
+                    >
+                      INVESTMENT
+                    </Text>
+
+                    <Text
+                      style={
+                        styles.investmentPrice
+                      }
+                    >
+                      R
+                      {detailsPackage.price.toLocaleString(
+                        'en-ZA',
+                      )}
+                    </Text>
+                  </View>
+
+                  <View
+                    style={
+                      styles.orderBadge
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.orderLabel
+                      }
+                    >
+                      ORDER
+                    </Text>
+
+                    <Text
+                      style={
+                        styles.orderValue
+                      }
+                    >
+                      #
+                      {
+                        detailsPackage.displayOrder
+                      }
+                    </Text>
+                  </View>
+                </View>
+
+                {/* DESCRIPTION */}
+
+                <View
+                  style={
+                    styles.detailsSection
+                  }
+                >
+                  <Text
+                    style={
+                      styles.detailsSectionTitle
+                    }
+                  >
+                    Description
+                  </Text>
+
+                  <Text
+                    style={
+                      styles.detailsDescription
+                    }
+                  >
+                    {
+                      detailsPackage.description
+                    }
+                  </Text>
+                </View>
+
+                {/* BENEFITS */}
+
+                <View
+                  style={
+                    styles.detailsSection
+                  }
+                >
+                  <Text
+                    style={
+                      styles.detailsSectionTitle
+                    }
+                  >
+                    Package Benefits
+                  </Text>
+
+                  {detailsPackage.bullets.length >
+                  0 ? (
+                    <View
+                      style={
+                        styles.detailsBulletList
+                      }
+                    >
+                      {detailsPackage.bullets.map(
+                        (
+                          bullet,
+                          index,
+                        ) => (
+                          <View
+                            key={`${bullet}-${index}`}
+                            style={
+                              styles.detailsBulletRow
+                            }
+                          >
+                            <View
+                              style={
+                                styles.detailsBulletIcon
+                              }
+                            >
+                              <Ionicons
+                                name="checkmark"
+                                size={12}
+                                color={
+                                  COLORS.tealDark
+                                }
+                              />
+                            </View>
+
+                            <Text
+                              style={
+                                styles.detailsBulletText
+                              }
+                            >
+                              {bullet}
+                            </Text>
+                          </View>
+                        ),
+                      )}
+                    </View>
+                  ) : (
+                    <Text
+                      style={
+                        styles.noBenefitsText
+                      }
+                    >
+                      No benefits have been
+                      added to this package.
+                    </Text>
+                  )}
+                </View>
+
+                {/* CUSTOMER CTA */}
+
+                <View
+                  style={
+                    styles.ctaPreviewCard
+                  }
+                >
+                  <View>
+                    <Text
+                      style={
+                        styles.ctaPreviewLabel
+                      }
+                    >
+                      CUSTOMER CTA
+                    </Text>
+
+                    <Text
+                      style={
+                        styles.ctaPreviewButton
+                      }
+                    >
+                      {
+                        detailsPackage.buttonLabel
+                      }
+                    </Text>
+                  </View>
+
+                  <View
+                    style={[
+                      styles.variantPreview,
+                      detailsPackage.buttonVariant ===
+                      'teal'
+                        ? styles.tealPreview
+                        : styles.purplePreview,
+                    ]}
+                  >
+                    <Text
+                      style={
+                        styles.variantPreviewText
+                      }
+                    >
+                      {detailsPackage.buttonVariant
+                        .charAt(0)
+                        .toUpperCase() +
+                        detailsPackage.buttonVariant.slice(
+                          1,
+                        )}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* ACTIONS */}
+
+                <View
+                  style={
+                    styles.detailsActions
+                  }
+                >
+                  <Pressable
+                    style={[
+                      styles.detailsActionButton,
+                      styles.detailsEditButton,
+                    ]}
+                    onPress={() =>
+                      openEditModal(
+                        detailsPackage,
+                      )
+                    }
+                  >
+                    <Ionicons
+                      name="create-outline"
+                      size={18}
+                      color={
+                        COLORS.tealDark
+                      }
+                    />
+
+                    <Text
+                      style={
+                        styles.detailsEditText
+                      }
+                    >
+                      Edit Package
+                    </Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={[
+                      styles.detailsActionButton,
+                      detailsPackage.isActive
+                        ? styles.detailsDeactivateButton
+                        : styles.detailsActivateButton,
+                    ]}
+                    onPress={() =>
+                      handleToggleStatus(
+                        detailsPackage,
+                      )
+                    }
+                  >
+                    <Ionicons
+                      name={
+                        detailsPackage.isActive
+                          ? 'eye-off-outline'
+                          : 'eye-outline'
+                      }
+                      size={18}
+                      color={
+                        detailsPackage.isActive
+                          ? COLORS.danger
+                          : COLORS.tealDark
+                      }
+                    />
+
+                    <Text
+                      style={[
+                        styles.detailsStatusActionText,
+                        detailsPackage.isActive
+                          ? styles.deactivateText
+                          : styles.activateText,
+                      ]}
+                    >
+                      {detailsPackage.isActive
+                        ? 'Deactivate'
+                        : 'Activate'}
+                    </Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={[
+                      styles.detailsActionButton,
+                      styles.detailsDeleteButton,
+                    ]}
+                    onPress={() =>
+                      handleDeletePackage(
+                        detailsPackage,
+                      )
+                    }
+                  >
+                    <Ionicons
+                      name="trash-outline"
+                      size={18}
+                      color={
+                        COLORS.danger
+                      }
+                    />
+
+                    <Text
+                      style={
+                        styles.detailsDeleteText
+                      }
+                    >
+                      Delete Package
+                    </Text>
+                  </Pressable>
+                </View>
+
+                <Text
+                  style={
+                    styles.detailsFooter
+                  }
+                >
+                  Last updated{' '}
+                  {new Date(
+                    detailsPackage.updatedAt,
+                  ).toLocaleString('en-ZA')}
+                </Text>
+              </ScrollView>
+            ) : null}
           </View>
         </View>
       </Modal>
@@ -2328,6 +2986,19 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
 
+  viewDetailsHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingBottom: 2,
+  },
+
+  viewDetailsText: {
+    marginRight: 3,
+    fontSize: 9,
+    fontWeight: '700',
+    color: COLORS.teal,
+  },
+
   /* Management actions */
 
   managementActions: {
@@ -2452,7 +3123,9 @@ const styles = StyleSheet.create({
     color: COLORS.muted,
   },
 
-  /* Modal */
+  /* ============================================================
+     FORM MODAL
+  ============================================================ */
 
   modalOverlay: {
     flex: 1,
@@ -2524,6 +3197,57 @@ const styles = StyleSheet.create({
     marginBottom: 7,
     fontSize: 10,
     color: COLORS.muted,
+  },
+
+  formImagePreview: {
+    width: '100%',
+    height: 190,
+    borderRadius: 14,
+    backgroundColor: '#F0F5F5',
+    marginBottom: 10,
+  },
+
+  formImagePlaceholder: {
+    width: '100%',
+    height: 190,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F0F5F5',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderStyle: 'dashed',
+    marginBottom: 10,
+  },
+
+  formImagePlaceholderText: {
+    marginTop: 8,
+    fontSize: 11,
+    color: COLORS.muted,
+  },
+
+  imagePickerButton: {
+    minHeight: 46,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    backgroundColor: COLORS.tealDark,
+    paddingHorizontal: 15,
+  },
+
+  imagePickerButtonText: {
+    marginLeft: 7,
+    fontSize: 12,
+    fontWeight: '800',
+    color: COLORS.white,
+  },
+
+  selectedImageText: {
+    marginTop: 7,
+    fontSize: 10,
+    color: COLORS.tealDark,
+    textAlign: 'center',
   },
 
   formInput: {
@@ -2705,6 +3429,309 @@ const styles = StyleSheet.create({
 
   disabledButton: {
     opacity: 0.6,
+  },
+
+  /* ============================================================
+     DETAILS MODAL
+  ============================================================ */
+
+  detailsOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+  },
+
+  detailsContainer: {
+    maxHeight: '94%',
+    backgroundColor: COLORS.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: 'hidden',
+  },
+
+  detailsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+
+  detailsEyebrow: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 1.3,
+    color: COLORS.tealDark,
+  },
+
+  detailsHeaderTitle: {
+    marginTop: 3,
+    fontSize: 19,
+    fontWeight: '800',
+    color: COLORS.text,
+  },
+
+  detailsScroll: {
+    flexGrow: 0,
+  },
+
+  detailsContent: {
+    padding: 20,
+    paddingBottom: 35,
+  },
+
+  detailsImage: {
+    width: '100%',
+    height: 210,
+    borderRadius: 18,
+    backgroundColor: '#F0F5F5',
+  },
+
+  detailsImagePlaceholder: {
+    width: '100%',
+    height: 210,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F0F5F5',
+  },
+
+  detailsTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: 17,
+  },
+
+  detailsTitleContainer: {
+    flex: 1,
+    paddingRight: 10,
+  },
+
+  detailsTitle: {
+    fontSize: 24,
+    lineHeight: 29,
+    fontWeight: '800',
+    color: COLORS.text,
+  },
+
+  detailsRating: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 7,
+  },
+
+  detailsRatingText: {
+    marginLeft: 5,
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.secondaryText,
+  },
+
+  detailsStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    borderRadius: 9,
+  },
+
+  investmentCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 18,
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: COLORS.tealLight,
+    borderWidth: 1,
+    borderColor: '#CDEEEE',
+  },
+
+  investmentLabel: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 1.1,
+    color: COLORS.tealDark,
+  },
+
+  investmentPrice: {
+    marginTop: 3,
+    fontSize: 26,
+    fontWeight: '800',
+    color: COLORS.text,
+  },
+
+  orderBadge: {
+    alignItems: 'flex-end',
+    paddingLeft: 12,
+  },
+
+  orderLabel: {
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 1,
+    color: COLORS.muted,
+  },
+
+  orderValue: {
+    marginTop: 3,
+    fontSize: 15,
+    fontWeight: '800',
+    color: COLORS.text,
+  },
+
+  detailsSection: {
+    marginTop: 22,
+  },
+
+  detailsSectionTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: COLORS.text,
+    marginBottom: 8,
+  },
+
+  detailsDescription: {
+    fontSize: 13,
+    lineHeight: 20,
+    color: COLORS.secondaryText,
+  },
+
+  detailsBulletList: {
+    gap: 10,
+  },
+
+  detailsBulletRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+
+  detailsBulletIcon: {
+    width: 23,
+    height: 23,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.tealLight,
+    marginRight: 9,
+  },
+
+  detailsBulletText: {
+    flex: 1,
+    paddingTop: 2,
+    fontSize: 12,
+    lineHeight: 18,
+    color: COLORS.secondaryText,
+  },
+
+  noBenefitsText: {
+    fontSize: 12,
+    color: COLORS.muted,
+  },
+
+  ctaPreviewCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 22,
+    padding: 15,
+    borderRadius: 15,
+    backgroundColor: '#FBFDFD',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+
+  ctaPreviewLabel: {
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 1,
+    color: COLORS.muted,
+  },
+
+  ctaPreviewButton: {
+    marginTop: 4,
+    fontSize: 13,
+    fontWeight: '800',
+    color: COLORS.text,
+  },
+
+  variantPreview: {
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 9,
+  },
+
+  tealPreview: {
+    backgroundColor: COLORS.tealLight,
+  },
+
+  purplePreview: {
+    backgroundColor: COLORS.purpleLight,
+  },
+
+  variantPreviewText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: COLORS.text,
+  },
+
+  detailsActions: {
+    marginTop: 22,
+    gap: 8,
+  },
+
+  detailsActionButton: {
+    minHeight: 46,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+  },
+
+  detailsEditButton: {
+    backgroundColor: COLORS.tealLight,
+  },
+
+  detailsEditText: {
+    marginLeft: 7,
+    fontSize: 12,
+    fontWeight: '800',
+    color: COLORS.tealDark,
+  },
+
+  detailsDeactivateButton: {
+    backgroundColor: '#FFF3F3',
+  },
+
+  detailsActivateButton: {
+    backgroundColor: COLORS.tealLight,
+  },
+
+  detailsStatusActionText: {
+    marginLeft: 7,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+
+  detailsDeleteButton: {
+    backgroundColor: '#FFF3F3',
+  },
+
+  detailsDeleteText: {
+    marginLeft: 7,
+    fontSize: 12,
+    fontWeight: '800',
+    color: COLORS.danger,
+  },
+
+  detailsFooter: {
+    marginTop: 18,
+    textAlign: 'center',
+    fontSize: 10,
+    color: COLORS.muted,
   },
 
   pressed: {

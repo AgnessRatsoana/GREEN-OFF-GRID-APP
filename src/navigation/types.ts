@@ -11,10 +11,11 @@ export type RootStackParamList = {
 
   [ROUTES.ADMIN_DASHBOARD]: undefined;
 
+
   [ROUTES.MARKETING_DASHBOARD]: undefined;
-  [ROUTES.MARKETING_PRODUCTS]: undefined;
   [ROUTES.MARKETING_PACKAGES]: undefined;
-  [ROUTES.ADD_PRODUCT]: undefined;
+  [ROUTES.MARKETING_PRODUCTS]: undefined;
+  [ROUTES.ADD_PRODUCT]: { productId?: string } | undefined;
   
 
   [ROUTES.FAVOURITES]: undefined;
