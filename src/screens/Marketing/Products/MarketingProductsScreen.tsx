@@ -1,872 +1,1597 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import {
+  useFocusEffect,
   useNavigation,
 } from '@react-navigation/native';
-import type {
-  NativeStackNavigationProp,
-} from '@react-navigation/native-stack';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import {
   ActivityIndicator,
+  Alert,
+  FlatList,
   Image,
+  Modal,
   Pressable,
   RefreshControl,
   SafeAreaView,
   ScrollView,
-  StatusBar,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
 } from 'react-native';
 
-import { ROUTES } from '../../../constants/routes';
-import { RootStackParamList } from '../../../navigation/types';
 import {
-  fetchMarketplaceProducts,
-  MarketplaceProduct,
+  activateMarketplaceProduct,
+  deactivateMarketplaceProduct,
+  deleteMarketplaceProduct,
+  fetchAllMarketplaceProducts,
+  type MarketplaceProduct,
 } from '../../../services/marketplace/marketplace';
+
+import { ROUTES } from '../../../constants/routes';
+import type { RootStackParamList } from '../../../navigation/types';
 
 type NavigationProp =
   NativeStackNavigationProp<RootStackParamList>;
 
+const COLORS = {
+  background: '#F5F7F8',
+  card: '#FFFFFF',
+  primary: '#0F766E',
+  primaryDark: '#115E59',
+  text: '#172033',
+  muted: '#6B7280',
+  border: '#E5E7EB',
+  danger: '#DC2626',
+  success: '#15803D',
+  warning: '#D97706',
+  white: '#FFFFFF',
+};
+
 export function MarketingProductsScreen() {
-  const navigation =
-    useNavigation<NavigationProp>();
+  const navigation = useNavigation<NavigationProp>();
 
   const [products, setProducts] = useState<
     MarketplaceProduct[]
   >([]);
 
-  const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(
-    null,
-  );
+  const [selectedProduct, setSelectedProduct] =
+    useState<MarketplaceProduct | null>(null);
 
+  const [detailsVisible, setDetailsVisible] =
+    useState(false);
+
+  const [isLoading, setIsLoading] =
+    useState(true);
+
+  const [isRefreshing, setIsRefreshing] =
+    useState(false);
+
+  const [error, setError] =
+    useState<string | null>(null);
+
+  const [searchQuery, setSearchQuery] =
+    useState('');
+
+  const [isProcessing, setIsProcessing] =
+    useState<string | null>(null);
+
+  /**
+   * Load all products from Supabase.
+   */
   const loadProducts = useCallback(
-    async (isRefresh = false) => {
+    async (showLoader = true) => {
       try {
-        if (isRefresh) {
-          setRefreshing(true);
-        } else {
-          setLoading(true);
+        if (showLoader) {
+          setIsLoading(true);
         }
 
         setError(null);
 
         const data =
-          await fetchMarketplaceProducts();
+          await fetchAllMarketplaceProducts();
 
         setProducts(data);
-      } catch (err) {
+
+        /**
+         * Keep the currently-open details modal
+         * synchronized with the latest database record.
+         */
+        setSelectedProduct((current) => {
+          if (!current) {
+            return null;
+          }
+
+          return (
+            data.find(
+              (product) =>
+                product.id === current.id,
+            ) ?? null
+          );
+        });
+      } catch (loadError) {
         console.error(
-          'MarketingProductsScreen:',
-          err,
+          'MARKETING PRODUCTS LOAD ERROR:',
+          loadError,
         );
 
-        setError(
-          err instanceof Error
-            ? err.message
-            : 'Unable to load marketplace products.',
-        );
+        const message =
+          loadError instanceof Error
+            ? loadError.message
+            : 'Unable to load marketplace products.';
+
+        setError(message);
       } finally {
-        setLoading(false);
-        setRefreshing(false);
+        if (showLoader) {
+          setIsLoading(false);
+        }
       }
     },
     [],
   );
 
-  useEffect(() => {
-    loadProducts();
-  }, [loadProducts]);
+  /**
+   * IMPORTANT:
+   *
+   * Refresh every time the marketing products
+   * screen receives focus.
+   *
+   * This means:
+   *
+   * Add Product
+   * → Save
+   * → Go Back
+   * → Product list automatically refreshes.
+   */
+  useFocusEffect(
+    useCallback(() => {
+      loadProducts(true);
+    }, [loadProducts]),
+  );
 
+  /**
+   * Pull-to-refresh.
+   */
+  const handleRefresh = useCallback(
+    async () => {
+      try {
+        setIsRefreshing(true);
+        await loadProducts(false);
+      } finally {
+        setIsRefreshing(false);
+      }
+    },
+    [loadProducts],
+  );
+
+  /**
+   * Search products.
+   */
   const filteredProducts = useMemo(() => {
-    const query = search
-      .trim()
-      .toLowerCase();
+    const query =
+      searchQuery.trim().toLowerCase();
 
     if (!query) {
       return products;
     }
 
-    return products.filter((product) =>
-      [
-        product.name,
-        product.category,
-        product.brand,
-        product.sku,
-      ]
-        .join(' ')
-        .toLowerCase()
-        .includes(query),
-    );
-  }, [products, search]);
+    return products.filter((product) => {
+      return (
+        product.name
+          .toLowerCase()
+          .includes(query) ||
+        product.brand
+          .toLowerCase()
+          .includes(query) ||
+        product.category
+          .toLowerCase()
+          .includes(query) ||
+        product.sku
+          .toLowerCase()
+          .includes(query)
+      );
+    });
+  }, [products, searchQuery]);
 
-  const handleBack = () => {
-    navigation.goBack();
+  /**
+   * Open product details.
+   */
+  const openProductDetails = (
+    product: MarketplaceProduct,
+  ) => {
+    setSelectedProduct(product);
+    setDetailsVisible(true);
   };
 
+  /**
+   * Close product details.
+   */
+  const closeProductDetails = () => {
+    setDetailsVisible(false);
+    setSelectedProduct(null);
+  };
+
+  /**
+   * Add product.
+   */
   const handleAddProduct = () => {
     navigation.navigate(ROUTES.ADD_PRODUCT);
   };
 
-  const formatPrice = (price: number) => {
-    return `R ${price.toLocaleString('en-ZA', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
-  };
-
-  const getProductImage = (
+  /**
+   * Edit product.
+   */
+  const handleEditProduct = (
     product: MarketplaceProduct,
   ) => {
-    return product.imageUrl?.trim() || null;
+    closeProductDetails();
+
+    navigation.navigate(
+      ROUTES.ADD_PRODUCT,
+      {
+        productId: product.id,
+      },
+    );
   };
 
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor={COLORS.background}
-      />
+  /**
+   * Activate / deactivate product.
+   */
+  const handleToggleStatus = async (
+    product: MarketplaceProduct,
+  ) => {
+    try {
+      setIsProcessing(product.id);
+      setError(null);
 
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => loadProducts(true)}
-            tintColor={COLORS.teal}
-            colors={[COLORS.teal]}
-          />
+      const updatedProduct =
+        product.isActive
+          ? await deactivateMarketplaceProduct(
+              product.id,
+            )
+          : await activateMarketplaceProduct(
+              product.id,
+            );
+
+      /**
+       * Update the product locally immediately.
+       */
+      setProducts((currentProducts) =>
+        currentProducts.map((currentProduct) =>
+          currentProduct.id ===
+          updatedProduct.id
+            ? updatedProduct
+            : currentProduct,
+        ),
+      );
+
+      setSelectedProduct((current) =>
+        current?.id === updatedProduct.id
+          ? updatedProduct
+          : current,
+      );
+    } catch (statusError) {
+      console.error(
+        'TOGGLE PRODUCT STATUS ERROR:',
+        statusError,
+      );
+
+      const message =
+        statusError instanceof Error
+          ? statusError.message
+          : 'Unable to update product status.';
+
+      setError(message);
+
+      Alert.alert(
+        'Unable to Update Product',
+        message,
+      );
+    } finally {
+      setIsProcessing(null);
+    }
+  };
+
+  /**
+   * Confirm deletion.
+   */
+  const confirmDeleteProduct = (
+    product: MarketplaceProduct,
+  ) => {
+    Alert.alert(
+      'Delete Product',
+      `Are you sure you want to permanently delete "${product.name}"?`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () =>
+            handleDeleteProduct(product),
+        },
+      ],
+    );
+  };
+
+  /**
+   * Delete product.
+   */
+  const handleDeleteProduct = async (
+    product: MarketplaceProduct,
+  ) => {
+    try {
+      setIsProcessing(product.id);
+      setError(null);
+
+      await deleteMarketplaceProduct(
+        product.id,
+      );
+
+      /**
+       * Remove immediately from local list.
+       */
+      setProducts((currentProducts) =>
+        currentProducts.filter(
+          (currentProduct) =>
+            currentProduct.id !== product.id,
+        ),
+      );
+
+      if (
+        selectedProduct?.id === product.id
+      ) {
+        closeProductDetails();
+      }
+
+      Alert.alert(
+        'Product Deleted',
+        `"${product.name}" has been removed from the marketplace.`,
+      );
+    } catch (deleteError) {
+      console.error(
+        'DELETE PRODUCT ERROR:',
+        deleteError,
+      );
+
+      const message =
+        deleteError instanceof Error
+          ? deleteError.message
+          : 'Unable to delete the product.';
+
+      setError(message);
+
+      Alert.alert(
+        'Unable to Delete Product',
+        message,
+      );
+    } finally {
+      setIsProcessing(null);
+    }
+  };
+
+  /**
+   * Product card.
+   *
+   * The whole card is a Pressable so that
+   * clicking anywhere on the main card opens
+   * the product details.
+   *
+   * The action buttons stop their own action
+   * from being interpreted as a card click.
+   */
+  const renderProductCard = ({
+    item,
+  }: {
+    item: MarketplaceProduct;
+  }) => {
+    const processing =
+      isProcessing === item.id;
+
+    return (
+      <Pressable
+        onPress={() =>
+          openProductDetails(item)
         }
+        disabled={processing}
+        style={({ pressed }) => [
+          styles.productCard,
+          pressed && styles.productCardPressed,
+        ]}
+        android_ripple={{
+          color: '#E6FFFB',
+        }}
       >
-        {/* HEADER */}
+        {/* PRODUCT IMAGE */}
+        <View style={styles.productImageContainer}>
+          {item.imageUrl ? (
+            <Image
+              source={{
+                uri: item.imageUrl,
+              }}
+              style={styles.productImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View
+              style={
+                styles.productImagePlaceholder
+              }
+            >
+              <Ionicons
+                name="image-outline"
+                size={42}
+                color={COLORS.muted}
+              />
 
-        <View style={styles.header}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.backButton,
-              pressed && styles.pressed,
-            ]}
-            onPress={handleBack}
+              <Text
+                style={
+                  styles.noImageText
+                }
+              >
+                No Image
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* PRODUCT INFORMATION */}
+        <View style={styles.productContent}>
+          <View style={styles.productTopRow}>
+            <View style={styles.productTitleContainer}>
+              <Text
+                style={styles.productName}
+                numberOfLines={2}
+              >
+                {item.name}
+              </Text>
+
+              <Text
+                style={styles.productBrand}
+                numberOfLines={1}
+              >
+                {item.brand}
+              </Text>
+            </View>
+
+            <View
+              style={[
+                styles.statusBadge,
+                item.isActive
+                  ? styles.activeBadge
+                  : styles.inactiveBadge,
+              ]}
+            >
+              <View
+                style={[
+                  styles.statusDot,
+                  item.isActive
+                    ? styles.activeDot
+                    : styles.inactiveDot,
+                ]}
+              />
+
+              <Text
+                style={[
+                  styles.statusBadgeText,
+                  item.isActive
+                    ? styles.activeText
+                    : styles.inactiveText,
+                ]}
+              >
+                {item.isActive
+                  ? 'Active'
+                  : 'Inactive'}
+              </Text>
+            </View>
+          </View>
+
+          <Text
+            style={styles.productDescription}
+            numberOfLines={2}
           >
+            {item.description ||
+              'No product description available.'}
+          </Text>
+
+          <View style={styles.productMetaRow}>
+            <View>
+              <Text style={styles.metaLabel}>
+                Price
+              </Text>
+
+              <Text style={styles.productPrice}>
+                R{' '}
+                {Number(
+                  item.price,
+                ).toLocaleString(
+                  'en-ZA',
+                  {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  },
+                )}
+              </Text>
+            </View>
+
+            <View style={styles.metaItem}>
+              <Text style={styles.metaLabel}>
+                Stock
+              </Text>
+
+              <Text style={styles.metaValue}>
+                {item.quantity}
+              </Text>
+            </View>
+
+            <View style={styles.metaItem}>
+              <Text style={styles.metaLabel}>
+                SKU
+              </Text>
+
+              <Text
+                style={styles.metaValue}
+                numberOfLines={1}
+              >
+                {item.sku || '—'}
+              </Text>
+            </View>
+          </View>
+
+          {/* ACTIONS */}
+          <View style={styles.actionsRow}>
+            <Pressable
+              onPress={(event) => {
+                event.stopPropagation();
+                handleEditProduct(item);
+              }}
+              disabled={processing}
+              style={[
+                styles.actionButton,
+                styles.editButton,
+                processing &&
+                  styles.disabledButton,
+              ]}
+            >
+              <Ionicons
+                name="create-outline"
+                size={18}
+                color={COLORS.primary}
+              />
+
+              <Text
+                style={styles.editButtonText}
+              >
+                Edit
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={(event) => {
+                event.stopPropagation();
+                handleToggleStatus(item);
+              }}
+              disabled={processing}
+              style={[
+                styles.actionButton,
+                styles.statusButton,
+                processing &&
+                  styles.disabledButton,
+              ]}
+            >
+              {processing ? (
+                <ActivityIndicator
+                  size="small"
+                  color={COLORS.warning}
+                />
+              ) : (
+                <Ionicons
+                  name={
+                    item.isActive
+                      ? 'eye-off-outline'
+                      : 'eye-outline'
+                  }
+                  size={18}
+                  color={COLORS.warning}
+                />
+              )}
+
+              <Text
+                style={styles.statusButtonText}
+              >
+                {item.isActive
+                  ? 'Deactivate'
+                  : 'Activate'}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={(event) => {
+                event.stopPropagation();
+                confirmDeleteProduct(item);
+              }}
+              disabled={processing}
+              style={[
+                styles.deleteButton,
+                processing &&
+                  styles.disabledButton,
+              ]}
+            >
+              <Ionicons
+                name="trash-outline"
+                size={19}
+                color={COLORS.danger}
+              />
+            </Pressable>
+          </View>
+
+          {/* VIEW DETAILS */}
+          <View style={styles.viewDetailsRow}>
+            <Text
+              style={styles.viewDetailsText}
+            >
+              Tap product to view full details
+            </Text>
+
             <Ionicons
-              name="arrow-back"
-              size={21}
-              color={COLORS.text}
+              name="chevron-forward"
+              size={18}
+              color={COLORS.primary}
             />
-          </Pressable>
-
-          <View style={styles.headerText}>
-            <Text style={styles.eyebrow}>
-              MARKETING
-            </Text>
-
-            <Text style={styles.title}>
-              Products
-            </Text>
-
-            <Text style={styles.subtitle}>
-              Manage products available in the
-              Green Off-Grid catalogue.
-            </Text>
           </View>
         </View>
+      </Pressable>
+    );
+  };
 
-        {/* SUMMARY */}
+  /**
+   * Empty search/list state.
+   */
+  const renderEmptyState = () => {
+    if (isLoading) {
+      return null;
+    }
 
-        <View style={styles.summaryCard}>
-          <View style={styles.summaryIcon}>
-            <Ionicons
-              name="cube-outline"
-              size={24}
-              color={COLORS.teal}
-            />
-          </View>
+    const searching =
+      searchQuery.trim().length > 0;
 
-          <View style={styles.summaryContent}>
-            <Text style={styles.summaryLabel}>
-              Catalogue
-            </Text>
-
-            <Text style={styles.summaryValue}>
-              {products.length}
-            </Text>
-
-            <Text style={styles.summaryDescription}>
-              Active marketplace products
-            </Text>
-          </View>
-
-          <View style={styles.summaryStatus}>
-            <View style={styles.summaryStatusDot} />
-
-            <Text style={styles.summaryStatusText}>
-              Live
-            </Text>
-          </View>
+    return (
+      <View style={styles.emptyContainer}>
+        <View style={styles.emptyIcon}>
+          <Ionicons
+            name={
+              searching
+                ? 'search-outline'
+                : 'cube-outline'
+            }
+            size={48}
+            color={COLORS.primary}
+          />
         </View>
 
-        {/* SEARCH + ADD */}
+        <Text style={styles.emptyTitle}>
+          {searching
+            ? 'No Products Found'
+            : 'No Products Yet'}
+        </Text>
 
-        <View style={styles.toolbar}>
-          <View style={styles.searchContainer}>
-            <Ionicons
-              name="search-outline"
-              size={19}
-              color={COLORS.muted}
-            />
+        <Text style={styles.emptyDescription}>
+          {searching
+            ? 'Try changing your search term or clear the search field.'
+            : 'Start building your marketplace catalogue by adding your first product.'}
+        </Text>
 
-            <TextInput
-              value={search}
-              onChangeText={setSearch}
-              placeholder="Search products"
-              placeholderTextColor={COLORS.muted}
-              style={styles.searchInput}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </View>
-
+        {!searching && (
           <Pressable
-            style={({ pressed }) => [
-              styles.addButton,
-              pressed && styles.pressed,
-            ]}
             onPress={handleAddProduct}
+            style={styles.emptyAddButton}
           >
             <Ionicons
               name="add"
-              size={22}
+              size={21}
               color={COLORS.white}
             />
 
-            <Text style={styles.addButtonText}>
-              Add
+            <Text
+              style={styles.emptyAddButtonText}
+            >
+              Add Product
             </Text>
           </Pressable>
-        </View>
+        )}
+      </View>
+    );
+  };
 
-        {/* SECTION HEADER */}
-
-        <View style={styles.sectionHeader}>
-          <View style={styles.sectionHeaderText}>
-            <Text style={styles.sectionTitle}>
-              Product Catalogue
-            </Text>
-
-            <Text style={styles.sectionSubtitle}>
-              View and manage your catalogue items.
-            </Text>
-          </View>
-
-          <Text style={styles.productCount}>
-            {filteredProducts.length}
-          </Text>
-        </View>
-
-        {/* LOADING */}
-
-        {loading ? (
-          <View style={styles.stateCard}>
-            <ActivityIndicator
-              size="large"
-              color={COLORS.teal}
-            />
-
-            <Text style={styles.stateTitle}>
-              Loading catalogue
-            </Text>
-
-            <Text style={styles.stateDescription}>
-              Fetching the latest marketplace
-              products.
-            </Text>
-          </View>
-        ) : error ? (
-          /* ERROR */
-
-          <View style={styles.stateCard}>
-            <View style={styles.errorIcon}>
+  /**
+   * Header.
+   */
+  const listHeader = () => {
+    return (
+      <>
+        <View style={styles.statsContainer}>
+          <View style={styles.statCard}>
+            <View
+              style={[
+                styles.statIcon,
+                styles.totalStatIcon,
+              ]}
+            >
               <Ionicons
-                name="alert-circle-outline"
-                size={30}
-                color={COLORS.danger}
+                name="cube-outline"
+                size={22}
+                color={COLORS.primary}
               />
             </View>
 
-            <Text style={styles.stateTitle}>
-              Unable to load products
-            </Text>
+            <View>
+              <Text style={styles.statLabel}>
+                Total Products
+              </Text>
 
-            <Text style={styles.stateDescription}>
+              <Text style={styles.statValue}>
+                {products.length}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.statCard}>
+            <View
+              style={[
+                styles.statIcon,
+                styles.activeStatIcon,
+              ]}
+            >
+              <Ionicons
+                name="checkmark-circle-outline"
+                size={22}
+                color={COLORS.success}
+              />
+            </View>
+
+            <View>
+              <Text style={styles.statLabel}>
+                Active
+              </Text>
+
+              <Text style={styles.statValue}>
+                {
+                  products.filter(
+                    (product) =>
+                      product.isActive,
+                  ).length
+                }
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.statCard}>
+            <View
+              style={[
+                styles.statIcon,
+                styles.stockStatIcon,
+              ]}
+            >
+              <Ionicons
+                name="layers-outline"
+                size={22}
+                color={COLORS.warning}
+              />
+            </View>
+
+            <View>
+              <Text style={styles.statLabel}>
+                Stock Units
+              </Text>
+
+              <Text style={styles.statValue}>
+                {products.reduce(
+                  (total, product) =>
+                    total +
+                    Number(
+                      product.quantity,
+                    ),
+                  0,
+                )}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {error && (
+          <View style={styles.errorBox}>
+            <Ionicons
+              name="alert-circle-outline"
+              size={21}
+              color={COLORS.danger}
+            />
+
+            <Text style={styles.errorText}>
               {error}
             </Text>
 
             <Pressable
-              style={({ pressed }) => [
-                styles.retryButton,
-                pressed && styles.pressed,
-              ]}
-              onPress={() => loadProducts()}
+              onPress={() =>
+                loadProducts(true)
+              }
             >
-              <Ionicons
-                name="refresh-outline"
-                size={18}
-                color={COLORS.white}
-              />
-
-              <Text style={styles.retryButtonText}>
-                Try Again
+              <Text
+                style={styles.retryText}
+              >
+                Retry
               </Text>
             </Pressable>
           </View>
-        ) : filteredProducts.length === 0 ? (
-          /* EMPTY */
+        )}
 
-          <View style={styles.stateCard}>
-            <View style={styles.emptyIcon}>
-              <Ionicons
-                name={
-                  search.trim()
-                    ? 'search-outline'
-                    : 'cube-outline'
-                }
-                size={30}
-                color={COLORS.teal}
-              />
-            </View>
-
-            <Text style={styles.stateTitle}>
-              {search.trim()
-                ? 'No matching products'
-                : 'No products yet'}
+        <View style={styles.resultsHeader}>
+          <View>
+            <Text style={styles.resultsTitle}>
+              Marketplace Catalogue
             </Text>
 
-            <Text style={styles.stateDescription}>
-              {search.trim()
-                ? 'Try searching with a different product name, category, brand or SKU.'
-                : 'Your product catalogue is currently empty. Add a product to begin building the catalogue.'}
+            <Text
+              style={styles.resultsSubtitle}
+            >
+              {filteredProducts.length}{' '}
+              {filteredProducts.length === 1
+                ? 'product'
+                : 'products'}
+            </Text>
+          </View>
+        </View>
+      </>
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <SafeAreaView
+        style={styles.loadingContainer}
+      >
+        <ActivityIndicator
+          size="large"
+          color={COLORS.primary}
+        />
+
+        <Text style={styles.loadingTitle}>
+          Loading Products
+        </Text>
+
+        <Text style={styles.loadingDescription}>
+          Connecting to the marketplace catalogue...
+        </Text>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      {/* HEADER */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <Pressable
+            onPress={() =>
+              navigation.goBack()
+            }
+            style={styles.backButton}
+          >
+            <Ionicons
+              name="arrow-back"
+              size={23}
+              color={COLORS.text}
+            />
+          </Pressable>
+
+          <View>
+            <Text style={styles.headerTitle}>
+              Marketplace Products
             </Text>
 
-            {!search.trim() && (
+            <Text
+              style={styles.headerSubtitle}
+            >
+              Manage your product catalogue
+            </Text>
+          </View>
+        </View>
+
+        <Pressable
+          onPress={handleAddProduct}
+          style={styles.addButton}
+        >
+          <Ionicons
+            name="add"
+            size={21}
+            color={COLORS.white}
+          />
+
+          <Text style={styles.addButtonText}>
+            Add Product
+          </Text>
+        </Pressable>
+      </View>
+
+      {/* SEARCH */}
+      <View style={styles.searchContainer}>
+        <Ionicons
+          name="search-outline"
+          size={21}
+          color={COLORS.muted}
+        />
+
+        <TextInput
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder="Search products, brands, categories or SKU..."
+          placeholderTextColor={COLORS.muted}
+          style={styles.searchInput}
+          returnKeyType="search"
+        />
+
+        {searchQuery.length > 0 && (
+          <Pressable
+            onPress={() =>
+              setSearchQuery('')
+            }
+          >
+            <Ionicons
+              name="close-circle"
+              size={21}
+              color={COLORS.muted}
+            />
+          </Pressable>
+        )}
+      </View>
+
+      {/* PRODUCT LIST */}
+      <FlatList
+        data={filteredProducts}
+        keyExtractor={(item) => item.id}
+        renderItem={renderProductCard}
+        ListHeaderComponent={listHeader}
+        ListEmptyComponent={renderEmptyState}
+        contentContainerStyle={[
+          styles.listContent,
+          filteredProducts.length === 0 &&
+            styles.emptyListContent,
+        ]}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            tintColor={COLORS.primary}
+            colors={[COLORS.primary]}
+          />
+        }
+      />
+
+      {/* PRODUCT DETAILS MODAL */}
+      <Modal
+        visible={detailsVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={
+          closeProductDetails
+        }
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.detailsModal}>
+            <View
+              style={styles.modalHeader}
+            >
+              <View>
+                <Text
+                  style={styles.modalTitle}
+                >
+                  Product Details
+                </Text>
+
+                <Text
+                  style={styles.modalSubtitle}
+                >
+                  Marketplace catalogue item
+                </Text>
+              </View>
+
               <Pressable
-                style={({ pressed }) => [
-                  styles.emptyButton,
-                  pressed && styles.pressed,
-                ]}
-                onPress={handleAddProduct}
+                onPress={
+                  closeProductDetails
+                }
+                style={styles.modalCloseButton}
               >
                 <Ionicons
-                  name="add"
-                  size={19}
-                  color={COLORS.white}
+                  name="close"
+                  size={25}
+                  color={COLORS.text}
                 />
-
-                <Text style={styles.emptyButtonText}>
-                  Add Product
-                </Text>
               </Pressable>
-            )}
-          </View>
-        ) : (
-          /* PRODUCT LIST */
+            </View>
 
-          <View style={styles.productList}>
-            {filteredProducts.map((product) => {
-              const imageUrl =
-                getProductImage(product);
-
-              return (
-                <Pressable
-                  key={product.id}
-                  style={({ pressed }) => [
-                    styles.productCard,
-                    pressed && styles.pressed,
-                  ]}
+            {selectedProduct && (
+              <ScrollView
+                showsVerticalScrollIndicator={
+                  false
+                }
+                contentContainerStyle={
+                  styles.modalScrollContent
+                }
+              >
+                {/* IMAGE */}
+                <View
+                  style={
+                    styles.modalImageContainer
+                  }
                 >
-                  {/* PRODUCT IMAGE */}
-
-                  <View style={styles.productImage}>
-                    {imageUrl ? (
-                      <Image
-                        source={{
-                          uri: imageUrl,
-                        }}
-                        style={styles.productImageContent}
-                        resizeMode="cover"
-                        onError={(event) => {
-                          console.warn(
-                            `Failed to load image for ${product.name}`,
-                            event.nativeEvent
-                              .error,
-                          );
-                        }}
-                      />
-                    ) : (
-                      <View
-                        style={
-                          styles.productImagePlaceholder
-                        }
-                      >
-                        <Ionicons
-                          name="image-outline"
-                          size={25}
-                          color={COLORS.muted}
-                        />
-
-                        <Text
-                          style={
-                            styles.noImageText
-                          }
-                        >
-                          No image
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-
-                  {/* PRODUCT DETAILS */}
-
-                  <View
-                    style={styles.productContent}
-                  >
-                    <Text
-                      style={styles.productName}
-                      numberOfLines={2}
-                    >
-                      {product.name}
-                    </Text>
-
-                    <Text
+                  {selectedProduct.imageUrl ? (
+                    <Image
+                      source={{
+                        uri: selectedProduct.imageUrl,
+                      }}
                       style={
-                        styles.productCategory
+                        styles.modalImage
                       }
-                      numberOfLines={1}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View
+                      style={
+                        styles.modalImagePlaceholder
+                      }
                     >
-                      {product.category ||
-                        'Uncategorised'}
-                    </Text>
-
-                    <Text
-                      style={styles.productBrand}
-                      numberOfLines={1}
-                    >
-                      {product.brand ||
-                        'Green Off-Grid'}
-                    </Text>
-
-                    <Text
-                      style={styles.productPrice}
-                    >
-                      {formatPrice(product.price)}
-                    </Text>
-                  </View>
-
-                  {/* RIGHT SIDE */}
-
-                  <View style={styles.productRight}>
-                    <View style={styles.productStatus}>
-                      <View
-                        style={
-                          styles.productStatusDot
+                      <Ionicons
+                        name="image-outline"
+                        size={58}
+                        color={
+                          COLORS.muted
                         }
                       />
 
                       <Text
                         style={
-                          styles.productStatusText
+                          styles.modalNoImageText
                         }
                       >
-                        Active
+                        No product image
                       </Text>
                     </View>
+                  )}
+                </View>
 
-                    <Ionicons
-                      name="chevron-forward"
-                      size={20}
-                      color={COLORS.muted}
-                    />
+                {/* NAME + STATUS */}
+                <View
+                  style={
+                    styles.detailsTitleRow
+                  }
+                >
+                  <View
+                    style={
+                      styles.detailsTitleContainer
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.detailsProductName
+                      }
+                    >
+                      {selectedProduct.name}
+                    </Text>
+
+                    <Text
+                      style={
+                        styles.detailsBrand
+                      }
+                    >
+                      {selectedProduct.brand}
+                    </Text>
                   </View>
-                </Pressable>
-              );
-            })}
+
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      selectedProduct.isActive
+                        ? styles.activeBadge
+                        : styles.inactiveBadge,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.statusDot,
+                        selectedProduct.isActive
+                          ? styles.activeDot
+                          : styles.inactiveDot,
+                      ]}
+                    />
+
+                    <Text
+                      style={[
+                        styles.statusBadgeText,
+                        selectedProduct.isActive
+                          ? styles.activeText
+                          : styles.inactiveText,
+                      ]}
+                    >
+                      {selectedProduct.isActive
+                        ? 'Active'
+                        : 'Inactive'}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* DESCRIPTION */}
+                <View
+                  style={
+                    styles.detailsSection
+                  }
+                >
+                  <Text
+                    style={
+                      styles.detailsSectionTitle
+                    }
+                  >
+                    Description
+                  </Text>
+
+                  <Text
+                    style={
+                      styles.detailsDescription
+                    }
+                  >
+                    {selectedProduct.description ||
+                      'No description provided.'}
+                  </Text>
+                </View>
+
+                {/* DETAILS GRID */}
+                <View
+                  style={
+                    styles.detailsGrid
+                  }
+                >
+                  <DetailItem
+                    label="Selling Price"
+                    value={`R ${Number(
+                      selectedProduct.price,
+                    ).toLocaleString(
+                      'en-ZA',
+                      {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      },
+                    )}`}
+                  />
+
+                  <DetailItem
+                    label="Cost Price"
+                    value={
+                      selectedProduct.costPrice ===
+                      null
+                        ? 'Not specified'
+                        : `R ${Number(
+                            selectedProduct.costPrice,
+                          ).toLocaleString(
+                            'en-ZA',
+                            {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            },
+                          )}`
+                    }
+                  />
+
+                  <DetailItem
+                    label="Stock Quantity"
+                    value={String(
+                      selectedProduct.quantity,
+                    )}
+                  />
+
+                  <DetailItem
+                    label="Category"
+                    value={
+                      selectedProduct.category ||
+                      'Not specified'
+                    }
+                  />
+
+                  <DetailItem
+                    label="SKU"
+                    value={
+                      selectedProduct.sku ||
+                      'Not specified'
+                    }
+                  />
+
+                  <DetailItem
+                    label="Product ID"
+                    value={
+                      selectedProduct.id
+                    }
+                  />
+                </View>
+
+                {/* ACTIONS */}
+                <View
+                  style={
+                    styles.modalActions
+                  }
+                >
+                  <Pressable
+                    onPress={() =>
+                      handleEditProduct(
+                        selectedProduct,
+                      )
+                    }
+                    style={[
+                      styles.modalActionButton,
+                      styles.modalEditButton,
+                    ]}
+                  >
+                    <Ionicons
+                      name="create-outline"
+                      size={21}
+                      color={COLORS.primary}
+                    />
+
+                    <Text
+                      style={
+                        styles.modalEditButtonText
+                      }
+                    >
+                      Edit Product
+                    </Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() =>
+                      handleToggleStatus(
+                        selectedProduct,
+                      )
+                    }
+                    disabled={
+                      isProcessing ===
+                      selectedProduct.id
+                    }
+                    style={[
+                      styles.modalActionButton,
+                      styles.modalStatusButton,
+                    ]}
+                  >
+                    <Ionicons
+                      name={
+                        selectedProduct.isActive
+                          ? 'eye-off-outline'
+                          : 'eye-outline'
+                      }
+                      size={21}
+                      color={COLORS.warning}
+                    />
+
+                    <Text
+                      style={
+                        styles.modalStatusButtonText
+                      }
+                    >
+                      {selectedProduct.isActive
+                        ? 'Deactivate Product'
+                        : 'Activate Product'}
+                    </Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() =>
+                      confirmDeleteProduct(
+                        selectedProduct,
+                      )
+                    }
+                    disabled={
+                      isProcessing ===
+                      selectedProduct.id
+                    }
+                    style={[
+                      styles.modalActionButton,
+                      styles.modalDeleteButton,
+                    ]}
+                  >
+                    <Ionicons
+                      name="trash-outline"
+                      size={21}
+                      color={COLORS.danger}
+                    />
+
+                    <Text
+                      style={
+                        styles.modalDeleteButtonText
+                      }
+                    >
+                      Delete Product
+                    </Text>
+                  </Pressable>
+                </View>
+              </ScrollView>
+            )}
           </View>
-        )}
-
-        {/* MANAGEMENT INFORMATION */}
-
-        {!loading && !error && (
-          <View style={styles.infoCard}>
-            <View style={styles.infoIcon}>
-              <Ionicons
-                name="information-circle-outline"
-                size={21}
-                color={COLORS.tealDark}
-              />
-            </View>
-
-            <View style={styles.infoContent}>
-              <Text style={styles.infoTitle}>
-                Catalogue management
-              </Text>
-
-              <Text style={styles.infoText}>
-                Product images are loaded directly
-                from the marketplace database. The
-                marketing workspace can later be
-                extended to replace these demo images
-                with the correct product images stored
-                in the marketplace-products bucket.
-              </Text>
-            </View>
-          </View>
-        )}
-
-        <Text style={styles.footerText}>
-          Green Off-Grid Marketing Workspace
-        </Text>
-      </ScrollView>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
-const COLORS = {
-  background: '#F7FAFA',
-  surface: '#FFFFFF',
-  border: '#E2EBEB',
-
-  teal: '#24B8B8',
-  tealDark: '#0D6464',
-  tealLight: '#EEF9F9',
-
-  text: '#163838',
-  secondaryText: '#557070',
-  muted: '#8A9B9B',
-
-  white: '#FFFFFF',
-  danger: '#C94A4A',
+type DetailItemProps = {
+  label: string;
+  value: string;
 };
 
+function DetailItem({
+  label,
+  value,
+}: DetailItemProps) {
+  return (
+    <View style={styles.detailItem}>
+      <Text style={styles.detailItemLabel}>
+        {label}
+      </Text>
+
+      <Text
+        style={styles.detailItemValue}
+        numberOfLines={3}
+      >
+        {value}
+      </Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  safeArea: {
+  container: {
     flex: 1,
     backgroundColor: COLORS.background,
   },
 
-  container: {
+  loadingContainer: {
     flex: 1,
+    backgroundColor: COLORS.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
   },
 
-  contentContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 40,
+  loadingTitle: {
+    marginTop: 16,
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+
+  loadingDescription: {
+    marginTop: 8,
+    fontSize: 14,
+    color: COLORS.muted,
+    textAlign: 'center',
   },
 
   header: {
+    minHeight: 78,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    backgroundColor: COLORS.card,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 22,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 16,
+  },
+
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 12,
   },
 
   backButton: {
     width: 42,
     height: 42,
-    borderRadius: 13,
+    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    marginRight: 13,
   },
 
-  headerText: {
-    flex: 1,
-  },
-
-  eyebrow: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 1.4,
-    color: COLORS.tealDark,
-    marginBottom: 4,
-  },
-
-  title: {
-    fontSize: 29,
+  headerTitle: {
+    fontSize: 22,
     fontWeight: '800',
     color: COLORS.text,
   },
 
-  subtitle: {
-    marginTop: 6,
+  headerSubtitle: {
+    marginTop: 3,
     fontSize: 13,
-    lineHeight: 19,
-    color: COLORS.secondaryText,
+    color: COLORS.muted,
   },
 
-  summaryCard: {
+  addButton: {
+    minHeight: 44,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: COLORS.primary,
     flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 18,
-    backgroundColor: COLORS.tealDark,
-    marginBottom: 20,
-  },
-
-  summaryIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor:
-      'rgba(255,255,255,0.14)',
+    gap: 7,
   },
 
-  summaryContent: {
-    flex: 1,
-    marginLeft: 13,
-  },
-
-  summaryLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.7)',
-  },
-
-  summaryValue: {
-    marginTop: 1,
-    fontSize: 25,
-    fontWeight: '800',
+  addButtonText: {
     color: COLORS.white,
-  },
-
-  summaryDescription: {
-    marginTop: 1,
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.7)',
-  },
-
-  summaryStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-    borderRadius: 12,
-    backgroundColor:
-      'rgba(255,255,255,0.11)',
-  },
-
-  summaryStatusDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: '#7BE0AE',
-    marginRight: 5,
-  },
-
-  summaryStatusText: {
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: '700',
-    color: COLORS.white,
-  },
-
-  toolbar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 24,
   },
 
   searchContainer: {
-    flex: 1,
-    height: 48,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
+    marginHorizontal: 20,
+    marginTop: 16,
+    marginBottom: 4,
+    minHeight: 50,
+    paddingHorizontal: 15,
     borderRadius: 14,
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.card,
     borderWidth: 1,
     borderColor: COLORS.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
 
   searchInput: {
     flex: 1,
-    marginLeft: 9,
-    fontSize: 14,
+    minHeight: 48,
     color: COLORS.text,
-    paddingVertical: 0,
+    fontSize: 15,
+    outlineStyle: 'none',
+  } as any,
+
+  listContent: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 40,
   },
 
-  addButton: {
-    height: 48,
-    paddingHorizontal: 16,
-    marginLeft: 9,
-    borderRadius: 14,
+  emptyListContent: {
+    flexGrow: 1,
+  },
+
+  statsContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.teal,
+    gap: 12,
+    paddingVertical: 12,
   },
 
-  addButtonText: {
-    marginLeft: 4,
-    fontSize: 14,
-    fontWeight: '700',
-    color: COLORS.white,
-  },
-
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 13,
-  },
-
-  sectionHeaderText: {
+  statCard: {
     flex: 1,
-    marginRight: 12,
-  },
-
-  sectionTitle: {
-    fontSize: 19,
-    fontWeight: '800',
-    color: COLORS.text,
-  },
-
-  sectionSubtitle: {
-    marginTop: 4,
-    fontSize: 12,
-    lineHeight: 18,
-    color: COLORS.secondaryText,
-  },
-
-  productCount: {
-    minWidth: 32,
-    height: 32,
-    borderRadius: 10,
-    textAlign: 'center',
-    textAlignVertical: 'center',
-    paddingTop: 7,
-    backgroundColor: COLORS.tealLight,
-    color: COLORS.tealDark,
-    fontSize: 13,
-    fontWeight: '800',
-  },
-
-  stateCard: {
-    alignItems: 'center',
-    paddingHorizontal: 25,
-    paddingVertical: 42,
-    borderRadius: 18,
-    backgroundColor: COLORS.surface,
+    minHeight: 82,
+    padding: 14,
+    borderRadius: 15,
+    backgroundColor: COLORS.card,
     borderWidth: 1,
     borderColor: COLORS.border,
-  },
-
-  stateTitle: {
-    marginTop: 14,
-    fontSize: 18,
-    fontWeight: '800',
-    color: COLORS.text,
-    textAlign: 'center',
-  },
-
-  stateDescription: {
-    marginTop: 7,
-    fontSize: 13,
-    lineHeight: 19,
-    textAlign: 'center',
-    color: COLORS.secondaryText,
-  },
-
-  emptyIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.tealLight,
-  },
-
-  errorIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FDEEEE',
-  },
-
-  retryButton: {
-    marginTop: 19,
-    height: 44,
-    paddingHorizontal: 17,
-    borderRadius: 13,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.teal,
-  },
-
-  retryButtonText: {
-    marginLeft: 5,
-    fontSize: 14,
-    fontWeight: '700',
-    color: COLORS.white,
-  },
-
-  emptyButton: {
-    marginTop: 19,
-    height: 44,
-    paddingHorizontal: 16,
-    borderRadius: 13,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.teal,
-  },
-
-  emptyButtonText: {
-    marginLeft: 5,
-    fontSize: 14,
-    fontWeight: '700',
-    color: COLORS.white,
-  },
-
-  productList: {
     gap: 10,
   },
 
-  productCard: {
+  statIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  totalStatIcon: {
+    backgroundColor: '#CCFBF1',
+  },
+
+  activeStatIcon: {
+    backgroundColor: '#DCFCE7',
+  },
+
+  stockStatIcon: {
+    backgroundColor: '#FEF3C7',
+  },
+
+  statLabel: {
+    fontSize: 11,
+    color: COLORS.muted,
+    fontWeight: '600',
+  },
+
+  statValue: {
+    marginTop: 3,
+    fontSize: 20,
+    fontWeight: '800',
+    color: COLORS.text,
+  },
+
+  errorBox: {
+    marginTop: 8,
+    marginBottom: 8,
+    padding: 13,
+    borderRadius: 13,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    minHeight: 104,
-    borderRadius: 16,
-    backgroundColor: COLORS.surface,
+    gap: 9,
+  },
+
+  errorText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#991B1B',
+    lineHeight: 19,
+  },
+
+  retryText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: COLORS.primary,
+  },
+
+  resultsHeader: {
+    paddingTop: 8,
+    paddingBottom: 12,
+  },
+
+  resultsTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: COLORS.text,
+  },
+
+  resultsSubtitle: {
+    marginTop: 3,
+    fontSize: 13,
+    color: COLORS.muted,
+  },
+
+  productCard: {
+    marginBottom: 15,
+    borderRadius: 18,
+    backgroundColor: COLORS.card,
     borderWidth: 1,
     borderColor: COLORS.border,
+    overflow: 'hidden',
+    flexDirection: 'row',
+  },
+
+  productCardPressed: {
+    opacity: 0.92,
+    transform: [
+      {
+        scale: 0.995,
+      },
+    ],
+  },
+
+  productImageContainer: {
+    width: 145,
+    minHeight: 230,
+    backgroundColor: '#F3F4F6',
   },
 
   productImage: {
-    width: 72,
-    height: 72,
-    borderRadius: 13,
-    overflow: 'hidden',
-    backgroundColor: COLORS.tealLight,
-  },
-
-  productImageContent: {
     width: '100%',
     height: '100%',
   },
@@ -875,122 +1600,448 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.tealLight,
+    padding: 10,
   },
 
   noImageText: {
-    marginTop: 3,
-    fontSize: 8,
-    fontWeight: '600',
+    marginTop: 8,
+    fontSize: 12,
     color: COLORS.muted,
+    fontWeight: '600',
   },
 
   productContent: {
     flex: 1,
-    marginLeft: 12,
-    marginRight: 7,
+    padding: 15,
+  },
+
+  productTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+
+  productTitleContainer: {
+    flex: 1,
   },
 
   productName: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: COLORS.text,
+    lineHeight: 22,
+  },
+
+  productBrand: {
+    marginTop: 4,
+    fontSize: 13,
+    color: COLORS.primary,
+    fontWeight: '600',
+  },
+
+  statusBadge: {
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    borderRadius: 999,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+
+  activeBadge: {
+    backgroundColor: '#DCFCE7',
+  },
+
+  inactiveBadge: {
+    backgroundColor: '#F3F4F6',
+  },
+
+  statusDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 999,
+  },
+
+  activeDot: {
+    backgroundColor: COLORS.success,
+  },
+
+  inactiveDot: {
+    backgroundColor: COLORS.muted,
+  },
+
+  statusBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+
+  activeText: {
+    color: COLORS.success,
+  },
+
+  inactiveText: {
+    color: COLORS.muted,
+  },
+
+  productDescription: {
+    marginTop: 12,
+    fontSize: 13,
+    color: COLORS.muted,
+    lineHeight: 19,
+  },
+
+  productMetaRow: {
+    marginTop: 15,
+    paddingTop: 13,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 20,
+  },
+
+  metaItem: {
+    flex: 1,
+  },
+
+  metaLabel: {
+    fontSize: 10,
+    color: COLORS.muted,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+
+  productPrice: {
+    marginTop: 4,
+    fontSize: 17,
+    color: COLORS.primary,
+    fontWeight: '800',
+  },
+
+  metaValue: {
+    marginTop: 4,
+    fontSize: 13,
+    color: COLORS.text,
+    fontWeight: '700',
+  },
+
+  actionsRow: {
+    marginTop: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+
+  actionButton: {
+    minHeight: 39,
+    paddingHorizontal: 11,
+    borderRadius: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+
+  editButton: {
+    backgroundColor: '#CCFBF1',
+  },
+
+  editButtonText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: COLORS.primary,
+  },
+
+  statusButton: {
+    backgroundColor: '#FEF3C7',
+  },
+
+  statusButtonText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: COLORS.warning,
+  },
+
+  deleteButton: {
+    width: 39,
+    height: 39,
+    borderRadius: 10,
+    backgroundColor: '#FEF2F2',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  disabledButton: {
+    opacity: 0.5,
+  },
+
+  viewDetailsRow: {
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
+  viewDetailsText: {
+    fontSize: 12,
+    color: COLORS.primary,
+    fontWeight: '700',
+  },
+
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 30,
+    paddingVertical: 80,
+  },
+
+  emptyIcon: {
+    width: 86,
+    height: 86,
+    borderRadius: 25,
+    backgroundColor: '#CCFBF1',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  emptyTitle: {
+    marginTop: 20,
+    fontSize: 22,
+    fontWeight: '800',
+    color: COLORS.text,
+    textAlign: 'center',
+  },
+
+  emptyDescription: {
+    marginTop: 9,
+    maxWidth: 450,
+    fontSize: 14,
+    color: COLORS.muted,
+    lineHeight: 21,
+    textAlign: 'center',
+  },
+
+  emptyAddButton: {
+    marginTop: 22,
+    minHeight: 46,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    backgroundColor: COLORS.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+  },
+
+  emptyAddButtonText: {
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.58)',
+    justifyContent: 'flex-end',
+  },
+
+  detailsModal: {
+    width: '100%',
+    maxHeight: '92%',
+    backgroundColor: COLORS.card,
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
+    overflow: 'hidden',
+  },
+
+  modalHeader: {
+    minHeight: 72,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: COLORS.text,
+  },
+
+  modalSubtitle: {
+    marginTop: 3,
+    fontSize: 12,
+    color: COLORS.muted,
+  },
+
+  modalCloseButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  modalScrollContent: {
+    padding: 20,
+    paddingBottom: 35,
+  },
+
+  modalImageContainer: {
+    width: '100%',
+    height: 230,
+    borderRadius: 18,
+    overflow: 'hidden',
+    backgroundColor: '#F3F4F6',
+  },
+
+  modalImage: {
+    width: '100%',
+    height: '100%',
+  },
+
+  modalImagePlaceholder: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  modalNoImageText: {
+    marginTop: 10,
+    color: COLORS.muted,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  detailsTitleRow: {
+    marginTop: 18,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+
+  detailsTitleContainer: {
+    flex: 1,
+  },
+
+  detailsProductName: {
+    fontSize: 24,
+    lineHeight: 30,
+    fontWeight: '800',
+    color: COLORS.text,
+  },
+
+  detailsBrand: {
+    marginTop: 5,
+    fontSize: 14,
+    color: COLORS.primary,
+    fontWeight: '700',
+  },
+
+  detailsSection: {
+    marginTop: 22,
+  },
+
+  detailsSectionTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: COLORS.text,
+  },
+
+  detailsDescription: {
+    marginTop: 8,
+    fontSize: 14,
+    lineHeight: 21,
+    color: COLORS.muted,
+  },
+
+  detailsGrid: {
+    marginTop: 20,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+
+  detailItem: {
+    width: '48%',
+    minHeight: 75,
+    padding: 13,
+    borderRadius: 13,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+
+  detailItemLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: COLORS.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+
+  detailItemValue: {
+    marginTop: 7,
     fontSize: 14,
     lineHeight: 19,
     fontWeight: '700',
     color: COLORS.text,
   },
 
-  productCategory: {
-    marginTop: 3,
-    fontSize: 10,
-    color: COLORS.secondaryText,
+  modalActions: {
+    marginTop: 22,
+    gap: 10,
   },
 
-  productBrand: {
-    marginTop: 2,
-    fontSize: 10,
-    color: COLORS.muted,
-  },
-
-  productPrice: {
-    marginTop: 5,
-    fontSize: 13,
-    fontWeight: '800',
-    color: COLORS.tealDark,
-  },
-
-  productRight: {
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    minHeight: 65,
-  },
-
-  productStatus: {
+  modalActionButton: {
+    minHeight: 49,
+    borderRadius: 13,
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 7,
-    paddingVertical: 5,
-    borderRadius: 9,
-    backgroundColor: COLORS.tealLight,
-  },
-
-  productStatusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#27835C',
-    marginRight: 5,
-  },
-
-  productStatusText: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: COLORS.tealDark,
-  },
-
-  infoCard: {
-    flexDirection: 'row',
-    marginTop: 24,
-    padding: 15,
-    borderRadius: 16,
-    backgroundColor: COLORS.tealLight,
-    borderWidth: 1,
-    borderColor: '#D8EEEE',
-  },
-
-  infoIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.white,
+    gap: 8,
+    borderWidth: 1,
   },
 
-  infoContent: {
-    flex: 1,
-    marginLeft: 11,
+  modalEditButton: {
+    backgroundColor: '#CCFBF1',
+    borderColor: '#99F6E4',
   },
 
-  infoTitle: {
-    fontSize: 13,
+  modalEditButtonText: {
+    color: COLORS.primary,
+    fontSize: 14,
     fontWeight: '800',
-    color: COLORS.tealDark,
   },
 
-  infoText: {
-    marginTop: 4,
-    fontSize: 11,
-    lineHeight: 17,
-    color: COLORS.secondaryText,
+  modalStatusButton: {
+    backgroundColor: '#FEF3C7',
+    borderColor: '#FDE68A',
   },
 
-  footerText: {
-    marginTop: 25,
-    textAlign: 'center',
-    fontSize: 10,
-    color: COLORS.muted,
+  modalStatusButtonText: {
+    color: COLORS.warning,
+    fontSize: 14,
+    fontWeight: '800',
   },
 
-  pressed: {
-    opacity: 0.72,
+  modalDeleteButton: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
+  },
+
+  modalDeleteButtonText: {
+    color: COLORS.danger,
+    fontSize: 14,
+    fontWeight: '800',
   },
 });
