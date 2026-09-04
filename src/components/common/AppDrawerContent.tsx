@@ -21,6 +21,7 @@ export function AppDrawerContent({ navigation }: DrawerContentComponentProps) {
       { key: ROUTES.HOME, label: 'Home', icon: 'home-outline' as const },
       { key: ROUTES.PROFILE, label: 'Profile', icon: 'person-outline' as const },
       { key: ROUTES.MESSAGES, label: 'Messages', icon: 'chatbubble-ellipses-outline' as const },
+      { key: ROUTES.ORDERS, label: 'My Orders', icon: 'cube-outline' as const },
       { key: ROUTES.PACKAGES, label: 'Marketplace', icon: 'storefront-outline' as const },
       { key: ROUTES.RETAIL_OUTLET, label: 'Retail Outlet', icon: 'business-outline' as const },
       { key: ROUTES.FAVOURITES, label: 'Favourites', icon: 'heart-outline' as const },

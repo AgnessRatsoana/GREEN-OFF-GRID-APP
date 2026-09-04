@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { appTheme } from '../../theme';
@@ -16,9 +16,10 @@ const navItems: Array<{ key: NavKey; icon: keyof typeof Ionicons.glyphMap }> = [
 interface FloatingBottomNavProps {
   activeKey?: NavKey;
   onTabPress?: (key: NavKey) => void;
+  badgeCounts?: Partial<Record<NavKey, number>>;
 }
 
-export function FloatingBottomNav({ activeKey = 'home', onTabPress }: FloatingBottomNavProps) {
+export function FloatingBottomNav({ activeKey = 'home', onTabPress, badgeCounts }: FloatingBottomNavProps) {
   const insets = useSafeAreaInsets();
 
   return (
@@ -43,11 +44,20 @@ export function FloatingBottomNav({ activeKey = 'home', onTabPress }: FloatingBo
               ]}
               onPress={() => onTabPress?.(item.key)}
             >
-              <Ionicons
-                name={item.icon}
-                size={20}
-                color={appTheme.colors.background}
-              />
+              <View style={styles.iconWrap}>
+                <Ionicons
+                  name={item.icon}
+                  size={20}
+                  color={appTheme.colors.background}
+                />
+                {(badgeCounts?.[item.key] ?? 0) > 0 ? (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>
+                      {(badgeCounts?.[item.key] ?? 0) > 99 ? '99+' : badgeCounts?.[item.key]}
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
             </Pressable>
           );
         })}
@@ -87,5 +97,28 @@ const styles = StyleSheet.create({
   },
   inactiveIconButton: {
     backgroundColor: '#8fd7d7',
+  },
+  iconWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badge: {
+    position: 'absolute',
+    top: -6,
+    right: -12,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#e05252',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 5,
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '800',
   },
 });

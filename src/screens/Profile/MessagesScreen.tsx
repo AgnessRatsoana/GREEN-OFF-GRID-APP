@@ -7,7 +7,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { RootStackParamList } from '../../navigation/types';
 import { ROUTES } from '../../constants/routes';
-import { fetchCustomerConversations, type EnquiryConversation } from '../../services/applications/enquiries';
+import {
+  fetchCustomerConversations,
+  subscribeToEnquiryActivity,
+  type EnquiryConversation,
+} from '../../services/applications/enquiries';
 import { MARKETPLACE_PRODUCTS } from '../../data/marketplace';
 import { PACKAGES } from '../../data/packages';
 import { appTheme } from '../../theme';
@@ -36,8 +40,17 @@ export function MessagesScreen() {
 
   useEffect(() => { loadEnquiries(); }, []);
 
+  // Live updates: a new marketing reply refreshes the list immediately.
+  useEffect(() => {
+    const unsubscribe = subscribeToEnquiryActivity(() => {
+      loadEnquiries(true);
+    });
+    return unsubscribe;
+  }, []);
+
   const getItemName = (conversation: EnquiryConversation) => {
     if (conversation.itemType === 'product') return MARKETPLACE_PRODUCTS.find((item) => item.id === conversation.itemId)?.name ?? 'Product enquiry';
+    if (conversation.itemType === 'order') return 'Order enquiry';
     return PACKAGES.find((item) => item.id === conversation.itemId)?.title ?? 'Package enquiry';
   };
 
@@ -63,8 +76,27 @@ export function MessagesScreen() {
           <View style={styles.contentWrap}><Text style={styles.title}>No messages yet</Text><Text style={styles.subtitle}>Your product and package enquiries will appear here.</Text></View>
         ) : null}
         {conversations.map((conversation) => (
-          <Pressable key={conversation.id} style={styles.messageCard} onPress={() => navigation.getParent()?.getParent()?.navigate(ROUTES.ENQUIRY, { conversationId: conversation.id })}>
-            <View style={styles.messageHeader}><Text style={styles.itemType}>{conversation.itemType.toUpperCase()}</Text><Text style={styles.status}>{conversation.status.replace('_', ' ')}</Text></View>
+          <Pressable
+            key={conversation.id}
+            style={styles.messageCard}
+            onPress={() => {
+              const rootNavigation = navigation.getParent() as unknown as
+                | NativeStackNavigationProp<RootStackParamList>
+                | undefined;
+              rootNavigation?.navigate(ROUTES.ENQUIRY, { conversationId: conversation.id });
+            }}
+          >
+            <View style={styles.messageHeader}>
+              <Text style={styles.itemType}>{conversation.itemType.toUpperCase()}</Text>
+              <View style={styles.headerRight}>
+                {conversation.unreadCount > 0 ? (
+                  <View style={styles.unreadBadge}>
+                    <Text style={styles.unreadBadgeText}>{conversation.unreadCount}</Text>
+                  </View>
+                ) : null}
+                <Text style={styles.status}>{conversation.status.replace('_', ' ')}</Text>
+              </View>
+            </View>
             <Text style={styles.itemName}>{getItemName(conversation)}</Text>
             <Text style={styles.messageText}>Open conversation</Text>
             <Text style={styles.dateText}>{new Date(conversation.updatedAt).toLocaleDateString()}</Text>
@@ -134,6 +166,17 @@ const styles = StyleSheet.create({
   messageHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   itemType: { color: '#24b8b8', fontSize: 10, fontWeight: '800', letterSpacing: 1 },
   status: { color: '#668080', fontSize: 11, textTransform: 'capitalize' },
+  headerRight: { flexDirection: 'row', alignItems: 'center', columnGap: 8 },
+  unreadBadge: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#24b8b8',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  unreadBadgeText: { color: '#FFFFFF', fontSize: 11, fontWeight: '800' },
   itemName: { color: '#123f3f', fontSize: 16, fontWeight: '800', marginTop: 7 },
   messageText: { color: '#4f6e6e', fontSize: 14, lineHeight: 21, marginTop: 8 },
   dateText: { color: '#789292', fontSize: 11, marginTop: 10 },

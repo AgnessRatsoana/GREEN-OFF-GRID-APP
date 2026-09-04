@@ -54,6 +54,8 @@ export function PackagesScreen() {
   const favourites = useFavouritesStore((s) => s.favourites);
 
   const addItem = useCartStore((s) => s.addItem);
+  const cartItems = useCartStore((s) => s.items);
+  const cartItemsHas = (id: string) => cartItems.some((entry) => entry.id === id);
 
   const cartCount = useCartStore((s) =>
     s.items.reduce((sum, item) => sum + item.quantity, 0),
@@ -558,15 +560,16 @@ export function PackagesScreen() {
                       )}
 
                       <Pressable
-                        style={styles.addButton}
+                        style={[styles.addButton, cartItemsHas(item.id) && styles.addButtonAdded]}
                         onPress={(e) => {
                           e.stopPropagation();
 
                           addItem({
                             id: item.id,
                             name: item.name,
-                            price: displayPrice,
+                            price: item.price,
                             type: 'accessory',
+                            imageUrl: item.imageUrl,
                           });
                         }}
                       >
@@ -575,7 +578,7 @@ export function PackagesScreen() {
                             styles.addButtonText
                           }
                         >
-                          Add
+                          {cartItemsHas(item.id) ? 'Added ✓' : 'Add'}
                         </Text>
                       </Pressable>
                     </View>
@@ -1051,6 +1054,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#24b8b8',
     paddingVertical: 10,
     paddingHorizontal: 14,
+  },
+
+  addButtonAdded: {
+    backgroundColor: '#178a6a',
   },
 
   addButtonText: {

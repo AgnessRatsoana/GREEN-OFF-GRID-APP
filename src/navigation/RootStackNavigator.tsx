@@ -15,6 +15,7 @@ import { PackageApplicationScreen } from '../screens/Applications/PackageApplica
 import { CartScreen } from '../screens/Cart/CartScreen';
 import { CheckoutScreen } from '../screens/Checkout/CheckoutScreen';
 import { OrderConfirmationScreen } from '../screens/Checkout/OrderConfirmationScreen';
+import { OrderTrackingScreen } from '../screens/Orders/OrderTrackingScreen';
 
 import { FavouritesScreen } from '../screens/Favourites/FavouritesScreen';
 
@@ -29,6 +30,7 @@ import { MarketingDashboardScreen } from '../screens/Marketing/MarketingDashboar
 import { MarketingProductsScreen } from '../screens/Marketing/Products/MarketingProductsScreen';
 import { MarketingPackagesScreen } from '../screens/Marketing/Packages/MarketingPackagesScreen';
 import { MarketingEnquiriesScreen } from '../screens/Marketing/MarketingEnquiriesScreen';
+import { MarketingOrdersScreen } from '../screens/Marketing/MarketingOrdersScreen';
 
 
 import { AddProductScreen } from '../screens/Marketing/Products/AddProductScreen';
@@ -139,6 +141,12 @@ export function RootStackNavigator() {
       <Stack.Screen
         name={ROUTES.MARKETING_ENQUIRIES}
         component={MarketingEnquiriesScreen}
+        options={{ animation: 'slide_from_right' }}
+      />
+
+      <Stack.Screen
+        name={ROUTES.MARKETING_ORDERS}
+        component={MarketingOrdersScreen}
         options={{ animation: 'slide_from_right' }}
       />
 
@@ -255,6 +263,14 @@ export function RootStackNavigator() {
       <Stack.Screen
         name={ROUTES.ORDER_CONFIRMATION}
         component={OrderConfirmationScreen}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+
+      <Stack.Screen
+        name={ROUTES.ORDER_TRACKING}
+        component={OrderTrackingScreen}
         options={{
           animation: 'slide_from_right',
         }}

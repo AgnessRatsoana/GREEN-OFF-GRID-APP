@@ -452,6 +452,15 @@ export function MarketingDashboardScreen() {
                     />
 
                     <ActionCard
+                        title="Orders"
+                        description="Manage customer orders and fulfilment."
+                        icon="cube-outline"
+                        onPress={() => {
+                            navigation.navigate(ROUTES.MARKETING_ORDERS);
+                        }}
+                    />
+
+                    <ActionCard
                         title="Messages"
                         description="Review customer communication and enquiries."
                         icon="chatbubble-outline"

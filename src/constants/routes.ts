@@ -12,6 +12,7 @@ export const ROUTES = {
   MARKETING_PRODUCTS: 'MarketingProducts',
   MARKETING_PACKAGES: 'MarketingPackages',
   MARKETING_ENQUIRIES: 'MarketingEnquiries',
+  MARKETING_ORDERS: 'MarketingOrders',
   ADD_PRODUCT: 'AddProduct',
 
   LOGIN: 'Login',
@@ -26,6 +27,8 @@ export const ROUTES = {
   PRODUCT_DETAILS: 'ProductDetails',
   PACKAGE_DETAILS: 'PackageDetails',
   ENQUIRY: 'Enquiry',
+  ORDERS: 'Orders',
+  ORDER_TRACKING: 'OrderTracking',
 
   APPLICATION_FORM: 'PackageApplication',
   APPLICATION_STATUS: 'ApplicationStatus',

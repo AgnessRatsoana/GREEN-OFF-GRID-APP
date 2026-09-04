@@ -16,7 +16,12 @@ import { useAuthStore } from '../../store/authStore';
 import { useCartStore } from '../../store/cartStore';
 import { useFavouritesStore } from '../../store/favouritesStore';
 import { appTheme } from '../../theme';
-import { getBusinessPrice } from '../../utils/pricing';
+import {
+  BUSINESS_DISCOUNT_MIN_QUANTITY,
+  getBusinessLineUnitPrice,
+  getBusinessPrice,
+  isBusinessDiscountEligible,
+} from '../../utils/pricing';
 
 export function ProductDetailsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -24,6 +29,7 @@ export function ProductDetailsScreen() {
   const insets = useSafeAreaInsets();
   const isBusiness = useAuthStore((s) => s.user?.accountType === 'business');
   const addItem = useCartStore((s) => s.addItem);
+  const cartItems = useCartStore((s) => s.items);
 
   const [quantity, setQuantity] = useState(10);
   const toggle = useFavouritesStore((s) => s.toggle);
@@ -32,6 +38,7 @@ export function ProductDetailsScreen() {
 
   const [product, setProduct] = useState<MarketplaceProduct | null>(null);
   const [isLoadingProduct, setIsLoadingProduct] = useState(true);
+  const isInCart = product ? cartItems.some((entry) => entry.id === product.id) : false;
 
   useEffect(() => {
     let isMounted = true;
@@ -43,10 +50,23 @@ export function ProductDetailsScreen() {
       }
 
       setIsLoadingProduct(true);
+
+      // Legacy Home catalogue IDs (e.g. "product-09") are not Supabase UUIDs;
+      // querying the uuid column with them causes a 400. Use the static record.
+      const isSupabaseId = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        route.params.productId,
+      );
+
       try {
-        const loadedProduct = await fetchMarketplaceProductById(route.params.productId);
+        const loadedProduct = isSupabaseId
+          ? await fetchMarketplaceProductById(route.params.productId)
+          : null;
         if (isMounted) {
-          setProduct(loadedProduct);
+          if (loadedProduct) {
+            setProduct(loadedProduct);
+          } else {
+            throw new Error('Not a Supabase product');
+          }
         }
       } catch {
         if (isMounted) {
@@ -138,10 +158,14 @@ export function ProductDetailsScreen() {
         <Text style={styles.metaText}>Category: {product.category || 'General'}</Text>
         <Text style={styles.metaText}>SKU: {product.sku || 'N/A'}</Text>
         {isBusiness ? (
-          <View style={styles.priceRow}>
-            <Text style={styles.originalPriceStrike}>R {product.price.toLocaleString()}</Text>
-            <Text style={styles.priceText}>R {getBusinessPrice(product.price).toLocaleString()}</Text>
-          </View>
+          isBusinessDiscountEligible(quantity) ? (
+            <View style={styles.priceRow}>
+              <Text style={styles.originalPriceStrike}>R {product.price.toLocaleString()}</Text>
+              <Text style={styles.priceText}>R {getBusinessPrice(product.price).toLocaleString()}</Text>
+            </View>
+          ) : (
+            <Text style={styles.priceText}>R {product.price.toLocaleString()}</Text>
+          )
         ) : (
           <Text style={styles.priceText}>R {product.price.toLocaleString()}</Text>
         )}
@@ -171,27 +195,38 @@ export function ProductDetailsScreen() {
             <Text style={styles.totalLabel}>Total</Text>
 
             <Text style={styles.totalPrice}>
-              R {(getBusinessPrice(product.price) * quantity).toLocaleString()}
+              R {(getBusinessLineUnitPrice(product.price, quantity) * quantity).toLocaleString()}
             </Text>
+
+            {!isBusinessDiscountEligible(quantity) ? (
+              <View style={styles.discountNotice}>
+                <Ionicons name="information-circle-outline" size={14} color="#b07908" />
+                <Text style={styles.discountNoticeText}>
+                  Discount not applicable below {BUSINESS_DISCOUNT_MIN_QUANTITY} quantities
+                </Text>
+              </View>
+            ) : null}
           </View>
         )}
 
         <Pressable
-          style={styles.addButton}
+          style={[styles.addButton, isInCart && styles.addButtonAdded]}
           onPress={() =>
             addItem(
               {
                 id: product.id,
                 name: product.name,
-                price: isBusiness ? getBusinessPrice(product.price) : product.price,
+                price: product.price,
                 type: 'accessory',
+                imageUrl: product.imageUrl,
               },
               isBusiness ? quantity : 1
             )
           }
         >
+          {isInCart ? <Ionicons name="checkmark-circle" size={16} color="#FFFFFF" /> : null}
           <Text style={styles.addButtonText}>
-            {isBusiness ? 'Add bulk order' : 'Add to Cart'}
+            {isInCart ? 'Added' : isBusiness ? 'Add bulk order' : 'Add to Cart'}
           </Text>
         </Pressable>
 
@@ -437,12 +472,35 @@ const styles = StyleSheet.create({
     backgroundColor: '#24b8b8',
     paddingVertical: 12,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    columnGap: 6,
+  },
+  addButtonAdded: {
+    backgroundColor: '#178a6a',
   },
   addButtonText: {
     color: '#FFFFFF',
     fontSize: 13,
     lineHeight: 16,
     fontWeight: '700',
+  },
+  discountNotice: {
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    columnGap: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(176,121,8,0.35)',
+    backgroundColor: '#fff8e8',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  discountNoticeText: {
+    color: '#8a6207',
+    fontSize: 12,
+    fontWeight: '600',
   },
   sectionTitle: {
     color: '#1a3f3f',

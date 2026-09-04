@@ -19,6 +19,8 @@ export function MarketplaceAccessoriesSection() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const isBusiness = useAuthStore((s) => s.user?.accountType === 'business');
   const addItem = useCartStore((s) => s.addItem);
+  const cartItems = useCartStore((s) => s.items);
+  const isInCart = (id: string) => cartItems.some((entry) => entry.id === id);
   const toggle = useFavouritesStore((s) => s.toggle);
   const favourites = useFavouritesStore((s) => s.favourites);
   const isFavourite = (id: string) => favourites.includes(id);
@@ -74,7 +76,7 @@ export function MarketplaceAccessoriesSection() {
                   <Text style={styles.priceText}>R {item.price.toLocaleString()}</Text>
                 )}
                 <Pressable
-                  style={styles.addButton}
+                  style={[styles.addButton, isInCart(item.id) && styles.addButtonAdded]}
                   onPress={(e) => {
                     e.stopPropagation();
 
@@ -94,7 +96,7 @@ export function MarketplaceAccessoriesSection() {
                   }}
                 >
                   <Text style={styles.addButtonText}>
-                    {isBusiness ? 'View' : 'Add'}
+                    {isBusiness ? 'View' : isInCart(item.id) ? 'Added ✓' : 'Add'}
                   </Text>
                 </Pressable>
               </View>
@@ -225,6 +227,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#24b8b8',
     paddingVertical: 10,
     paddingHorizontal: 14,
+  },
+  addButtonAdded: {
+    backgroundColor: '#178a6a',
   },
   addButtonText: {
     color: '#FFFFFF',

@@ -3,6 +3,7 @@ import { createDrawerNavigator } from '@react-navigation/drawer';
 import { AppDrawerContent } from '../components/common/AppDrawerContent';
 import { ROUTES } from '../constants/routes';
 import { HomeScreen } from '../screens/Home/HomeScreen';
+import { OrdersScreen } from '../screens/Orders/OrdersScreen';
 import { MessagesScreen } from '../screens/Profile/MessagesScreen';
 import { ProfileScreen } from '../screens/Profile/ProfileScreen';
 import { MainDrawerParamList } from './types';
@@ -34,6 +35,10 @@ export function AppDrawerNavigator() {
       <Drawer.Screen
         name={ROUTES.MESSAGES}
         component={MessagesScreen}
+      />
+      <Drawer.Screen
+        name={ROUTES.ORDERS}
+        component={OrdersScreen}
       />
     </Drawer.Navigator>
   );

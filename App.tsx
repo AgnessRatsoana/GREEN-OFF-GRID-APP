@@ -23,6 +23,7 @@ import {
   saveAuthTokens,
 } from './src/services/storage/secureStore';
 import { useAuthStore } from './src/store/authStore';
+import { useCartStore } from './src/store/cartStore';
 import { useFavouritesStore } from './src/store/favouritesStore';
 import { appTheme } from './src/theme';
 
@@ -44,6 +45,8 @@ export default function App() {
 
   const hydrateFavourites =
     useFavouritesStore((s) => s.hydrate);
+  const hydrateCart =
+    useCartStore((s) => s.hydrate);
 
   useEffect(() => {
     const bootstrapAuth = async () => {
@@ -55,6 +58,7 @@ export default function App() {
          * when the application starts.
          */
         await hydrateFavourites();
+        await hydrateCart();
 
         /*
          * CHECK INITIAL URL
@@ -131,6 +135,7 @@ export default function App() {
     clearSession,
     setSession,
     hydrateFavourites,
+    hydrateCart,
   ]);
 
   /*

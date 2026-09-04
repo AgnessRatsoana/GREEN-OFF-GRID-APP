@@ -9,7 +9,11 @@ import { ROUTES } from '../../constants/routes';
 import { MARKETPLACE_PRODUCTS } from '../../data/marketplace';
 import { PACKAGES } from '../../data/packages';
 import type { RootStackParamList } from '../../navigation/types';
-import { fetchMarketingConversations, type EnquiryConversation } from '../../services/applications/enquiries';
+import {
+  fetchMarketingConversations,
+  subscribeToEnquiryActivity,
+  type EnquiryConversation,
+} from '../../services/applications/enquiries';
 
 export function MarketingEnquiriesScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -35,9 +39,23 @@ export function MarketingEnquiriesScreen() {
 
   useEffect(() => { loadEnquiries(); }, []);
 
-  const getItemName = (conversation: EnquiryConversation) => conversation.itemType === 'product'
-    ? MARKETPLACE_PRODUCTS.find((item) => item.id === conversation.itemId)?.name ?? 'Product enquiry'
-    : PACKAGES.find((item) => item.id === conversation.itemId)?.title ?? 'Package enquiry';
+  // Live updates: a new customer message refreshes the list immediately.
+  useEffect(() => {
+    const unsubscribe = subscribeToEnquiryActivity(() => {
+      loadEnquiries(true);
+    });
+    return unsubscribe;
+  }, []);
+
+  const getItemName = (conversation: EnquiryConversation) => {
+    if (conversation.itemType === 'product') {
+      return MARKETPLACE_PRODUCTS.find((item) => item.id === conversation.itemId)?.name ?? 'Product enquiry';
+    }
+    if (conversation.itemType === 'order') {
+      return 'Order enquiry';
+    }
+    return PACKAGES.find((item) => item.id === conversation.itemId)?.title ?? 'Package enquiry';
+  };
 
   return (
     <View style={styles.root}>
@@ -54,7 +72,17 @@ export function MarketingEnquiriesScreen() {
         {!isLoading && !errorMessage && conversations.length === 0 ? <Text style={styles.emptyText}>No customer enquiries yet.</Text> : null}
         {conversations.map((conversation) => (
           <Pressable key={conversation.id} style={styles.card} onPress={() => navigation.navigate(ROUTES.ENQUIRY, { conversationId: conversation.id })}>
-            <View style={styles.cardHeader}><Text style={styles.type}>{conversation.itemType.toUpperCase()}</Text><Text style={styles.status}>{conversation.status.replace('_', ' ')}</Text></View>
+            <View style={styles.cardHeader}>
+              <Text style={styles.type}>{conversation.itemType.toUpperCase()}</Text>
+              <View style={styles.headerRight}>
+                {conversation.unreadCount > 0 ? (
+                  <View style={styles.unreadBadge}>
+                    <Text style={styles.unreadBadgeText}>{conversation.unreadCount}</Text>
+                  </View>
+                ) : null}
+                <Text style={styles.status}>{conversation.status.replace('_', ' ')}</Text>
+              </View>
+            </View>
             <Text style={styles.itemName}>{getItemName(conversation)}</Text>
             <Text style={styles.customer}>Customer conversation</Text>
             <Text style={styles.message}>Open conversation and reply</Text>
@@ -77,6 +105,17 @@ const styles = StyleSheet.create({
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between' },
   type: { color: '#24b8b8', fontSize: 10, fontWeight: '800', letterSpacing: 1 },
   status: { color: '#668080', fontSize: 11, textTransform: 'capitalize' },
+  headerRight: { flexDirection: 'row', alignItems: 'center', columnGap: 8 },
+  unreadBadge: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#24b8b8',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  unreadBadgeText: { color: '#FFFFFF', fontSize: 11, fontWeight: '800' },
   itemName: { color: '#123f3f', fontSize: 16, fontWeight: '800', marginTop: 7 },
   customer: { color: '#789292', fontSize: 11, marginTop: 5 },
   message: { color: '#4f6e6e', fontSize: 14, lineHeight: 21, marginTop: 8 },

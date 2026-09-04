@@ -10,7 +10,13 @@ import { ROUTES } from '../../constants/routes';
 import { MARKETPLACE_PRODUCTS } from '../../data/marketplace';
 import { RootStackParamList } from '../../navigation/types';
 import { useCartStore, type CartLine } from '../../store/cartStore';
+import { useAuthStore } from '../../store/authStore';
 import { appTheme } from '../../theme';
+import {
+  BUSINESS_DISCOUNT_MIN_QUANTITY,
+  getBusinessLineUnitPrice,
+  isBusinessDiscountEligible,
+} from '../../utils/pricing';
 
 function formatCurrency(value: number) {
   return `R ${value.toLocaleString()}`;
@@ -21,19 +27,25 @@ export function CartScreen() {
   const insets = useSafeAreaInsets();
   const allItems = useCartStore((s) => s.items);
   const items = useMemo(() => allItems.filter((item) => item.type === 'accessory'), [allItems]);
+  const isBusiness = useAuthStore((s) => s.user?.accountType === 'business');
   const addItem = useCartStore((s) => s.addItem);
   const removeItem = useCartStore((s) => s.removeItem);
   const clearCart = useCartStore((s) => s.clearCart);
+
+  const getUnitPrice = (item: CartLine) =>
+    isBusiness ? getBusinessLineUnitPrice(item.price, item.quantity) : item.price;
 
   const cartIds = new Set(items.map((item) => item.id));
   const recommendedProducts = MARKETPLACE_PRODUCTS.filter((product) => !cartIds.has(product.id)).slice(0, 4);
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-  const totalAmount = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalAmount = items.reduce((sum, item) => sum + getUnitPrice(item) * item.quantity, 0);
 
   const increaseQty = (item: CartLine) => {
-    addItem({ id: item.id, name: item.name, price: item.price, type: item.type });
+    addItem({ id: item.id, name: item.name, price: item.price, type: item.type, imageUrl: item.imageUrl });
   };
+
+  const isRecommendedInCart = (id: string) => allItems.some((entry) => entry.id === id);
 
   return (
     <View style={styles.root}>
@@ -82,16 +94,35 @@ export function CartScreen() {
             </Pressable>
           </View>
         ) : (
-          items.map((item) => (
+          items.map((item) => {
+            const unitPrice = getUnitPrice(item);
+            const discountEligible = isBusiness && isBusinessDiscountEligible(item.quantity);
+
+            return (
             <View key={item.id} style={styles.itemCard}>
+              <Image
+                source={item.imageUrl ? { uri: item.imageUrl } : require('../../assets/images/demoAccesories.jpg')}
+                style={styles.itemImage}
+                contentFit="cover"
+              />
+
               <View style={styles.itemTextWrap}>
                 <Text style={styles.itemType}>Accessory</Text>
 
                 <Text style={styles.itemName}>{item.name}</Text>
 
-                <Text style={styles.itemPrice}>
-                  {formatCurrency(item.price)}
-                </Text>
+                <View style={styles.unitPriceRow}>
+                  {discountEligible ? (
+                    <Text style={styles.unitPriceStrike}>{formatCurrency(item.price)}</Text>
+                  ) : null}
+                  <Text style={styles.itemPrice}>{formatCurrency(unitPrice)}</Text>
+                </View>
+
+                {isBusiness && !discountEligible ? (
+                  <Text style={styles.discountHint}>
+                    Discount not applicable below {BUSINESS_DISCOUNT_MIN_QUANTITY} quantities
+                  </Text>
+                ) : null}
 
                 <Text style={styles.quantityLabel}>Quantity</Text>
 
@@ -118,11 +149,12 @@ export function CartScreen() {
                 <Text style={styles.totalLabel}>Total</Text>
 
                 <Text style={styles.itemTotal}>
-                  {formatCurrency(item.price * item.quantity)}
+                  {formatCurrency(unitPrice * item.quantity)}
                 </Text>
               </View>
             </View>
-          ))
+            );
+          })
         )}
 
         <Text style={styles.sectionTitle}>Recommended products</Text>
@@ -138,12 +170,14 @@ export function CartScreen() {
                 <Text numberOfLines={2} style={styles.recommendedName}>{product.name}</Text>
                 <Text style={styles.recommendedPrice}>{formatCurrency(product.price)}</Text>
                 <Pressable
-                  style={styles.recommendedBtn}
+                  style={[styles.recommendedBtn, isRecommendedInCart(product.id) && styles.recommendedBtnAdded]}
                   onPress={() =>
                     addItem({ id: product.id, name: product.name, price: product.price, type: 'accessory' })
                   }
                 >
-                  <Text style={styles.recommendedBtnText}>Add</Text>
+                  <Text style={styles.recommendedBtnText}>
+                    {isRecommendedInCart(product.id) ? 'Added ✓' : 'Add'}
+                  </Text>
                 </Pressable>
               </View>
             </View>
@@ -286,9 +320,17 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(36,184,184,0.18)',
     backgroundColor: '#FFFFFF',
     padding: appTheme.spacing.md,
+    flexDirection: 'row',
+    columnGap: appTheme.spacing.sm,
+  },
+  itemImage: {
+    width: 92,
+    height: 92,
+    borderRadius: 12,
+    backgroundColor: '#eef6f6',
   },
   itemTextWrap: {
-    width: '100%',
+    flex: 1,
   },
   itemType: {
     color: '#24b8b8',
@@ -302,7 +344,23 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: 4,
   },
-  itemPrice: {
+  unitPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    columnGap: 8,
+    marginTop: 4,
+  },
+  unitPriceStrike: {
+    color: '#9fb3b3',
+    fontSize: 12,
+    textDecorationLine: 'line-through',
+  },
+  discountHint: {
+    color: '#8a6207',
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 4,
+  },  itemPrice: {
     color: '#395f5f',
     fontSize: 13,
     marginTop: 4,
@@ -388,6 +446,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#24b8b8',
     paddingVertical: 7,
     alignItems: 'center',
+  },
+  recommendedBtnAdded: {
+    backgroundColor: '#178a6a',
   },
   recommendedBtnText: {
     color: '#FFFFFF',
