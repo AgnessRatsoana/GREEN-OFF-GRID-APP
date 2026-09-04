@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ROUTES } from '../../constants/routes';
 import { MARKETPLACE_PRODUCTS } from '../../data/marketplace';
 import { PACKAGES } from '../../data/packages';
+import { fetchMarketplaceProductById, type MarketplaceProduct } from '../../services/marketplace/marketplace';
 import { RootStackParamList } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
 import { useCartStore } from '../../store/cartStore';
@@ -29,7 +30,63 @@ export function ProductDetailsScreen() {
   const favourites = useFavouritesStore((s) => s.favourites);
   const isFavourite = (id: string) => favourites.includes(id);
 
-  const product = MARKETPLACE_PRODUCTS.find((p) => p.id === route.params?.productId);
+  const [product, setProduct] = useState<MarketplaceProduct | null>(null);
+  const [isLoadingProduct, setIsLoadingProduct] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadProduct = async () => {
+      if (!route.params?.productId) {
+        setIsLoadingProduct(false);
+        return;
+      }
+
+      setIsLoadingProduct(true);
+      try {
+        const loadedProduct = await fetchMarketplaceProductById(route.params.productId);
+        if (isMounted) {
+          setProduct(loadedProduct);
+        }
+      } catch {
+        if (isMounted) {
+          const catalogueProduct = MARKETPLACE_PRODUCTS.find(
+            (item) => item.id === route.params?.productId,
+          );
+
+          setProduct(
+            catalogueProduct
+              ? {
+                  ...catalogueProduct,
+                  costPrice: null,
+                  imageUrl: null,
+                  isActive: true,
+                  createdAt: '',
+                  updatedAt: '',
+                }
+              : null,
+          );
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingProduct(false);
+        }
+      }
+    };
+
+    loadProduct();
+    return () => {
+      isMounted = false;
+    };
+  }, [route.params?.productId]);
+
+  if (isLoadingProduct) {
+    return (
+      <View style={[styles.root, styles.centerWrap]}>
+        <Text style={styles.errorText}>Loading product...</Text>
+      </View>
+    );
+  }
 
   if (!product) {
     return (
@@ -56,6 +113,14 @@ export function ProductDetailsScreen() {
           hitSlop={8}
         >
           <Ionicons name={saved ? 'heart' : 'heart-outline'} size={16} color={saved ? '#FFFFFF' : '#b89aff'} />
+        </Pressable>
+        <Pressable
+          style={styles.messageBtn}
+          onPress={() => navigation.navigate(ROUTES.ENQUIRY, { itemType: 'product', itemId: product.id })}
+          hitSlop={8}
+          accessibilityLabel="Enquire about this product"
+        >
+          <Ionicons name="chatbubble-ellipses-outline" size={17} color="#24b8b8" />
         </Pressable>
       </View>
 
@@ -231,6 +296,17 @@ const styles = StyleSheet.create({
   heartBtnActive: {
     backgroundColor: '#b89aff',
     borderColor: '#b89aff',
+  },
+  messageBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1.5,
+    borderColor: '#24b8b8',
+    backgroundColor: 'rgba(36,184,184,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: appTheme.spacing.xs,
   },
   body: {
     padding: appTheme.spacing.md,

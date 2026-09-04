@@ -14,6 +14,7 @@ export type RootStackParamList = {
 
   [ROUTES.MARKETING_DASHBOARD]: undefined;
   [ROUTES.MARKETING_PACKAGES]: undefined;
+  [ROUTES.MARKETING_ENQUIRIES]: undefined;
   [ROUTES.MARKETING_PRODUCTS]: undefined;
   [ROUTES.ADD_PRODUCT]: { productId?: string } | undefined;
   
@@ -24,6 +25,11 @@ export type RootStackParamList = {
   [ROUTES.PACKAGES]: undefined;
   [ROUTES.PRODUCT_DETAILS]: { productId: string };
   [ROUTES.PACKAGE_DETAILS]: { packageId: string };
+  [ROUTES.ENQUIRY]: {
+    itemType?: 'product' | 'package';
+    itemId?: string;
+    conversationId?: string;
+  };
 
   [ROUTES.APPLICATION_FORM]: { packageId: string };
   [ROUTES.APPLICATION_STATUS]: { applicationId: string };

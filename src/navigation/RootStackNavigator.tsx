@@ -21,12 +21,14 @@ import { FavouritesScreen } from '../screens/Favourites/FavouritesScreen';
 import { PackageDetailsScreen } from '../screens/Packages/PackageDetailsScreen';
 import { PackagesScreen } from '../screens/Packages/PackagesScreen';
 import { ProductDetailsScreen } from '../screens/Packages/ProductDetailsScreen';
+import { EnquiryScreen } from '../screens/Enquiries/EnquiryScreen';
 
 import { RetailOutletScreen } from '../screens/RetailOutlet/RetailOutletScreen';
 
 import { MarketingDashboardScreen } from '../screens/Marketing/MarketingDashboardScreen';
 import { MarketingProductsScreen } from '../screens/Marketing/Products/MarketingProductsScreen';
 import { MarketingPackagesScreen } from '../screens/Marketing/Packages/MarketingPackagesScreen';
+import { MarketingEnquiriesScreen } from '../screens/Marketing/MarketingEnquiriesScreen';
 
 
 import { AddProductScreen } from '../screens/Marketing/Products/AddProductScreen';
@@ -135,6 +137,12 @@ export function RootStackNavigator() {
       />
 
       <Stack.Screen
+        name={ROUTES.MARKETING_ENQUIRIES}
+        component={MarketingEnquiriesScreen}
+        options={{ animation: 'slide_from_right' }}
+      />
+
+      <Stack.Screen
         name={ROUTES.ADD_PRODUCT}
         component={AddProductScreen}
         options={{
@@ -200,6 +208,15 @@ export function RootStackNavigator() {
         component={PackageDetailsScreen}
         options={{
           animation: 'slide_from_right',
+        }}
+      />
+
+      <Stack.Screen
+        name={ROUTES.ENQUIRY}
+        component={EnquiryScreen}
+        options={{
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
         }}
       />
 

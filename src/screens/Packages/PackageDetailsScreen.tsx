@@ -66,6 +66,15 @@ export function PackageDetailsScreen() {
           />
         </Pressable>
 
+        <Pressable
+          style={[styles.floatBtn, styles.messageBtn, { top: insets.top + 12, right: 64 }]}
+          onPress={() => navigation.navigate(ROUTES.ENQUIRY, { itemType: 'package', itemId: pkg.id })}
+          hitSlop={8}
+          accessibilityLabel="Enquire about this package"
+        >
+          <Ionicons name="chatbubble-ellipses-outline" size={17} color="#24b8b8" />
+        </Pressable>
+
         {/* Package title overlay */}
         <View style={[styles.heroTextBlock, { bottom: insets.top + 20 }]}>
           <View style={[styles.variantPill, isTeal ? styles.tealPill : styles.purplePill]}>
@@ -175,6 +184,11 @@ const styles = StyleSheet.create({
   heartBtnActive: {
     backgroundColor: '#b89aff',
     borderColor: '#b89aff',
+  },
+  messageBtn: {
+    borderWidth: 1.5,
+    borderColor: '#24b8b8',
+    backgroundColor: 'rgba(255,255,255,0.92)',
   },
   heroTextBlock: {
     position: 'absolute',

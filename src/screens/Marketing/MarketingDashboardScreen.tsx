@@ -456,7 +456,7 @@ export function MarketingDashboardScreen() {
                         description="Review customer communication and enquiries."
                         icon="chatbubble-outline"
                         onPress={() => {
-                            // Messages functionality will be connected here.
+                            navigation.navigate(ROUTES.MARKETING_ENQUIRIES);
                         }}
                     />
 

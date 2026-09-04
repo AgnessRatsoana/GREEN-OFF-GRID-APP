@@ -67,7 +67,7 @@ export function GlobalFloatingBottomNav({
           }
 
           if (key === 'notifications') {
-            // No dedicated notifications screen exists yet; Messages is accessed via the side menu.
+            navigationRef.navigate(ROUTES.MAIN_DRAWER, { screen: ROUTES.MESSAGES } as never);
             return;
           }
 

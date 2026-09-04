@@ -1,15 +1,45 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { RootStackParamList } from '../../navigation/types';
+import { ROUTES } from '../../constants/routes';
+import { fetchCustomerConversations, type EnquiryConversation } from '../../services/applications/enquiries';
+import { MARKETPLACE_PRODUCTS } from '../../data/marketplace';
+import { PACKAGES } from '../../data/packages';
 import { appTheme } from '../../theme';
 
 export function MessagesScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
+  const [conversations, setConversations] = useState<EnquiryConversation[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const loadEnquiries = async (refresh = false) => {
+    if (refresh) setIsRefreshing(true);
+    else setIsLoading(true);
+    try {
+      setErrorMessage(null);
+      setConversations(await fetchCustomerConversations());
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to load messages.');
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
+  useEffect(() => { loadEnquiries(); }, []);
+
+  const getItemName = (conversation: EnquiryConversation) => {
+    if (conversation.itemType === 'product') return MARKETPLACE_PRODUCTS.find((item) => item.id === conversation.itemId)?.name ?? 'Product enquiry';
+    return PACKAGES.find((item) => item.id === conversation.itemId)?.title ?? 'Package enquiry';
+  };
 
   return (
     <View style={styles.root}>
@@ -23,10 +53,24 @@ export function MessagesScreen() {
         </View>
       </View>
 
-      <View style={styles.contentWrap}>
-        <Text style={styles.title}>Messages</Text>
-        <Text style={styles.subtitle}>Chatboard support can be plugged in right after profile flow.</Text>
-      </View>
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => loadEnquiries(true)} tintColor="#24b8b8" />}
+      >
+        {isLoading ? <ActivityIndicator color="#24b8b8" /> : null}
+        {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+        {!isLoading && !errorMessage && conversations.length === 0 ? (
+          <View style={styles.contentWrap}><Text style={styles.title}>No messages yet</Text><Text style={styles.subtitle}>Your product and package enquiries will appear here.</Text></View>
+        ) : null}
+        {conversations.map((conversation) => (
+          <Pressable key={conversation.id} style={styles.messageCard} onPress={() => navigation.getParent()?.getParent()?.navigate(ROUTES.ENQUIRY, { conversationId: conversation.id })}>
+            <View style={styles.messageHeader}><Text style={styles.itemType}>{conversation.itemType.toUpperCase()}</Text><Text style={styles.status}>{conversation.status.replace('_', ' ')}</Text></View>
+            <Text style={styles.itemName}>{getItemName(conversation)}</Text>
+            <Text style={styles.messageText}>Open conversation</Text>
+            <Text style={styles.dateText}>{new Date(conversation.updatedAt).toLocaleDateString()}</Text>
+          </Pressable>
+        ))}
+      </ScrollView>
     </View>
   );
 }
@@ -85,4 +129,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
     textAlign: 'center',
   },
+  content: { padding: appTheme.spacing.md, rowGap: appTheme.spacing.sm },
+  messageCard: { borderWidth: 1, borderColor: 'rgba(36,184,184,0.2)', borderRadius: 14, padding: 14, backgroundColor: '#f7fdfd' },
+  messageHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  itemType: { color: '#24b8b8', fontSize: 10, fontWeight: '800', letterSpacing: 1 },
+  status: { color: '#668080', fontSize: 11, textTransform: 'capitalize' },
+  itemName: { color: '#123f3f', fontSize: 16, fontWeight: '800', marginTop: 7 },
+  messageText: { color: '#4f6e6e', fontSize: 14, lineHeight: 21, marginTop: 8 },
+  dateText: { color: '#789292', fontSize: 11, marginTop: 10 },
+  errorText: { color: '#b34040', textAlign: 'center', marginTop: 12 },
 });
