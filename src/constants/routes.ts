@@ -13,6 +13,7 @@ export const ROUTES = {
   MARKETING_PACKAGES: 'MarketingPackages',
   MARKETING_ENQUIRIES: 'MarketingEnquiries',
   MARKETING_ORDERS: 'MarketingOrders',
+  MARKETING_APPLICATIONS: 'MarketingApplications',
   ADD_PRODUCT: 'AddProduct',
 
   LOGIN: 'Login',

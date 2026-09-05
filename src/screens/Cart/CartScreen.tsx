@@ -12,6 +12,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useCartStore, type CartLine } from '../../store/cartStore';
 import { useAuthStore } from '../../store/authStore';
 import { appTheme } from '../../theme';
+import { FLOATING_NAV_CONTENT_INSET } from '../../components/common/FloatingBottomNav';
 import {
   BUSINESS_DISCOUNT_MIN_QUANTITY,
   getBusinessLineUnitPrice,
@@ -60,7 +61,7 @@ export function CartScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 36 }]}
+        contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + FLOATING_NAV_CONTENT_INSET }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.summaryCard}>

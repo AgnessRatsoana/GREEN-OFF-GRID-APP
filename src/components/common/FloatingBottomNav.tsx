@@ -4,6 +4,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { appTheme } from '../../theme';
 
+/**
+ * Extra bottom padding screens should use so content can scroll clear of the
+ * floating nav. Roughly: 46px button + vertical padding + safe area + margin.
+ */
+export const FLOATING_NAV_CONTENT_INSET = 140;
+
 type NavKey = 'home' | 'saved' | 'notifications' | 'packages';
 
 const navItems: Array<{ key: NavKey; icon: keyof typeof Ionicons.glyphMap }> = [

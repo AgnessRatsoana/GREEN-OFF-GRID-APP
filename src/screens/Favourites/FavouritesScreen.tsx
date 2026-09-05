@@ -12,6 +12,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { useCartStore } from '../../store/cartStore';
 import { useFavouritesStore } from '../../store/favouritesStore';
 import { appTheme } from '../../theme';
+import { FLOATING_NAV_CONTENT_INSET } from '../../components/common/FloatingBottomNav';
 
 export function FavouritesScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -48,7 +49,7 @@ export function FavouritesScreen() {
         </View>
       ) : (
         <ScrollView
-          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 32 }]}
+          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + FLOATING_NAV_CONTENT_INSET }]}
           showsVerticalScrollIndicator={false}
         >
           <Text style={styles.countLabel}>

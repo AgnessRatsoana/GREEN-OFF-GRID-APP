@@ -17,6 +17,7 @@ export interface CreateApplicationInput {
 
   businessName?: string;
 
+  address?: string;
   city?: string;
   province?: string;
 
@@ -39,6 +40,7 @@ export interface Application {
 
   business_name: string | null;
 
+  address: string | null;
   city: string | null;
   province: string | null;
 
@@ -89,6 +91,7 @@ export async function createApplication(
 
       business_name: input.businessName?.trim() || null,
 
+      address: input.address?.trim() || null,
       city: input.city?.trim() || null,
       province: input.province?.trim() || null,
 
@@ -186,4 +189,72 @@ export async function fetchMyApplication(
   }
 
   return data as Application | null;
+}
+
+/**
+ * Marketing/admin: fetch all applications.
+ */
+export async function fetchAllApplications(): Promise<Application[]> {
+  const supabase = getSupabaseClient();
+
+  const { data, error } = await supabase
+    .from('applications')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw new Error('Unable to load applications.');
+  }
+
+  return (data || []) as Application[];
+}
+
+/**
+ * Marketing/admin: update application status.
+ */
+export async function updateApplicationStatus(
+  applicationId: string,
+  status: ApplicationStatus,
+): Promise<Application> {
+  const supabase = getSupabaseClient();
+
+  const { data, error } = await supabase
+    .from('applications')
+    .update({ status })
+    .eq('id', applicationId)
+    .select()
+    .single();
+
+  if (error || !data) {
+    throw new Error('Unable to update application status.');
+  }
+
+  return data as Application;
+}
+
+/**
+ * Live application status updates.
+ */
+export function subscribeToApplicationUpdates(
+  applicationId: string,
+  onUpdate: (application: Application) => void,
+): () => void {
+  const supabase = getSupabaseClient();
+  const channel = supabase
+    .channel(`application-${applicationId}-${Date.now()}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'applications',
+        filter: `id=eq.${applicationId}`,
+      },
+      (payload) => onUpdate(payload.new as Application),
+    )
+    .subscribe();
+
+  return () => {
+    void supabase.removeChannel(channel);
+  };
 }

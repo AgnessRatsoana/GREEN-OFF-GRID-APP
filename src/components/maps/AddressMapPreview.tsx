@@ -8,7 +8,8 @@ interface AddressMapPreviewProps {
 }
 
 function buildEmbedUrl(query: string): string {
-  return `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed`;
+  // maps.google.com with output=embed allows cross-origin framing without a key.
+  return `https://maps.google.com/maps?output=embed&q=${encodeURIComponent(query)}`;
 }
 
 /**
@@ -20,16 +21,18 @@ export function AddressMapPreview({ query, style }: AddressMapPreviewProps) {
     return (
       <View style={[styles.frame, style]}>
         {React.createElement('iframe', {
+          key: query,
           src: buildEmbedUrl(query),
           style: {
             border: 0,
             width: '100%',
             height: '100%',
             borderRadius: 14,
+            display: 'block',
           },
-          loading: 'lazy',
+          allowFullScreen: true,
           referrerPolicy: 'no-referrer-when-downgrade',
-          title: 'Delivery address map',
+          title: 'Location map',
         })}
       </View>
     );

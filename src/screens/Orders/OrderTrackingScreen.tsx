@@ -22,6 +22,7 @@ import {
   type TrackedOrder,
 } from '../../services/orders/orders';
 import { appTheme } from '../../theme';
+import { FLOATING_NAV_CONTENT_INSET } from '../../components/common/FloatingBottomNav';
 
 function formatCurrency(cents: number) {
   return `R ${(cents / 100).toLocaleString()}`;
@@ -106,7 +107,7 @@ export function OrderTrackingScreen() {
         </View>
       ) : (
         <ScrollView
-          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 96 }]}
+          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + FLOATING_NAV_CONTENT_INSET }]}
           showsVerticalScrollIndicator={false}
         >
           {/* Order summary */}

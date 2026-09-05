@@ -22,8 +22,10 @@ import { RootStackParamList } from '../../navigation/types';
 import {
   type Application,
   fetchMyApplication,
+  subscribeToApplicationUpdates,
 } from '../../services/applications/applications';
 import { appTheme } from '../../theme';
+import { FLOATING_NAV_CONTENT_INSET } from '../../components/common/FloatingBottomNav';
 
 export function ApplicationStatusScreen() {
   const navigation =
@@ -85,8 +87,16 @@ export function ApplicationStatusScreen() {
 
     loadApplication();
 
+    // Live status updates
+    const unsubscribe = subscribeToApplicationUpdates(applicationId, (updated) => {
+      if (mounted) {
+        setApplication(updated);
+      }
+    });
+
     return () => {
       mounted = false;
+      unsubscribe();
     };
   }, [applicationId]);
 

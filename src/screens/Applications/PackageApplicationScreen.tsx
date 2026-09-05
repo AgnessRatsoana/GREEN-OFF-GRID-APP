@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AddressMapPreview } from '../../components/maps/AddressMapPreview';
 import { ROUTES } from '../../constants/routes';
 import { PACKAGES } from '../../data/packages';
 import { RootStackParamList } from '../../navigation/types';
@@ -45,10 +46,17 @@ export function PackageApplicationScreen() {
   const [businessName, setBusinessName] = useState('');
   const [city, setCity] = useState('');
   const [province, setProvince] = useState('');
+  const [address, setAddress] = useState('');
+  const [addressConfirmed, setAddressConfirmed] = useState(false);
   const [projectType, setProjectType] = useState('Residential');
   const [budget, setBudget] = useState('');
   const [notes, setNotes] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const detailsValid = fullName.trim().length > 0 && email.trim().length > 0 && phone.trim().length > 0;
+  const locationValid = city.trim().length > 0 && province.trim().length > 0 && address.trim().length > 0 && addressConfirmed;
+  const mapQuery = [address.trim(), city.trim(), province.trim(), 'South Africa'].filter(Boolean).join(', ');
 
 
   if (!pkg) {
@@ -60,12 +68,12 @@ export function PackageApplicationScreen() {
   }
 
   const nextStage = () => {
-    if (stage === 'details') {
+    if (stage === 'details' && detailsValid) {
       setStage('location');
       return;
     }
 
-    if (stage === 'location') {
+    if (stage === 'location' && locationValid) {
       setStage('review');
     }
   };
@@ -82,53 +90,60 @@ export function PackageApplicationScreen() {
   };
 
   const handleSubmit = async () => {
-  try {
-    setSubmitted(false);
+    if (isSubmitting) return;
 
-    const application = await createApplication({
-      packageId: pkg.id,
-      packageTitle: pkg.title,
+    try {
+      setIsSubmitting(true);
+      setSubmitted(false);
 
-      fullName,
-      email,
-      phone,
+      const application = await createApplication({
+        packageId: pkg.id,
+        packageTitle: pkg.title,
 
-      businessName,
+        fullName,
+        email,
+        phone,
 
-      city,
-      province,
+        businessName,
 
-      projectType: projectType as
-        | 'Residential'
-        | 'Commercial'
-        | 'Industrial',
+        address,
+        city,
+        province,
 
-      budget,
-      notes,
-    });
+        projectType: projectType as
+          | 'Residential'
+          | 'Commercial'
+          | 'Industrial',
 
-    setSubmitted(true);
+        budget,
+        notes,
+      });
 
-    navigation.navigate(ROUTES.APPLICATION_STATUS, {
-      applicationId: application.id,
-    });
-  } catch (error) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : 'Unable to submit your application.';
+      setSubmitted(true);
 
-    console.error('Application submission failed:', message);
+      navigation.navigate(ROUTES.APPLICATION_STATUS, {
+        applicationId: application.id,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Unable to submit your application.';
 
-    setSubmitted(false);
-  }
-};
+      console.error('Application submission failed:', message);
+
+      setSubmitted(false);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.root, { paddingTop: insets.top + appTheme.spacing.md }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+    <View style={[styles.root, { paddingTop: insets.top + appTheme.spacing.md }]}>
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
       <View style={styles.headerRow}>
         <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={20} color={appTheme.colors.primaryAccent} />
@@ -164,37 +179,52 @@ export function PackageApplicationScreen() {
           <View style={styles.formSection}>
             <Text style={styles.sectionTitle}>Your information</Text>
 
-            <TextInput
-              value={fullName}
-              onChangeText={setFullName}
-              placeholder="Full name"
-              style={styles.input}
-              placeholderTextColor="#7b8a8a"
-            />
-            <TextInput
-              value={email}
-              onChangeText={setEmail}
-              placeholder="Email address"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              style={styles.input}
-              placeholderTextColor="#7b8a8a"
-            />
-            <TextInput
-              value={phone}
-              onChangeText={setPhone}
-              placeholder="Contact number"
-              keyboardType="phone-pad"
-              style={styles.input}
-              placeholderTextColor="#7b8a8a"
-            />
-            <TextInput
-              value={businessName}
-              onChangeText={setBusinessName}
-              placeholder="Business / brand name"
-              style={styles.input}
-              placeholderTextColor="#7b8a8a"
-            />
+            <View>
+              <Text style={styles.fieldLabel}>Full name <Text style={styles.requiredStar}>*</Text></Text>
+              <TextInput
+                value={fullName}
+                onChangeText={setFullName}
+                placeholder="Full name"
+                style={styles.input}
+                placeholderTextColor="#7b8a8a"
+              />
+            </View>
+
+            <View>
+              <Text style={styles.fieldLabel}>Email address <Text style={styles.requiredStar}>*</Text></Text>
+              <TextInput
+                value={email}
+                onChangeText={setEmail}
+                placeholder="Email address"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                style={styles.input}
+                placeholderTextColor="#7b8a8a"
+              />
+            </View>
+
+            <View>
+              <Text style={styles.fieldLabel}>Contact number <Text style={styles.requiredStar}>*</Text></Text>
+              <TextInput
+                value={phone}
+                onChangeText={setPhone}
+                placeholder="Contact number"
+                keyboardType="phone-pad"
+                style={styles.input}
+                placeholderTextColor="#7b8a8a"
+              />
+            </View>
+
+            <View>
+              <Text style={styles.fieldLabel}>Business / brand name</Text>
+              <TextInput
+                value={businessName}
+                onChangeText={setBusinessName}
+                placeholder="Business / brand name"
+                style={styles.input}
+                placeholderTextColor="#7b8a8a"
+              />
+            </View>
           </View>
         ) : null}
 
@@ -202,20 +232,58 @@ export function PackageApplicationScreen() {
           <View style={styles.formSection}>
             <Text style={styles.sectionTitle}>Location and demand</Text>
 
-            <TextInput
-              value={city}
-              onChangeText={setCity}
-              placeholder="City / town"
-              style={styles.input}
-              placeholderTextColor="#7b8a8a"
-            />
-            <TextInput
-              value={province}
-              onChangeText={setProvince}
-              placeholder="Province"
-              style={styles.input}
-              placeholderTextColor="#7b8a8a"
-            />
+            <View>
+              <Text style={styles.fieldLabel}>Street address <Text style={styles.requiredStar}>*</Text></Text>
+              <TextInput
+                value={address}
+                onChangeText={setAddress}
+                placeholder="Street address (e.g. 12 Main Road)"
+                style={styles.input}
+                placeholderTextColor="#7b8a8a"
+              />
+            </View>
+
+            <View>
+              <Text style={styles.fieldLabel}>City / town <Text style={styles.requiredStar}>*</Text></Text>
+              <TextInput
+                value={city}
+                onChangeText={setCity}
+                placeholder="City / town"
+                style={styles.input}
+                placeholderTextColor="#7b8a8a"
+              />
+            </View>
+
+            <View>
+              <Text style={styles.fieldLabel}>Province <Text style={styles.requiredStar}>*</Text></Text>
+              <TextInput
+                value={province}
+                onChangeText={setProvince}
+                placeholder="Province"
+                style={styles.input}
+                placeholderTextColor="#7b8a8a"
+              />
+            </View>
+
+            {address.trim().length > 0 && city.trim().length > 0 ? (
+              <View>
+                <AddressMapPreview query={mapQuery} />
+                <Pressable
+                  style={styles.addressCheckboxRow}
+                  onPress={() => setAddressConfirmed((prev) => !prev)}
+                >
+                  <Ionicons
+                    name={addressConfirmed ? 'checkbox' : 'square-outline'}
+                    size={22}
+                    color={addressConfirmed ? '#24b8b8' : '#9fb3b3'}
+                  />
+                  <Text style={styles.addressCheckboxText}>
+                    Confirm the map shows your correct location.
+                  </Text>
+                </Pressable>
+              </View>
+            ) : null}
+
             <Text style={styles.smallLabel}>Project type</Text>
             <View style={styles.segmentRow}>
               {['Residential', 'Commercial', 'Industrial'].map((option) => (
@@ -228,13 +296,17 @@ export function PackageApplicationScreen() {
                 </Pressable>
               ))}
             </View>
-            <TextInput
-              value={budget}
-              onChangeText={setBudget}
-              placeholder="Estimated budget (e.g. R200 000)"
-              style={styles.input}
-              placeholderTextColor="#7b8a8a"
-            />
+
+            <View>
+              <Text style={styles.fieldLabel}>Estimated budget</Text>
+              <TextInput
+                value={budget}
+                onChangeText={setBudget}
+                placeholder="Estimated budget (e.g. R200 000)"
+                style={styles.input}
+                placeholderTextColor="#7b8a8a"
+              />
+            </View>
           </View>
         ) : null}
 
@@ -273,6 +345,7 @@ export function PackageApplicationScreen() {
 
         {submitted ? <Text style={styles.successMessage}>Application submitted. You can track the status from your dashboard.</Text> : null}
       </ScrollView>
+      </KeyboardAvoidingView>
 
       <View style={styles.footerActions}>
         {stage !== 'details' ? (
@@ -280,22 +353,47 @@ export function PackageApplicationScreen() {
             <Text style={styles.secondaryButtonText}>Back</Text>
           </Pressable>
         ) : (
-          <Pressable style={styles.secondaryButton} onPress={() => navigation.goBack()}>
+          <Pressable
+            style={styles.secondaryButton}
+            onPress={() => {
+              if (navigation.canGoBack()) {
+                navigation.goBack();
+              } else {
+                navigation.navigate(ROUTES.PACKAGES);
+              }
+            }}
+          >
             <Text style={styles.secondaryButtonText}>Cancel</Text>
           </Pressable>
         )}
 
         {stage !== 'review' ? (
-          <Pressable style={styles.primaryButton} onPress={nextStage}>
+          <Pressable
+            style={[styles.primaryButton, (stage === 'details' && !detailsValid) || (stage === 'location' && !locationValid) ? styles.primaryButtonDisabled : null]}
+            onPress={nextStage}
+            disabled={(stage === 'details' && !detailsValid) || (stage === 'location' && !locationValid)}
+          >
             <Text style={styles.primaryButtonText}>Next</Text>
           </Pressable>
         ) : (
-          <Pressable style={styles.primaryButton} onPress={handleSubmit}>
-            <Text style={styles.primaryButtonText}>Submit</Text>
+          <Pressable style={styles.primaryButton} onPress={handleSubmit} disabled={isSubmitting}>
+            <Text style={styles.primaryButtonText}>{isSubmitting ? 'Submitting...' : 'Submit'}</Text>
           </Pressable>
         )}
       </View>
-    </KeyboardAvoidingView>
+
+      {/* Show what's missing */}
+      {stage === 'details' && !detailsValid ? (
+        <Text style={styles.validationHint}>
+          {!fullName.trim() ? 'Enter your full name' : !email.trim() ? 'Enter your email address' : 'Enter your contact number'}
+        </Text>
+      ) : null}
+      {stage === 'location' && !locationValid ? (
+        <Text style={styles.validationHint}>
+          {!address.trim() ? 'Enter street address' : !city.trim() ? 'Enter city' : !province.trim() ? 'Enter province' : !addressConfirmed ? 'Confirm the map location' : ''}
+        </Text>
+      ) : null}
+    </View>
   );
 }
 
@@ -304,6 +402,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
     paddingHorizontal: appTheme.spacing.md,
+  },
+  keyboardView: {
+    flex: 1,
   },
   rootCenter: {
     flex: 1,
@@ -399,6 +500,30 @@ const styles = StyleSheet.create({
     color: '#123f3f',
     marginBottom: 6,
   },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#4f6e6e',
+    marginBottom: 4,
+  },
+  requiredStar: {
+    color: '#d14444',
+    fontWeight: '800',
+  },
+  addressCheckboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    columnGap: 10,
+    paddingVertical: 8,
+    marginTop: 8,
+  },
+  addressCheckboxText: {
+    flex: 1,
+    color: '#4f6e6e',
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '500',
+  },
   input: {
     borderWidth: 1,
     borderColor: 'rgba(36, 184, 184, 0.24)',
@@ -486,6 +611,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: appTheme.spacing.sm,
     backgroundColor: '#24b8b8',
+  },
+  primaryButtonDisabled: {
+    opacity: 0.5,
+  },
+  validationHint: {
+    color: '#8a6207',
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+    paddingHorizontal: appTheme.spacing.md,
+    paddingBottom: appTheme.spacing.sm,
   },
   primaryButtonText: {
     color: '#FFFFFF',

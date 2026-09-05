@@ -23,6 +23,7 @@ import { createOrder } from '../../services/orders/orders';
 import { useAuthStore } from '../../store/authStore';
 import { useCartStore, type CartLine } from '../../store/cartStore';
 import { appTheme } from '../../theme';
+import { FLOATING_NAV_CONTENT_INSET } from '../../components/common/FloatingBottomNav';
 import { getBusinessLineUnitPrice } from '../../utils/pricing';
 
 function formatCurrency(value: number) {
@@ -133,7 +134,7 @@ export function CheckoutScreen() {
         <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 40 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + FLOATING_NAV_CONTENT_INSET }} showsVerticalScrollIndicator={false}>
         <View style={styles.summaryCard}>
           <Text style={styles.summaryLabel}>Accessories total ({totalItems} item{totalItems === 1 ? '' : 's'})</Text>
           <Text style={styles.summaryValue}>{formatCurrency(totalAmount)}</Text>

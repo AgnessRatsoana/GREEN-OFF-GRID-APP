@@ -21,6 +21,7 @@ import type { RootStackParamList } from '../../navigation/types';
 import { fetchCustomerOrders, type TrackedOrder } from '../../services/orders/orders';
 import { useCartStore } from '../../store/cartStore';
 import { appTheme } from '../../theme';
+import { FLOATING_NAV_CONTENT_INSET } from '../../components/common/FloatingBottomNav';
 
 function formatCurrency(cents: number) {
   return `R ${(cents / 100).toLocaleString()}`;
@@ -85,7 +86,7 @@ export function OrdersScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + FLOATING_NAV_CONTENT_INSET }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={isRefreshing} onRefresh={() => loadOrders(true)} tintColor="#24b8b8" />

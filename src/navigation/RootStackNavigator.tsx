@@ -31,6 +31,7 @@ import { MarketingProductsScreen } from '../screens/Marketing/Products/Marketing
 import { MarketingPackagesScreen } from '../screens/Marketing/Packages/MarketingPackagesScreen';
 import { MarketingEnquiriesScreen } from '../screens/Marketing/MarketingEnquiriesScreen';
 import { MarketingOrdersScreen } from '../screens/Marketing/MarketingOrdersScreen';
+import { MarketingApplicationsScreen } from '../screens/Marketing/MarketingApplicationsScreen';
 
 
 import { AddProductScreen } from '../screens/Marketing/Products/AddProductScreen';
@@ -147,6 +148,12 @@ export function RootStackNavigator() {
       <Stack.Screen
         name={ROUTES.MARKETING_ORDERS}
         component={MarketingOrdersScreen}
+        options={{ animation: 'slide_from_right' }}
+      />
+
+      <Stack.Screen
+        name={ROUTES.MARKETING_APPLICATIONS}
+        component={MarketingApplicationsScreen}
         options={{ animation: 'slide_from_right' }}
       />
 

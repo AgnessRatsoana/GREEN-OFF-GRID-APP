@@ -41,6 +41,7 @@ import { getOrderById, type TrackedOrder } from '../../services/orders/orders';
 import { useAuthStore } from '../../store/authStore';
 import { useMessagingStore } from '../../store/messagingStore';
 import { appTheme } from '../../theme';
+import { FLOATING_NAV_CONTENT_INSET } from '../../components/common/FloatingBottomNav';
 
 const PRODUCT_IMAGE = require('../../assets/images/demoAccesories.jpg');
 const PRODUCT_DEFAULT_MESSAGE =
@@ -255,7 +256,7 @@ export function EnquiryScreen() {
       ) : (
         <ScrollView
           ref={scrollRef}
-          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
+          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + FLOATING_NAV_CONTENT_INSET }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}

@@ -24,6 +24,7 @@ import {
 import { PACKAGES } from '../../data/packages';
 import { RootStackParamList } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
+import { FLOATING_NAV_CONTENT_INSET } from '../../components/common/FloatingBottomNav';
 import { useCartStore } from '../../store/cartStore';
 import { useFavouritesStore } from '../../store/favouritesStore';
 import { appTheme } from '../../theme';
@@ -332,7 +333,7 @@ export function PackagesScreen() {
         contentContainerStyle={[
           styles.list,
           {
-            paddingBottom: insets.bottom + 32,
+            paddingBottom: insets.bottom + FLOATING_NAV_CONTENT_INSET,
           },
         ]}
         showsVerticalScrollIndicator={false}

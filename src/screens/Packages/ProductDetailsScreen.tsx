@@ -16,6 +16,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useCartStore } from '../../store/cartStore';
 import { useFavouritesStore } from '../../store/favouritesStore';
 import { appTheme } from '../../theme';
+import { FLOATING_NAV_CONTENT_INSET } from '../../components/common/FloatingBottomNav';
 import {
   BUSINESS_DISCOUNT_MIN_QUANTITY,
   getBusinessLineUnitPrice,
@@ -144,7 +145,7 @@ export function ProductDetailsScreen() {
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 34 }]} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + FLOATING_NAV_CONTENT_INSET }]} showsVerticalScrollIndicator={false}>
         <View style={styles.heroWrap}>
           <Image source={require('../../assets/images/demoAccesories.jpg')} style={styles.heroImage} contentFit="cover" />
           <View style={styles.ratingBadge}>

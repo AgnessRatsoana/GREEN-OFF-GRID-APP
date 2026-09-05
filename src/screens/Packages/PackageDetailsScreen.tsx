@@ -10,6 +10,7 @@ import { PACKAGES } from '../../data/packages';
 import { RootStackParamList } from '../../navigation/types';
 import { useFavouritesStore } from '../../store/favouritesStore';
 import { appTheme } from '../../theme';
+import { FLOATING_NAV_CONTENT_INSET } from '../../components/common/FloatingBottomNav';
 
 export function PackageDetailsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -91,7 +92,7 @@ export function PackageDetailsScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 40 }]}
+        contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + FLOATING_NAV_CONTENT_INSET }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Price */}

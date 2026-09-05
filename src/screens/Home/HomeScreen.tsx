@@ -13,6 +13,7 @@ import { FranchisePackages } from '../../components/cards/FranchisePackages';
 import { InbuiltFranchiseServices } from '../../components/cards/InbuiltFranchiseServices';
 import { MarketplaceAccessoriesSection } from '../../components/cards/MarketplaceAccessoriesSection';
 import { FloatingProfileMenuButton } from '../../components/common/FloatingProfileMenuButton';
+import { FLOATING_NAV_CONTENT_INSET } from '../../components/common/FloatingBottomNav';
 import { RootStackParamList } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
 import { appTheme } from '../../theme';
@@ -42,7 +43,7 @@ export function HomeScreen() {
           styles.scrollContent,
           {
             paddingTop: insets.top + appTheme.spacing.xs,
-            paddingBottom: insets.bottom + 132,
+            paddingBottom: insets.bottom + FLOATING_NAV_CONTENT_INSET,
           },
         ]}
         showsVerticalScrollIndicator={false}

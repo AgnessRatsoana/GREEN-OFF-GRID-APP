@@ -447,7 +447,7 @@ export function MarketingDashboardScreen() {
                         description="View and monitor franchise applications."
                         icon="document-text-outline"
                         onPress={() => {
-                            // Applications screen will be connected here.
+                            navigation.navigate(ROUTES.MARKETING_APPLICATIONS);
                         }}
                     />
 

@@ -1,26 +1,58 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Image } from 'expo-image';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ROUTES } from '../../constants/routes';
 import { PACKAGES } from '../../data/packages';
 import { RootStackParamList } from '../../navigation/types';
-import { useApplicationsStore } from '../../store/applicationsStore';
+import { fetchMyApplications, type Application } from '../../services/applications/applications';
 import { appTheme } from '../../theme';
+import { FLOATING_NAV_CONTENT_INSET } from '../../components/common/FloatingBottomNav';
+
+const STATUS_COLORS: Record<string, string> = {
+  Submitted: '#24b8b8',
+  'Under Review': '#f59e0b',
+  Consultation: '#8b5cf6',
+  Approved: '#178a6a',
+  Rejected: '#d14444',
+};
 
 export function RetailOutletScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
-  const applications = useApplicationsStore((s) => s.applications);
 
-  const appliedPackages = PACKAGES.filter((pkg) =>
-    applications.some((application) => application.packageId === pkg.id),
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Load the customer's real applications from Supabase.
+  const loadApplications = async (refresh = false) => {
+    if (refresh) setIsRefreshing(true);
+    try {
+      setApplications(await fetchMyApplications());
+    } catch {
+      // Keep existing list on failure.
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
+  // Refresh whenever the screen gains focus so status changes show up.
+  useFocusEffect(
+    useCallback(() => {
+      loadApplications();
+    }, []),
   );
-  const hasActiveApplication = appliedPackages.length > 0;
+
+  const hasActiveApplication = applications.length > 0;
   const recommendedPackage = !hasActiveApplication ? PACKAGES[0] : null;
+
+  const getPackage = (packageId: string) => PACKAGES.find((pkg) => pkg.id === packageId);
 
   return (
     <View style={styles.root}>
@@ -32,9 +64,14 @@ export function RetailOutletScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 32 }]}
+        contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + FLOATING_NAV_CONTENT_INSET }]}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={isRefreshing} onRefresh={() => loadApplications(true)} tintColor="#24b8b8" />
+        }
       >
+        {isLoading ? <ActivityIndicator color="#24b8b8" style={{ marginBottom: 12 }} /> : null}
+
         {recommendedPackage ? (
           <View style={styles.recommendCard}>
             <Text style={styles.recommendLabel}>Recommended for you</Text>
@@ -54,27 +91,40 @@ export function RetailOutletScreen() {
           <View>
             <Text style={styles.sectionTitle}>Your applications</Text>
             <View style={styles.appliedList}>
-              {appliedPackages.map((pkg) => {
-                const application = applications.find((entry) => entry.packageId === pkg.id);
+              {applications.map((application) => {
+                const pkg = getPackage(application.package_id);
+                const statusColor = STATUS_COLORS[application.status] ?? '#24b8b8';
 
                 return (
                   <Pressable
-                    key={pkg.id}
+                    key={application.id}
                     style={styles.appliedCard}
                     onPress={() =>
-                      navigation.navigate(ROUTES.APPLICATION_FORM, {
-                        packageId: pkg.id,
+                      navigation.navigate(ROUTES.APPLICATION_STATUS, {
+                        applicationId: application.id,
                       })
                     }
                   >
-                    <Image source={pkg.imageSource} style={styles.appliedImage} contentFit="cover" />
+                    {pkg ? (
+                      <Image source={pkg.imageSource} style={styles.appliedImage} contentFit="cover" />
+                    ) : (
+                      <View style={[styles.appliedImage, styles.appliedImageFallback]}>
+                        <Ionicons name="cube-outline" size={22} color="#24b8b8" />
+                      </View>
+                    )}
                     <View style={styles.appliedContent}>
-                      <Text style={styles.appliedTitle}>{pkg.title}</Text>
-                      <View style={styles.statusPill}>
-                        <Text style={styles.statusPillText}>{application?.status ?? 'Submitted'}</Text>
+                      <Text style={styles.appliedTitle}>{application.package_title}</Text>
+                      <Text style={styles.appliedDate}>
+                        Applied {new Date(application.created_at).toLocaleDateString()}
+                      </Text>
+                      <View style={[styles.statusPill, { backgroundColor: `${statusColor}20` }]}>
+                        <Text style={[styles.statusPillText, { color: statusColor }]}>{application.status}</Text>
                       </View>
                     </View>
-                    <Ionicons name="chevron-forward" size={18} color="#6f8c8c" />
+                    <View style={styles.trackWrap}>
+                      <Text style={styles.trackText}>Track</Text>
+                      <Ionicons name="chevron-forward" size={16} color="#0f6464" />
+                    </View>
                   </Pressable>
                 );
               })}
@@ -206,27 +256,44 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 12,
   },
+  appliedImageFallback: {
+    backgroundColor: 'rgba(36,184,184,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   appliedContent: {
     flex: 1,
-    rowGap: 6,
+    rowGap: 4,
   },
   appliedTitle: {
     color: '#1a3f3f',
     fontSize: 15,
     fontWeight: '700',
   },
+  appliedDate: {
+    color: '#668080',
+    fontSize: 11,
+  },
   statusPill: {
     alignSelf: 'flex-start',
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    backgroundColor: 'rgba(36,184,184,0.14)',
   },
   statusPillText: {
-    color: '#0f6464',
     fontSize: 11,
     fontWeight: '800',
     textTransform: 'uppercase',
+  },
+  trackWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    columnGap: 2,
+  },
+  trackText: {
+    color: '#0f6464',
+    fontSize: 12,
+    fontWeight: '700',
   },
   packageList: {
     rowGap: appTheme.spacing.sm,
