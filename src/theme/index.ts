@@ -1,4 +1,4 @@
-import { colors } from './colors';
+import { colors, darkColors, lightColors } from './colors';
 import { radius } from './radius';
 import { shadows } from './shadows';
 import { spacing } from './spacing';
@@ -13,3 +13,14 @@ export const appTheme = {
 } as const;
 
 export type AppTheme = typeof appTheme;
+export type ThemeMode = 'light' | 'dark';
+
+export function buildTheme(mode: ThemeMode): AppTheme {
+  return {
+    colors: mode === 'dark' ? darkColors : lightColors,
+    radius,
+    shadows,
+    spacing,
+    typography,
+  };
+}

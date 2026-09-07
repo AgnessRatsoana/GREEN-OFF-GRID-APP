@@ -11,6 +11,8 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { appTheme } from '../../theme';
+import type { AppTheme } from '../../theme';
+import { useAppTheme } from '../../hooks/useAppTheme';
 
 interface FloatingProfileMenuButtonProps {
   onPress: () => void;
@@ -26,6 +28,8 @@ export function FloatingProfileMenuButton({
   profileImageUri,
 }: FloatingProfileMenuButtonProps) {
   const swapProgress = useSharedValue(0);
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
 
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -79,7 +83,7 @@ export function FloatingProfileMenuButton({
               <Ionicons
                 name="person-outline"
                 size={ICON_SIZE}
-                color={appTheme.colors.textPrimary}
+                color={theme.colors.textPrimary}
               />
             )}
           </View>
@@ -99,7 +103,7 @@ export function FloatingProfileMenuButton({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     alignSelf: 'flex-start',
     marginTop: appTheme.spacing.sm,
@@ -132,7 +136,7 @@ const styles = StyleSheet.create({
     borderRadius: BUBBLE_SIZE / 2,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: appTheme.colors.background,
+    backgroundColor: theme.colors.background,
   },
   menuBubble: {
     width: BUBBLE_SIZE,

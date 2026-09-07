@@ -4,18 +4,24 @@ import {
   DrawerContentScrollView,
 } from '@react-navigation/drawer';
 import { Image } from 'expo-image';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { ROUTES } from '../../constants/routes';
 import { logoutFromSupabase } from '../../services/auth/authActions';
 import { clearAuthTokens } from '../../services/storage/secureStore';
 import { useAuthStore } from '../../store/authStore';
+import { useThemeStore } from '../../store/themeStore';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { appTheme } from '../../theme';
 
 export function AppDrawerContent({ navigation }: DrawerContentComponentProps) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
   const clearSession = useAuthStore((s) => s.clearSession);
+  const themeMode = useThemeStore((s) => s.mode);
+  const toggleTheme = useThemeStore((s) => s.toggleTheme);
+  const theme = useAppTheme();
+  const isDark = themeMode === 'dark';
 
     const menuItems = [
       { key: ROUTES.HOME, label: 'Home', icon: 'home-outline' as const },
@@ -40,9 +46,31 @@ export function AppDrawerContent({ navigation }: DrawerContentComponentProps) {
   };
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
       <DrawerContentScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.title}>Menu</Text>
+        <Text style={[styles.title, { color: theme.colors.textPrimary }]}>Menu</Text>
+
+        <Pressable
+          style={[styles.themeToggleRow, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface }]}
+          onPress={toggleTheme}
+        >
+          <View style={styles.themeToggleLabelWrap}>
+            <Ionicons
+              name={isDark ? 'moon' : 'sunny'}
+              size={18}
+              color={theme.colors.primaryAccent}
+            />
+            <Text style={[styles.themeToggleLabel, { color: theme.colors.textPrimary }]}>
+              {isDark ? 'Dark Mode' : 'Light Mode'}
+            </Text>
+          </View>
+          <Switch
+            value={isDark}
+            onValueChange={toggleTheme}
+            trackColor={{ false: '#d7dede', true: theme.colors.primaryAccent }}
+            thumbColor="#FFFFFF"
+          />
+        </Pressable>
 
         <View style={styles.menuList}>
           {menuItems.map((item) => {
@@ -69,16 +97,24 @@ export function AppDrawerContent({ navigation }: DrawerContentComponentProps) {
                 <Ionicons
                   name={item.icon}
                   size={18}
-                  color={isActive ? '#0f6464' : '#2a4a4a'}
+                  color={isActive ? theme.colors.primaryAccent : theme.colors.textSecondary}
                 />
-                <Text style={[styles.menuLabel, isActive && styles.menuLabelActive]}>{item.label}</Text>
+                <Text
+                  style={[
+                    styles.menuLabel,
+                    { color: theme.colors.textSecondary },
+                    isActive && [styles.menuLabelActive, { color: theme.colors.primaryAccent }],
+                  ]}
+                >
+                  {item.label}
+                </Text>
               </Pressable>
             );
           })}
         </View>
       </DrawerContentScrollView>
 
-      <View style={styles.bottomSection}>
+      <View style={[styles.bottomSection, { borderTopColor: theme.colors.border }]}>
         {isAuthenticated && user ? (
           <>
             <View style={styles.profileRow}>
@@ -86,13 +122,13 @@ export function AppDrawerContent({ navigation }: DrawerContentComponentProps) {
                 {user.avatarUrl ? (
                   <Image source={user.avatarUrl} style={styles.avatarImage} contentFit="cover" />
                 ) : (
-                  <Ionicons name="person" size={18} color="#0f6464" />
+                  <Ionicons name="person" size={18} color={theme.colors.primaryAccent} />
                 )}
               </View>
 
               <View style={styles.profileTextWrap}>
-                <Text style={styles.profileName}>{user.name}</Text>
-                <Text style={styles.profileEmail}>{user.email}</Text>
+                <Text style={[styles.profileName, { color: theme.colors.textPrimary }]}>{user.name}</Text>
+                <Text style={[styles.profileEmail, { color: theme.colors.textSecondary }]}>{user.email}</Text>
               </View>
             </View>
 
@@ -135,6 +171,25 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  themeToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingVertical: appTheme.spacing.sm,
+    paddingHorizontal: appTheme.spacing.sm,
+    marginBottom: appTheme.spacing.md,
+  },
+  themeToggleLabelWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    columnGap: appTheme.spacing.sm,
+  },
+  themeToggleLabel: {
+    fontSize: 14,
+    fontWeight: '700',
   },
   scrollContent: {
     paddingTop: appTheme.spacing.md,

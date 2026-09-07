@@ -25,6 +25,8 @@ import {
   subscribeToApplicationUpdates,
 } from '../../services/applications/applications';
 import { appTheme } from '../../theme';
+import type { AppTheme } from '../../theme';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { FLOATING_NAV_CONTENT_INSET } from '../../components/common/FloatingBottomNav';
 
 export function ApplicationStatusScreen() {
@@ -46,6 +48,9 @@ export function ApplicationStatusScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const applicationId = route.params.applicationId;
+
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
 
   useEffect(() => {
     let mounted = true;
@@ -183,7 +188,7 @@ export function ApplicationStatusScreen() {
       <View style={styles.centerWrap}>
         <ActivityIndicator
           size="large"
-          color={appTheme.colors.primaryAccent}
+          color={theme.colors.primaryAccent}
         />
 
         <Text style={styles.loadingText}>
@@ -247,7 +252,7 @@ export function ApplicationStatusScreen() {
           <Ionicons
             name="arrow-back"
             size={20}
-            color={appTheme.colors.primaryAccent}
+            color={theme.colors.primaryAccent}
           />
         </Pressable>
 
@@ -461,10 +466,10 @@ export function ApplicationStatusScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background,
   },
 
   centerWrap: {
@@ -472,25 +477,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: appTheme.spacing.lg,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background,
   },
 
   loadingText: {
     marginTop: 12,
-    color: '#4f6e6e',
+    color: theme.colors.textSecondary,
     fontSize: 14,
   },
 
   errorTitle: {
     marginTop: 14,
-    color: '#123f3f',
+    color: theme.colors.textPrimary,
     fontSize: 20,
     fontWeight: '800',
   },
 
   errorText: {
     marginTop: 8,
-    color: '#5f7575',
+    color: theme.colors.textSecondary,
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 21,
@@ -511,14 +516,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(36, 184, 184, 0.3)',
-    backgroundColor: '#f4fcfc',
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
 
   headerTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#123f3f',
+    color: theme.colors.textPrimary,
   },
 
   headerSpacer: {
@@ -531,10 +536,10 @@ const styles = StyleSheet.create({
   },
 
   statusCard: {
-    backgroundColor: '#f5fdfd',
+    backgroundColor: theme.colors.surface,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(36,184,184,0.15)',
+    borderColor: theme.colors.border,
     padding: appTheme.spacing.md,
   },
 
@@ -559,55 +564,55 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 28,
     fontWeight: '900',
-    color: '#123f3f',
+    color: theme.colors.textPrimary,
   },
 
   subtitle: {
     marginTop: 8,
-    color: '#4f6e6e',
+    color: theme.colors.textSecondary,
     fontSize: 15,
     lineHeight: 22,
   },
 
   infoCard: {
-    backgroundColor: '#f9fdfd',
+    backgroundColor: theme.colors.surface,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(36,184,184,0.12)',
+    borderColor: theme.colors.border,
     padding: appTheme.spacing.md,
   },
 
   sectionTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#123f3f',
+    color: theme.colors.textPrimary,
     marginBottom: 16,
   },
 
   detailRow: {
     paddingVertical: 9,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(36,184,184,0.08)',
+    borderBottomColor: theme.colors.border,
   },
 
   detailLabel: {
-    color: '#668080',
+    color: theme.colors.textSecondary,
     fontSize: 12,
     fontWeight: '700',
     marginBottom: 4,
   },
 
   detailValue: {
-    color: '#123f3f',
+    color: theme.colors.textPrimary,
     fontSize: 14,
     fontWeight: '700',
   },
 
   timelineWrap: {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.surface,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(36,184,184,0.12)',
+    borderColor: theme.colors.border,
     padding: appTheme.spacing.md,
   },
 
@@ -626,24 +631,24 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#dfeaea',
+    backgroundColor: theme.colors.border,
     marginTop: 4,
   },
 
   timelineDotDone: {
-    backgroundColor: '#24b8b8',
+    backgroundColor: theme.colors.primaryAccent,
   },
 
   timelineLine: {
     width: 2,
     flex: 1,
-    backgroundColor: '#e5eeee',
+    backgroundColor: theme.colors.border,
     marginTop: 4,
     marginBottom: -4,
   },
 
   timelineLineDone: {
-    backgroundColor: '#24b8b8',
+    backgroundColor: theme.colors.primaryAccent,
   },
 
   timelineTextWrap: {
@@ -653,24 +658,24 @@ const styles = StyleSheet.create({
   },
 
   timelineLabel: {
-    color: '#6e8a8a',
+    color: theme.colors.textSecondary,
     fontWeight: '700',
     fontSize: 14,
   },
 
   timelineLabelDone: {
-    color: '#123f3f',
+    color: theme.colors.textPrimary,
   },
 
   timelineMeta: {
-    color: '#4f6e6e',
+    color: theme.colors.textSecondary,
     fontSize: 12,
     lineHeight: 18,
     marginTop: 4,
   },
 
   infoText: {
-    color: '#4f6e6e',
+    color: theme.colors.textSecondary,
     fontSize: 14,
     lineHeight: 22,
   },
@@ -680,7 +685,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: appTheme.spacing.sm,
-    backgroundColor: '#24b8b8',
+    backgroundColor: theme.colors.primaryAccent,
   },
 
   primaryButtonText: {

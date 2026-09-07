@@ -8,12 +8,16 @@ import { PACKAGES } from '../../data/packages';
 import { RootStackParamList } from '../../navigation/types';
 import { useFavouritesStore } from '../../store/favouritesStore';
 import { appTheme } from '../../theme';
+import type { AppTheme } from '../../theme';
+import { useAppTheme } from '../../hooks/useAppTheme';
 
 export function FranchisePackages() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const toggle = useFavouritesStore((s) => s.toggle);
   const favourites = useFavouritesStore((s) => s.favourites);
   const isFavourite = (id: string) => favourites.includes(id);
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
 
   return (
     <View style={styles.container}>
@@ -92,12 +96,12 @@ export function FranchisePackages() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     marginTop: appTheme.spacing.xl,
   },
   title: {
-    color: appTheme.colors.textPrimary,
+    color: theme.colors.textPrimary,
     fontSize: 26,
     lineHeight: 32,
     fontWeight: '800',
@@ -110,7 +114,7 @@ const styles = StyleSheet.create({
     width: 280,
     borderRadius: 24,
     overflow: 'hidden',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface,
     marginRight: appTheme.spacing.md,
   },
   imageHalf: {
@@ -145,7 +149,7 @@ const styles = StyleSheet.create({
     paddingBottom: appTheme.spacing.md,
   },
   packageTitle: {
-    color: '#111111',
+    color: theme.colors.textPrimary,
     fontSize: 18,
     lineHeight: 24,
     fontWeight: '800',
@@ -155,7 +159,7 @@ const styles = StyleSheet.create({
     rowGap: 4,
   },
   bulletText: {
-    color: '#111111',
+    color: theme.colors.textPrimary,
     fontSize: 13,
     lineHeight: 18,
     fontWeight: '400',
@@ -167,21 +171,21 @@ const styles = StyleSheet.create({
     columnGap: 4,
   },
   ratingText: {
-    color: '#111111',
+    color: theme.colors.textPrimary,
     fontSize: 12,
     lineHeight: 16,
     fontWeight: '600',
   },
   fromText: {
     marginTop: 2,
-    color: '#C7C7C7',
+    color: theme.colors.textSecondary,
     fontSize: 11,
     lineHeight: 14,
     fontWeight: '400',
   },
   priceText: {
     marginTop: 2,
-    color: '#111111',
+    color: theme.colors.textPrimary,
     fontSize: 20,
     lineHeight: 24,
     fontWeight: '800',
@@ -195,10 +199,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tealButton: {
-    backgroundColor: '#24b8b8',
+    backgroundColor: theme.colors.primaryAccent,
   },
   purpleButton: {
-    backgroundColor: '#b89aff',
+    backgroundColor: theme.colors.supportPurple,
   },
   buttonText: {
     color: '#FFFFFF',

@@ -2,6 +2,8 @@ import { Image } from 'expo-image';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { appTheme } from '../../theme';
+import type { AppTheme } from '../../theme';
+import { useAppTheme } from '../../hooks/useAppTheme';
 
 interface LogoItem {
   id: string;
@@ -89,6 +91,9 @@ const deals = [
 ];
 
 export function ExistingClientChecklistSection() {
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>exitsing client CHECKLIST</Text>
@@ -157,12 +162,12 @@ export function ExistingClientChecklistSection() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     marginTop: appTheme.spacing.xl,
   },
   title: {
-    color: '#b89aff',
+    color: theme.colors.supportPurple,
     fontSize: 28,
     lineHeight: 34,
     fontWeight: '700',
@@ -185,7 +190,7 @@ const styles = StyleSheet.create({
     rowGap: appTheme.spacing.sm,
   },
   dealText: {
-    color: appTheme.colors.textPrimary,
+    color: theme.colors.textPrimary,
     fontSize: 18,
     lineHeight: 26,
     fontWeight: '600',

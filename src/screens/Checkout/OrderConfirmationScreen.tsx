@@ -9,11 +9,15 @@ import { ROUTES } from '../../constants/routes';
 import { RootStackParamList } from '../../navigation/types';
 import { getOrderStatus, type OrderStatus } from '../../services/payments/yoco';
 import { appTheme } from '../../theme';
+import type { AppTheme } from '../../theme';
+import { useAppTheme } from '../../hooks/useAppTheme';
 
 export function OrderConfirmationScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, typeof ROUTES.ORDER_CONFIRMATION>>();
   const insets = useSafeAreaInsets();
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
 
   const orderId = route.params?.orderId;
   const [status, setStatus] = useState<OrderStatus | null>(null);
@@ -56,12 +60,12 @@ export function OrderConfirmationScreen() {
     <View style={[styles.root, { paddingTop: insets.top + appTheme.spacing.xl, paddingBottom: insets.bottom + appTheme.spacing.md }]}>
       <View style={styles.iconWrap}>
         {isLoading ? (
-          <ActivityIndicator size="large" color="#24b8b8" />
+          <ActivityIndicator size="large" color={theme.colors.primaryAccent} />
         ) : (
           <Ionicons
             name={isFailed ? 'close-circle' : 'checkmark-circle'}
             size={64}
-            color={isFailed ? '#d14444' : '#24b8b8'}
+            color={isFailed ? '#d14444' : theme.colors.primaryAccent}
           />
         )}
       </View>
@@ -82,10 +86,10 @@ export function OrderConfirmationScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background,
     paddingHorizontal: appTheme.spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
@@ -96,14 +100,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 26,
     fontWeight: '900',
-    color: '#123f3f',
+    color: theme.colors.textPrimary,
     marginBottom: appTheme.spacing.sm,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 15,
     lineHeight: 22,
-    color: '#4f6e6e',
+    color: theme.colors.textSecondary,
     textAlign: 'center',
     marginBottom: appTheme.spacing.lg,
   },
@@ -113,7 +117,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: appTheme.spacing.sm,
-    backgroundColor: '#24b8b8',
+    backgroundColor: theme.colors.primaryAccent,
   },
   primaryButtonText: {
     color: '#FFFFFF',

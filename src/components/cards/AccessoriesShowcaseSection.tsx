@@ -10,6 +10,8 @@ import { RootStackParamList } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
 import { useFavouritesStore } from '../../store/favouritesStore';
 import { appTheme } from '../../theme';
+import type { AppTheme } from '../../theme';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { getBusinessPrice } from '../../utils/pricing';
 
 const accessoryItems = MARKETPLACE_PRODUCTS.slice(8, 16);
@@ -25,6 +27,8 @@ export function AccessoriesShowcaseSection() {
   const toggle = useFavouritesStore((s) => s.toggle);
   const favourites = useFavouritesStore((s) => s.favourites);
   const isFavourite = (id: string) => favourites.includes(id);
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
 
   const openProduct = (productId: string) => {
     navigation.navigate(ROUTES.PACKAGES);
@@ -41,7 +45,7 @@ export function AccessoriesShowcaseSection() {
           <Text style={styles.subtitle}>Reliable products for installs, upgrades and daily sales.</Text>
         </View>
         <View style={styles.pill}>
-          <Ionicons name="flash" size={12} color="#24b8b8" />
+          <Ionicons name="flash" size={12} color={theme.colors.primaryAccent} />
           <Text style={styles.pillText}>Top 8</Text>
         </View>
       </View>
@@ -88,7 +92,7 @@ export function AccessoriesShowcaseSection() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     marginTop: appTheme.spacing.xs,
   },
@@ -100,7 +104,7 @@ const styles = StyleSheet.create({
     columnGap: appTheme.spacing.sm,
   },
   title: {
-    color: appTheme.colors.textPrimary,
+    color: theme.colors.textPrimary,
     fontSize: 24,
     lineHeight: 30,
     fontWeight: '800',
@@ -108,7 +112,7 @@ const styles = StyleSheet.create({
   subtitle: {
     marginTop: 4,
     maxWidth: 280,
-    color: appTheme.colors.textSecondary,
+    color: theme.colors.textSecondary,
     fontSize: 13,
     lineHeight: 18,
     fontWeight: '500',

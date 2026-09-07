@@ -144,7 +144,7 @@ export function FranchiseCarousel() {
                   <Ionicons
                     name="flash"
                     size={18}
-                    color={appTheme.colors.background}
+                    color="#FFFFFF"
                   />
                   <Text style={styles.iconRowText}>{slide.pointOne}</Text>
                 </View>
@@ -153,7 +153,7 @@ export function FranchiseCarousel() {
                   <Ionicons
                     name="flash"
                     size={18}
-                    color={appTheme.colors.background}
+                    color="#FFFFFF"
                   />
                   <Text style={styles.iconRowText}>{slide.pointTwo}</Text>
                 </View>
@@ -167,7 +167,7 @@ export function FranchiseCarousel() {
                     <Ionicons
                       name="calendar-outline"
                       size={16}
-                      color={appTheme.colors.background}
+                      color="#FFFFFF"
                     />
                     <Text style={styles.secondaryButtonText}>{slide.secondaryButtonText}</Text>
                   </Pressable>
@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
   },
   subTitle: {
     marginTop: 0,
-    color: appTheme.colors.background,
+    color: '#FFFFFF',
     fontSize: 24,
     lineHeight: 28,
     fontWeight: '400',
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   },
   mainTitle: {
     marginTop: appTheme.spacing.xs,
-    color: appTheme.colors.background,
+    color: '#FFFFFF',
     fontSize: 30,
     lineHeight: 34,
     fontWeight: '800',
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   },
   iconRowText: {
     flex: 1,
-    color: appTheme.colors.background,
+    color: '#FFFFFF',
     fontSize: 12,
     lineHeight: 17,
     fontWeight: '500',
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
   primaryButton: {
     flex: 1,
     borderRadius: 999,
-    backgroundColor: appTheme.colors.background,
+    backgroundColor: '#FFFFFF',
     paddingVertical: 9,
     paddingHorizontal: appTheme.spacing.sm,
     alignItems: 'center',
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
     flex: 1.15,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: appTheme.colors.background,
+    borderColor: '#FFFFFF',
     backgroundColor: 'rgba(255, 255, 255, 0.08)',
     paddingVertical: 9,
     paddingHorizontal: appTheme.spacing.sm,
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
     columnGap: appTheme.spacing.xs,
   },
   secondaryButtonText: {
-    color: appTheme.colors.background,
+    color: '#FFFFFF',
     fontSize: 12,
     lineHeight: 16,
     fontWeight: '600',

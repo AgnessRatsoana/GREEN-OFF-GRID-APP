@@ -11,6 +11,8 @@ import { useAuthStore } from '../../store/authStore';
 import { useCartStore } from '../../store/cartStore';
 import { useFavouritesStore } from '../../store/favouritesStore';
 import { appTheme } from '../../theme';
+import type { AppTheme } from '../../theme';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { getBusinessPrice } from '../../utils/pricing';
 
 const homeAccessories = MARKETPLACE_PRODUCTS.slice(0, 8);
@@ -24,6 +26,8 @@ export function MarketplaceAccessoriesSection() {
   const toggle = useFavouritesStore((s) => s.toggle);
   const favourites = useFavouritesStore((s) => s.favourites);
   const isFavourite = (id: string) => favourites.includes(id);
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
 
   const openProduct = (productId: string) => {
     navigation.navigate(ROUTES.PACKAGES);
@@ -108,12 +112,12 @@ export function MarketplaceAccessoriesSection() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     marginTop: appTheme.spacing.xl,
   },
   sectionLabel: {
-    color: '#1a3f3f',
+    color: theme.colors.textPrimary,
     fontSize: 20,
     lineHeight: 26,
     fontWeight: '800',
@@ -127,11 +131,11 @@ const styles = StyleSheet.create({
   },
   accessoryCard: {
     width: '48%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface,
     borderRadius: 20,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(36,184,184,0.18)',
+    borderColor: theme.colors.border,
   },
   accessoryImageWrap: {
     height: 160,
@@ -181,19 +185,19 @@ const styles = StyleSheet.create({
     padding: appTheme.spacing.md,
   },
   productName: {
-    color: '#111111',
+    color: theme.colors.textPrimary,
     fontSize: 16,
     lineHeight: 22,
     fontWeight: '800',
   },
   productDescription: {
-    color: '#5a7474',
+    color: theme.colors.textSecondary,
     fontSize: 12,
     lineHeight: 18,
     marginTop: 6,
   },
   categoryText: {
-    color: '#24b8b8',
+    color: theme.colors.primaryAccent,
     fontSize: 11,
     lineHeight: 16,
     fontWeight: '700',
@@ -207,7 +211,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   priceText: {
-    color: '#111111',
+    color: theme.colors.textPrimary,
     fontSize: 18,
     lineHeight: 22,
     fontWeight: '800',
@@ -218,13 +222,13 @@ const styles = StyleSheet.create({
     rowGap: 2,
   },
   originalPriceStrike: {
-    color: '#9fb1b1',
+    color: theme.colors.textSecondary,
     fontSize: 11,
     textDecorationLine: 'line-through',
   },
   addButton: {
     borderRadius: 999,
-    backgroundColor: '#24b8b8',
+    backgroundColor: theme.colors.primaryAccent,
     paddingVertical: 10,
     paddingHorizontal: 14,
   },

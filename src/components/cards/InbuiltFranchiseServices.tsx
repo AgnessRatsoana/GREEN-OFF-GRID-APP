@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { appTheme } from '../../theme';
+import type { AppTheme } from '../../theme';
+import { useAppTheme } from '../../hooks/useAppTheme';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -22,6 +24,9 @@ const serviceItems: ServiceItem[] = [
 ];
 
 export function InbuiltFranchiseServices() {
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Inbuilt Franchise Services</Text>
@@ -36,7 +41,7 @@ export function InbuiltFranchiseServices() {
               <Ionicons
                 name={item.icon}
                 size={24}
-                color="#24b8b8"
+                color={theme.colors.primaryAccent}
               />
               <Text style={styles.itemText}>{item.label}</Text>
             </View>
@@ -47,12 +52,12 @@ export function InbuiltFranchiseServices() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     marginTop: appTheme.spacing.xl,
   },
   title: {
-    color: appTheme.colors.textPrimary,
+    color: theme.colors.textPrimary,
     fontSize: 26,
     lineHeight: 32,
     fontWeight: '800',
@@ -70,7 +75,7 @@ const styles = StyleSheet.create({
   },
   itemText: {
     marginTop: appTheme.spacing.xs,
-    color: '#111111',
+    color: theme.colors.textPrimary,
     fontSize: 12,
     lineHeight: 16,
     fontWeight: '500',

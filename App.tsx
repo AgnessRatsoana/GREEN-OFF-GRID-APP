@@ -25,7 +25,9 @@ import {
 import { useAuthStore } from './src/store/authStore';
 import { useCartStore } from './src/store/cartStore';
 import { useFavouritesStore } from './src/store/favouritesStore';
+import { useThemeStore } from './src/store/themeStore';
 import { appTheme } from './src/theme';
+import { useAppTheme } from './src/hooks/useAppTheme';
 
 export default function App() {
   const [isHydrating, setIsHydrating] =
@@ -47,6 +49,11 @@ export default function App() {
     useFavouritesStore((s) => s.hydrate);
   const hydrateCart =
     useCartStore((s) => s.hydrate);
+  const hydrateTheme =
+    useThemeStore((s) => s.hydrate);
+  const themeMode =
+    useThemeStore((s) => s.mode);
+  const theme = useAppTheme();
 
   useEffect(() => {
     const bootstrapAuth = async () => {
@@ -59,6 +66,7 @@ export default function App() {
          */
         await hydrateFavourites();
         await hydrateCart();
+        await hydrateTheme();
 
         /*
          * CHECK INITIAL URL
@@ -136,6 +144,7 @@ export default function App() {
     setSession,
     hydrateFavourites,
     hydrateCart,
+    hydrateTheme,
   ]);
 
   /*
@@ -148,13 +157,10 @@ export default function App() {
         style={styles.container}
       >
         <SafeAreaProvider>
-          <View style={styles.loaderWrap}>
+          <View style={[styles.loaderWrap, { backgroundColor: theme.colors.background }]}>
             <ActivityIndicator
               size="large"
-              color={
-                appTheme.colors
-                  .primaryAccent
-              }
+              color={theme.colors.primaryAccent}
             />
           </View>
         </SafeAreaProvider>
@@ -170,7 +176,7 @@ export default function App() {
       style={styles.container}
     >
       <SafeAreaProvider>
-        <StatusBar style="dark" />
+        <StatusBar style={themeMode === 'dark' ? 'light' : 'dark'} />
 
         <AppNavigation
           onRouteChange={

@@ -15,6 +15,8 @@ import {
 import { MARKETPLACE_PRODUCTS } from '../../data/marketplace';
 import { PACKAGES } from '../../data/packages';
 import { appTheme } from '../../theme';
+import type { AppTheme } from '../../theme';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { FLOATING_NAV_CONTENT_INSET } from '../../components/common/FloatingBottomNav';
 
 export function MessagesScreen() {
@@ -24,6 +26,8 @@ export function MessagesScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
 
   const loadEnquiries = async (refresh = false) => {
     if (refresh) setIsRefreshing(true);
@@ -59,19 +63,19 @@ export function MessagesScreen() {
     <View style={styles.root}>
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={8}>
-          <Ionicons name="arrow-back" size={22} color="#24b8b8" />
+          <Ionicons name="arrow-back" size={22} color={theme.colors.primaryAccent} />
         </Pressable>
         <Text style={styles.headerTitle}>Messages</Text>
         <View style={styles.iconDecor}>
-          <Ionicons name="chatbubble-ellipses-outline" size={22} color="#24b8b8" />
+          <Ionicons name="chatbubble-ellipses-outline" size={22} color={theme.colors.primaryAccent} />
         </View>
       </View>
 
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + FLOATING_NAV_CONTENT_INSET }]}
-        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => loadEnquiries(true)} tintColor="#24b8b8" />}
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => loadEnquiries(true)} tintColor={theme.colors.primaryAccent} />}
       >
-        {isLoading ? <ActivityIndicator color="#24b8b8" /> : null}
+        {isLoading ? <ActivityIndicator color={theme.colors.primaryAccent} /> : null}
         {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
         {!isLoading && !errorMessage && conversations.length === 0 ? (
           <View style={styles.contentWrap}><Text style={styles.title}>No messages yet</Text><Text style={styles.subtitle}>Your product and package enquiries will appear here.</Text></View>
@@ -108,10 +112,10 @@ export function MessagesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -119,7 +123,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: appTheme.spacing.md,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(36,184,184,0.18)',
+    borderBottomColor: theme.colors.border,
   },
   backBtn: {
     width: 40,
@@ -132,7 +136,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     flex: 1,
-    color: '#1a3f3f',
+    color: theme.colors.textPrimary,
     fontSize: 22,
     fontWeight: '800',
     letterSpacing: 0.5,
@@ -152,34 +156,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: appTheme.spacing.md,
   },
   title: {
-    color: '#123f3f',
+    color: theme.colors.textPrimary,
     fontSize: 28,
     fontWeight: '800',
   },
   subtitle: {
     marginTop: appTheme.spacing.sm,
-    color: '#5d7676',
+    color: theme.colors.textSecondary,
     fontSize: 15,
     textAlign: 'center',
   },
   content: { padding: appTheme.spacing.md, rowGap: appTheme.spacing.sm },
-  messageCard: { borderWidth: 1, borderColor: 'rgba(36,184,184,0.2)', borderRadius: 14, padding: 14, backgroundColor: '#f7fdfd' },
+  messageCard: { borderWidth: 1, borderColor: theme.colors.border, borderRadius: 14, padding: 14, backgroundColor: theme.colors.surface },
   messageHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  itemType: { color: '#24b8b8', fontSize: 10, fontWeight: '800', letterSpacing: 1 },
-  status: { color: '#668080', fontSize: 11, textTransform: 'capitalize' },
+  itemType: { color: theme.colors.primaryAccent, fontSize: 10, fontWeight: '800', letterSpacing: 1 },
+  status: { color: theme.colors.textSecondary, fontSize: 11, textTransform: 'capitalize' },
   headerRight: { flexDirection: 'row', alignItems: 'center', columnGap: 8 },
   unreadBadge: {
     minWidth: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#24b8b8',
+    backgroundColor: theme.colors.primaryAccent,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 6,
   },
   unreadBadgeText: { color: '#FFFFFF', fontSize: 11, fontWeight: '800' },
-  itemName: { color: '#123f3f', fontSize: 16, fontWeight: '800', marginTop: 7 },
-  messageText: { color: '#4f6e6e', fontSize: 14, lineHeight: 21, marginTop: 8 },
-  dateText: { color: '#789292', fontSize: 11, marginTop: 10 },
+  itemName: { color: theme.colors.textPrimary, fontSize: 16, fontWeight: '800', marginTop: 7 },
+  messageText: { color: theme.colors.textSecondary, fontSize: 14, lineHeight: 21, marginTop: 8 },
+  dateText: { color: theme.colors.textSecondary, fontSize: 11, marginTop: 10 },
   errorText: { color: '#b34040', textAlign: 'center', marginTop: 12 },
 });

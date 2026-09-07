@@ -21,6 +21,8 @@ import { loginWithSupabase } from '../../services/auth/authActions';
 import { saveAuthTokens } from '../../services/storage/secureStore';
 import { useAuthStore } from '../../store/authStore';
 import { appTheme } from '../../theme';
+import type { AppTheme } from '../../theme';
+import { useAppTheme } from '../../hooks/useAppTheme';
 
 export function LoginScreen() {
   const navigation =
@@ -44,6 +46,9 @@ export function LoginScreen() {
 
   const [isSubmitting, setIsSubmitting] =
     useState(false);
+
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
 
   const handleLogin = async () => {
     /*
@@ -385,7 +390,7 @@ navigation.reset({
           name="arrow-back"
           size={20}
           color={
-            appTheme.colors
+            theme.colors
               .primaryAccent
           }
         />
@@ -514,12 +519,12 @@ navigation.reset({
   );
 }
 
-const styles =
+const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     root: {
       flex: 1,
       backgroundColor:
-        '#FFFFFF',
+        theme.colors.background,
       paddingHorizontal:
         appTheme.spacing.md,
     },
@@ -533,9 +538,9 @@ const styles =
         'center',
       borderWidth: 1,
       borderColor:
-        'rgba(36, 184, 184, 0.3)',
+        theme.colors.border,
       backgroundColor:
-        '#f4fcfc',
+        theme.colors.surface,
     },
 
     headerSection: {
@@ -548,13 +553,13 @@ const styles =
     title: {
       fontSize: 30,
       fontWeight: '800',
-      color: '#0d3d3d',
+      color: theme.colors.textPrimary,
     },
 
     subtitle: {
       fontSize: 15,
       lineHeight: 22,
-      color: '#4c6969',
+      color: theme.colors.textSecondary,
     },
 
     formSection: {
@@ -567,16 +572,16 @@ const styles =
     input: {
       borderWidth: 1,
       borderColor:
-        'rgba(36, 184, 184, 0.28)',
+        theme.colors.border,
       borderRadius: 16,
       paddingHorizontal:
         appTheme.spacing.md,
       paddingVertical:
         appTheme.spacing.sm,
       fontSize: 15,
-      color: '#213232',
+      color: theme.colors.textPrimary,
       backgroundColor:
-        '#fbffff',
+        theme.colors.surface,
     },
 
     errorText: {
@@ -594,7 +599,7 @@ const styles =
       paddingVertical:
         appTheme.spacing.sm,
       backgroundColor:
-        '#24b8b8',
+        theme.colors.primaryAccent,
     },
 
     loginButtonDisabled: {
@@ -611,11 +616,11 @@ const styles =
       marginTop:
         appTheme.spacing.sm,
       textAlign: 'center',
-      color: '#4c6969',
+      color: theme.colors.textSecondary,
     },
 
     switchTextStrong: {
-      color: '#b89aff',
+      color: theme.colors.supportPurple,
       fontWeight: '700',
     },
 
@@ -623,7 +628,7 @@ const styles =
       marginTop:
         appTheme.spacing.xs,
       textAlign: 'center',
-      color: '#0f6464',
+      color: theme.colors.primaryAccent,
       fontSize: 13,
       fontWeight: '700',
     },

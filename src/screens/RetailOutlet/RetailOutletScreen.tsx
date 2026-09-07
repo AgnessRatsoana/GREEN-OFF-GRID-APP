@@ -11,6 +11,8 @@ import { PACKAGES } from '../../data/packages';
 import { RootStackParamList } from '../../navigation/types';
 import { fetchMyApplications, type Application } from '../../services/applications/applications';
 import { appTheme } from '../../theme';
+import type { AppTheme } from '../../theme';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { FLOATING_NAV_CONTENT_INSET } from '../../components/common/FloatingBottomNav';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -28,6 +30,8 @@ export function RetailOutletScreen() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
 
   // Load the customer's real applications from Supabase.
   const loadApplications = async (refresh = false) => {
@@ -59,7 +63,7 @@ export function RetailOutletScreen() {
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <Text style={styles.headerTitle}>Packages</Text>
         <View style={styles.headerIcon}>
-          <Ionicons name="cube-outline" size={20} color="#24b8b8" />
+          <Ionicons name="cube-outline" size={20} color={theme.colors.primaryAccent} />
         </View>
       </View>
 
@@ -67,10 +71,10 @@ export function RetailOutletScreen() {
         contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + FLOATING_NAV_CONTENT_INSET }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={() => loadApplications(true)} tintColor="#24b8b8" />
+          <RefreshControl refreshing={isRefreshing} onRefresh={() => loadApplications(true)} tintColor={theme.colors.primaryAccent} />
         }
       >
-        {isLoading ? <ActivityIndicator color="#24b8b8" style={{ marginBottom: 12 }} /> : null}
+        {isLoading ? <ActivityIndicator color={theme.colors.primaryAccent} style={{ marginBottom: 12 }} /> : null}
 
         {recommendedPackage ? (
           <View style={styles.recommendCard}>
@@ -109,7 +113,7 @@ export function RetailOutletScreen() {
                       <Image source={pkg.imageSource} style={styles.appliedImage} contentFit="cover" />
                     ) : (
                       <View style={[styles.appliedImage, styles.appliedImageFallback]}>
-                        <Ionicons name="cube-outline" size={22} color="#24b8b8" />
+                        <Ionicons name="cube-outline" size={22} color={theme.colors.primaryAccent} />
                       </View>
                     )}
                     <View style={styles.appliedContent}>
@@ -123,7 +127,7 @@ export function RetailOutletScreen() {
                     </View>
                     <View style={styles.trackWrap}>
                       <Text style={styles.trackText}>Track</Text>
-                      <Ionicons name="chevron-forward" size={16} color="#0f6464" />
+                      <Ionicons name="chevron-forward" size={16} color={theme.colors.primaryAccent} />
                     </View>
                   </Pressable>
                 );
@@ -160,10 +164,10 @@ export function RetailOutletScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -172,10 +176,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: appTheme.spacing.md,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(36,184,184,0.18)',
+    borderBottomColor: theme.colors.border,
   },
   headerTitle: {
-    color: '#1a3f3f',
+    color: theme.colors.textPrimary,
     fontSize: 22,
     fontWeight: '800',
   },
@@ -194,25 +198,25 @@ const styles = StyleSheet.create({
   recommendCard: {
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(36,184,184,0.2)',
-    backgroundColor: '#f7fdfd',
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
     padding: appTheme.spacing.md,
     rowGap: 8,
   },
   recommendLabel: {
-    color: '#24b8b8',
+    color: theme.colors.primaryAccent,
     fontSize: 12,
     fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 0.6,
   },
   recommendTitle: {
-    color: '#123f3f',
+    color: theme.colors.textPrimary,
     fontSize: 22,
     fontWeight: '900',
   },
   recommendBody: {
-    color: '#4f6e6e',
+    color: theme.colors.textSecondary,
     fontSize: 14,
     lineHeight: 20,
   },
@@ -223,7 +227,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     columnGap: 8,
     borderRadius: 999,
-    backgroundColor: '#24b8b8',
+    backgroundColor: theme.colors.primaryAccent,
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
@@ -233,7 +237,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   sectionTitle: {
-    color: '#1a3f3f',
+    color: theme.colors.textPrimary,
     fontSize: 18,
     fontWeight: '800',
     marginBottom: appTheme.spacing.sm,
@@ -246,8 +250,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(36,184,184,0.18)',
-    backgroundColor: '#FFFFFF',
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
     padding: appTheme.spacing.sm,
     columnGap: appTheme.spacing.sm,
   },
@@ -266,12 +270,12 @@ const styles = StyleSheet.create({
     rowGap: 4,
   },
   appliedTitle: {
-    color: '#1a3f3f',
+    color: theme.colors.textPrimary,
     fontSize: 15,
     fontWeight: '700',
   },
   appliedDate: {
-    color: '#668080',
+    color: theme.colors.textSecondary,
     fontSize: 11,
   },
   statusPill: {
@@ -291,7 +295,7 @@ const styles = StyleSheet.create({
     columnGap: 2,
   },
   trackText: {
-    color: '#0f6464',
+    color: theme.colors.primaryAccent,
     fontSize: 12,
     fontWeight: '700',
   },
@@ -302,8 +306,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(36,184,184,0.18)',
-    backgroundColor: '#FFFFFF',
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
     flexDirection: 'row',
     alignItems: 'stretch',
     minHeight: 124,
@@ -319,12 +323,12 @@ const styles = StyleSheet.create({
     rowGap: 4,
   },
   packageTitle: {
-    color: '#1a3f3f',
+    color: theme.colors.textPrimary,
     fontSize: 15,
     fontWeight: '800',
   },
   packagePrice: {
-    color: '#0f6464',
+    color: theme.colors.primaryAccent,
     fontSize: 18,
     fontWeight: '900',
   },
@@ -336,10 +340,10 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   tealBtn: {
-    backgroundColor: '#24b8b8',
+    backgroundColor: theme.colors.primaryAccent,
   },
   purpleBtn: {
-    backgroundColor: '#b89aff',
+    backgroundColor: theme.colors.supportPurple,
   },
   packageBtnText: {
     color: '#FFFFFF',

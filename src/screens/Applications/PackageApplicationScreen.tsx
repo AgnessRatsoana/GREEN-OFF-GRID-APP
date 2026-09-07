@@ -20,6 +20,8 @@ import { PACKAGES } from '../../data/packages';
 import { RootStackParamList } from '../../navigation/types';
 import { createApplication } from '../../services/applications/applications';
 import { appTheme } from '../../theme';
+import type { AppTheme } from '../../theme';
+import { useAppTheme } from '../../hooks/useAppTheme';
 
 type Stage = 'details' | 'location' | 'review';
 
@@ -53,6 +55,8 @@ export function PackageApplicationScreen() {
   const [notes, setNotes] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
 
   const detailsValid = fullName.trim().length > 0 && email.trim().length > 0 && phone.trim().length > 0;
   const locationValid = city.trim().length > 0 && province.trim().length > 0 && address.trim().length > 0 && addressConfirmed;
@@ -146,7 +150,7 @@ export function PackageApplicationScreen() {
       >
       <View style={styles.headerRow}>
         <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={20} color={appTheme.colors.primaryAccent} />
+          <Ionicons name="arrow-back" size={20} color={theme.colors.primaryAccent} />
         </Pressable>
         <Text style={styles.headerTitle}>Application</Text>
         <View style={styles.headerSpacer} />
@@ -275,7 +279,7 @@ export function PackageApplicationScreen() {
                   <Ionicons
                     name={addressConfirmed ? 'checkbox' : 'square-outline'}
                     size={22}
-                    color={addressConfirmed ? '#24b8b8' : '#9fb3b3'}
+                    color={addressConfirmed ? theme.colors.primaryAccent : theme.colors.textSecondary}
                   />
                   <Text style={styles.addressCheckboxText}>
                     Confirm the map shows your correct location.
@@ -397,10 +401,10 @@ export function PackageApplicationScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background,
     paddingHorizontal: appTheme.spacing.md,
   },
   keyboardView: {
@@ -410,10 +414,10 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background,
   },
   emptyText: {
-    color: '#123f3f',
+    color: theme.colors.textPrimary,
     fontSize: 16,
     fontWeight: '700',
   },
@@ -430,13 +434,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(36, 184, 184, 0.3)',
-    backgroundColor: '#f4fcfc',
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#123f3f',
+    color: theme.colors.textPrimary,
   },
   headerSpacer: {
     width: 38,
@@ -450,7 +454,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   packageBadge: {
-    color: '#0f6464',
+    color: theme.colors.primaryAccent,
     fontSize: 12,
     fontWeight: '800',
     textTransform: 'uppercase',
@@ -470,22 +474,22 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#dfeaea',
+    backgroundColor: theme.colors.border,
     marginBottom: 8,
   },
   progressDotActive: {
-    backgroundColor: '#24b8b8',
+    backgroundColor: theme.colors.primaryAccent,
   },
   progressDotDone: {
-    backgroundColor: '#0f6464',
+    backgroundColor: theme.colors.primaryAccent,
   },
   progressLabel: {
     fontSize: 10,
-    color: '#6f8c8c',
+    color: theme.colors.textSecondary,
     textAlign: 'center',
   },
   progressLabelActive: {
-    color: '#123f3f',
+    color: theme.colors.textPrimary,
     fontWeight: '700',
   },
   content: {
@@ -497,13 +501,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#123f3f',
+    color: theme.colors.textPrimary,
     marginBottom: 6,
   },
   fieldLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#4f6e6e',
+    color: theme.colors.textSecondary,
     marginBottom: 4,
   },
   requiredStar: {
@@ -519,20 +523,20 @@ const styles = StyleSheet.create({
   },
   addressCheckboxText: {
     flex: 1,
-    color: '#4f6e6e',
+    color: theme.colors.textSecondary,
     fontSize: 14,
     lineHeight: 20,
     fontWeight: '500',
   },
   input: {
     borderWidth: 1,
-    borderColor: 'rgba(36, 184, 184, 0.24)',
+    borderColor: theme.colors.border,
     borderRadius: 16,
     paddingHorizontal: appTheme.spacing.md,
     paddingVertical: appTheme.spacing.sm,
     fontSize: 15,
-    color: '#213232',
-    backgroundColor: '#fbffff',
+    color: theme.colors.textPrimary,
+    backgroundColor: theme.colors.surface,
   },
   textArea: {
     minHeight: 110,
@@ -541,7 +545,7 @@ const styles = StyleSheet.create({
   smallLabel: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#123f3f',
+    color: theme.colors.textPrimary,
     marginTop: 6,
   },
   segmentRow: {
@@ -555,15 +559,15 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: 'rgba(36, 184, 184, 0.28)',
-    backgroundColor: '#f9fdfd',
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
   segmentButtonActive: {
-    backgroundColor: '#24b8b8',
-    borderColor: '#24b8b8',
+    backgroundColor: theme.colors.primaryAccent,
+    borderColor: theme.colors.primaryAccent,
   },
   segmentText: {
-    color: '#214d4d',
+    color: theme.colors.textPrimary,
     fontSize: 12,
     fontWeight: '700',
   },
@@ -571,26 +575,26 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   reviewCard: {
-    backgroundColor: '#f6fdfd',
+    backgroundColor: theme.colors.surface,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(36, 184, 184, 0.18)',
+    borderColor: theme.colors.border,
     padding: appTheme.spacing.md,
   },
   reviewLabel: {
-    color: '#668080',
+    color: theme.colors.textSecondary,
     fontSize: 12,
     marginTop: 10,
     marginBottom: 4,
     fontWeight: '700',
   },
   reviewValue: {
-    color: '#123f3f',
+    color: theme.colors.textPrimary,
     fontSize: 15,
     fontWeight: '700',
   },
   successMessage: {
-    color: '#0f6464',
+    color: theme.colors.primaryAccent,
     fontSize: 13,
     fontWeight: '700',
     marginTop: 8,
@@ -602,7 +606,7 @@ const styles = StyleSheet.create({
     columnGap: appTheme.spacing.sm,
     paddingVertical: appTheme.spacing.md,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(36, 184, 184, 0.18)',
+    borderTopColor: theme.colors.border,
   },
   primaryButton: {
     flex: 1,
@@ -610,7 +614,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: appTheme.spacing.sm,
-    backgroundColor: '#24b8b8',
+    backgroundColor: theme.colors.primaryAccent,
   },
   primaryButtonDisabled: {
     opacity: 0.5,
@@ -635,11 +639,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: appTheme.spacing.sm,
     borderWidth: 1,
-    borderColor: 'rgba(36, 184, 184, 0.22)',
-    backgroundColor: '#f4fcfc',
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
   secondaryButtonText: {
-    color: '#123f3f',
+    color: theme.colors.textPrimary,
     fontSize: 15,
     fontWeight: '800',
   },

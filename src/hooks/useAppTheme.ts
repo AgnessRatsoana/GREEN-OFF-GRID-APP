@@ -1,5 +1,7 @@
-import { appTheme } from '../theme';
+import { buildTheme } from '../theme';
+import { useThemeStore } from '../store/themeStore';
 
 export function useAppTheme() {
-  return appTheme;
+  const mode = useThemeStore((s) => s.mode);
+  return buildTheme(mode);
 }

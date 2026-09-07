@@ -12,6 +12,8 @@ import { RootStackParamList } from '../../navigation/types';
 import { useCartStore, type CartLine } from '../../store/cartStore';
 import { useAuthStore } from '../../store/authStore';
 import { appTheme } from '../../theme';
+import type { AppTheme } from '../../theme';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { FLOATING_NAV_CONTENT_INSET } from '../../components/common/FloatingBottomNav';
 import {
   BUSINESS_DISCOUNT_MIN_QUANTITY,
@@ -32,6 +34,8 @@ export function CartScreen() {
   const addItem = useCartStore((s) => s.addItem);
   const removeItem = useCartStore((s) => s.removeItem);
   const clearCart = useCartStore((s) => s.clearCart);
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   const getUnitPrice = (item: CartLine) =>
     isBusiness ? getBusinessLineUnitPrice(item.price, item.quantity) : item.price;
@@ -52,11 +56,11 @@ export function CartScreen() {
     <View style={styles.root}>
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <Pressable style={styles.backBtn} onPress={() => navigation.goBack()} hitSlop={8}>
-          <Ionicons name="arrow-back" size={22} color="#24b8b8" />
+          <Ionicons name="arrow-back" size={22} color={theme.colors.primaryAccent} />
         </Pressable>
         <Text style={styles.headerTitle}>My Cart</Text>
         <View style={styles.decorIcon}>
-          <Ionicons name="cart" size={20} color="#24b8b8" />
+          <Ionicons name="cart" size={20} color={theme.colors.primaryAccent} />
         </View>
       </View>
 
@@ -87,7 +91,7 @@ export function CartScreen() {
         <Text style={styles.sectionTitle}>Selected items</Text>
         {items.length === 0 ? (
           <View style={styles.emptyCard}>
-            <Ionicons name="cart-outline" size={42} color="#89a3a3" />
+            <Ionicons name="cart-outline" size={42} color={theme.colors.textSecondary} />
             <Text style={styles.emptyTitle}>Your cart is empty</Text>
             <Text style={styles.emptyBody}>Add accessories to see them here.</Text>
             <Pressable style={styles.shopBtn} onPress={() => navigation.navigate(ROUTES.PACKAGES)}>
@@ -132,7 +136,7 @@ export function CartScreen() {
                     style={styles.qtyBtn}
                     onPress={() => removeItem(item.id)}
                   >
-                    <Ionicons name="remove" size={16} color="#0f6464" />
+                    <Ionicons name="remove" size={16} color={theme.colors.primaryAccent} />
                   </Pressable>
 
                   <Text style={styles.qtyValue}>
@@ -143,7 +147,7 @@ export function CartScreen() {
                     style={styles.qtyBtn}
                     onPress={() => increaseQty(item)}
                   >
-                    <Ionicons name="add" size={16} color="#0f6464" />
+                    <Ionicons name="add" size={16} color={theme.colors.primaryAccent} />
                   </Pressable>
                 </View>
 
@@ -189,10 +193,10 @@ export function CartScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -200,7 +204,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: appTheme.spacing.md,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(36,184,184,0.18)',
+    borderBottomColor: theme.colors.border,
   },
   backBtn: {
     width: 40,
@@ -213,7 +217,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     flex: 1,
-    color: '#1a3f3f',
+    color: theme.colors.textPrimary,
     fontSize: 22,
     fontWeight: '800',
   },
@@ -232,22 +236,22 @@ const styles = StyleSheet.create({
   summaryCard: {
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(36,184,184,0.2)',
-    backgroundColor: '#f7fdfd',
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
     padding: appTheme.spacing.md,
   },
   summaryLabel: {
-    color: '#597575',
+    color: theme.colors.textSecondary,
     fontSize: 12,
     marginTop: 4,
   },
   summaryValue: {
-    color: '#123f3f',
+    color: theme.colors.textPrimary,
     fontSize: 24,
     fontWeight: '800',
   },
   summaryTotal: {
-    color: '#0f6464',
+    color: theme.colors.primaryAccent,
     fontSize: 28,
     fontWeight: '900',
     marginTop: 2,
@@ -268,7 +272,7 @@ const styles = StyleSheet.create({
   checkoutBtn: {
     marginTop: appTheme.spacing.sm,
     borderRadius: 16,
-    backgroundColor: '#24b8b8',
+    backgroundColor: theme.colors.primaryAccent,
     paddingVertical: 12,
     paddingHorizontal: 16,
     alignItems: 'center',
@@ -279,34 +283,34 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   sectionTitle: {
-    color: '#1a3f3f',
+    color: theme.colors.textPrimary,
     fontSize: 18,
     fontWeight: '800',
   },
   emptyCard: {
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(36,184,184,0.2)',
-    backgroundColor: '#f9fdfd',
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
     alignItems: 'center',
     paddingVertical: 26,
     paddingHorizontal: appTheme.spacing.md,
     rowGap: 8,
   },
   emptyTitle: {
-    color: '#1a3f3f',
+    color: theme.colors.textPrimary,
     fontSize: 18,
     fontWeight: '700',
   },
   emptyBody: {
-    color: '#5e7a7a',
+    color: theme.colors.textSecondary,
     fontSize: 13,
     textAlign: 'center',
   },
   shopBtn: {
     marginTop: 6,
     borderRadius: 999,
-    backgroundColor: '#24b8b8',
+    backgroundColor: theme.colors.primaryAccent,
     paddingHorizontal: 16,
     paddingVertical: 9,
   },
@@ -318,8 +322,8 @@ const styles = StyleSheet.create({
   itemCard: {
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(36,184,184,0.18)',
-    backgroundColor: '#FFFFFF',
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
     padding: appTheme.spacing.md,
     flexDirection: 'row',
     columnGap: appTheme.spacing.sm,
@@ -328,19 +332,19 @@ const styles = StyleSheet.create({
     width: 92,
     height: 92,
     borderRadius: 12,
-    backgroundColor: '#eef6f6',
+    backgroundColor: theme.colors.surface,
   },
   itemTextWrap: {
     flex: 1,
   },
   itemType: {
-    color: '#24b8b8',
+    color: theme.colors.primaryAccent,
     fontSize: 11,
     fontWeight: '700',
     textTransform: 'uppercase',
   },
   itemName: {
-    color: '#1a3f3f',
+    color: theme.colors.textPrimary,
     fontSize: 15,
     fontWeight: '700',
     marginTop: 4,
@@ -352,7 +356,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   unitPriceStrike: {
-    color: '#9fb3b3',
+    color: theme.colors.textSecondary,
     fontSize: 12,
     textDecorationLine: 'line-through',
   },
@@ -362,26 +366,26 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 4,
   },  itemPrice: {
-    color: '#395f5f',
+    color: theme.colors.textSecondary,
     fontSize: 13,
     marginTop: 4,
   },
   quantityLabel: {
-    color: '#597575',
+    color: theme.colors.textSecondary,
     fontSize: 12,
     fontWeight: '700',
     marginTop: 12,
   },
 
   totalLabel: {
-    color: '#597575',
+    color: theme.colors.textSecondary,
     fontSize: 12,
     fontWeight: '700',
     marginTop: 12,
   },
 
   itemTotal: {
-    color: '#0f6464',
+    color: theme.colors.primaryAccent,
     fontSize: 18,
     fontWeight: '900',
     marginTop: 2,
@@ -400,10 +404,10 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(36,184,184,0.26)',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f7fdfd',
+    backgroundColor: theme.colors.surface,
   },
   qtyValue: {
-    color: '#173f3f',
+    color: theme.colors.textPrimary,
     fontSize: 14,
     fontWeight: '800',
     minWidth: 20,
@@ -420,8 +424,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(36,184,184,0.18)',
-    backgroundColor: '#FFFFFF',
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
   recommendedImage: {
     width: '100%',
@@ -432,19 +436,19 @@ const styles = StyleSheet.create({
     rowGap: 6,
   },
   recommendedName: {
-    color: '#1a3f3f',
+    color: theme.colors.textPrimary,
     fontSize: 13,
     fontWeight: '700',
   },
   recommendedPrice: {
-    color: '#0f6464',
+    color: theme.colors.primaryAccent,
     fontSize: 14,
     fontWeight: '800',
   },
   recommendedBtn: {
     marginTop: 2,
     borderRadius: 999,
-    backgroundColor: '#24b8b8',
+    backgroundColor: theme.colors.primaryAccent,
     paddingVertical: 7,
     alignItems: 'center',
   },

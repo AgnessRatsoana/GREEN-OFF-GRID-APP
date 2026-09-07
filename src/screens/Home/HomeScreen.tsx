@@ -17,12 +17,14 @@ import { FLOATING_NAV_CONTENT_INSET } from '../../components/common/FloatingBott
 import { RootStackParamList } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
 import { appTheme } from '../../theme';
+import { useAppTheme } from '../../hooks/useAppTheme';
 
 export function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const user = useAuthStore((s) => s.user);
+  const theme = useAppTheme();
 
   const textScale = useMemo(() => {
     if (width >= 430) {
@@ -37,7 +39,7 @@ export function HomeScreen() {
   }, [width]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
@@ -67,6 +69,7 @@ export function HomeScreen() {
             style={[
               styles.discoveryTitle,
               {
+                color: theme.colors.textPrimary,
                 fontSize: 42 * textScale,
                 lineHeight: 46 * textScale,
               },
@@ -78,6 +81,7 @@ export function HomeScreen() {
             style={[
               styles.discoverySubtitle,
               {
+                color: theme.colors.textSecondary,
                 fontSize: 18 * textScale,
                 lineHeight: 24 * textScale,
               },

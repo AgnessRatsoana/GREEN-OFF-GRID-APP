@@ -23,6 +23,8 @@ import { createOrder } from '../../services/orders/orders';
 import { useAuthStore } from '../../store/authStore';
 import { useCartStore, type CartLine } from '../../store/cartStore';
 import { appTheme } from '../../theme';
+import type { AppTheme } from '../../theme';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { FLOATING_NAV_CONTENT_INSET } from '../../components/common/FloatingBottomNav';
 import { getBusinessLineUnitPrice } from '../../utils/pricing';
 
@@ -38,6 +40,8 @@ export function CheckoutScreen() {
   const clearCart = useCartStore((s) => s.clearCart);
   const isBusiness = useAuthStore((s) => s.user?.accountType === 'business');
   const user = useAuthStore((s) => s.user);
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   const getUnitPrice = (item: CartLine) =>
     isBusiness ? getBusinessLineUnitPrice(item.price, item.quantity) : item.price;
@@ -128,7 +132,7 @@ export function CheckoutScreen() {
     >
       <View style={styles.headerRow}>
         <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={20} color={appTheme.colors.primaryAccent} />
+          <Ionicons name="arrow-back" size={20} color={theme.colors.primaryAccent} />
         </Pressable>
         <Text style={styles.headerTitle}>Checkout</Text>
         <View style={styles.headerSpacer} />
@@ -147,21 +151,21 @@ export function CheckoutScreen() {
             onChangeText={setFullName}
             placeholder="Full name"
             style={styles.input}
-            placeholderTextColor="#7b8a8a"
+            placeholderTextColor={theme.colors.textSecondary}
           />
           <TextInput
             value={address}
             onChangeText={setAddress}
             placeholder="Street address (e.g. 12 Main Road)"
             style={styles.input}
-            placeholderTextColor="#7b8a8a"
+            placeholderTextColor={theme.colors.textSecondary}
           />
           <TextInput
             value={city}
             onChangeText={setCity}
             placeholder="City"
             style={styles.input}
-            placeholderTextColor="#7b8a8a"
+            placeholderTextColor={theme.colors.textSecondary}
           />
 
           {address.trim().length > 0 && city.trim().length > 0 ? (
@@ -175,7 +179,7 @@ export function CheckoutScreen() {
                   <Ionicons
                     name={addressConfirmed ? 'checkbox' : 'square-outline'}
                     size={22}
-                    color={addressConfirmed ? '#24b8b8' : '#9fb3b3'}
+                    color={addressConfirmed ? theme.colors.primaryAccent : theme.colors.textSecondary}
                   />
                   <Text style={styles.addressCheckboxText}>
                     Confirm the map shows your correct delivery location.
@@ -185,7 +189,7 @@ export function CheckoutScreen() {
             </View>
           ) : (
             <View style={styles.mapPlaceholder}>
-              <Ionicons name="location-outline" size={22} color="#5d7676" />
+              <Ionicons name="location-outline" size={22} color={theme.colors.textSecondary} />
               <Text style={styles.mapPlaceholderText}>
                 Enter your street address and city to verify the delivery location on the map.
               </Text>
@@ -199,7 +203,7 @@ export function CheckoutScreen() {
           {cardSaved ? (
             <View style={styles.savedCard}>
               <View style={styles.savedCardHeader}>
-                <Ionicons name="card" size={20} color="#0f6464" />
+                <Ionicons name="card" size={20} color={theme.colors.primaryAccent} />
                 <View style={styles.savedCardInfo}>
                   <Text style={styles.savedCardBank}>{bank}</Text>
                   <Text style={styles.savedCardNumber}>
@@ -208,14 +212,14 @@ export function CheckoutScreen() {
                   <Text style={styles.savedCardName}>{cardName}</Text>
                 </View>
                 <Pressable onPress={() => setCardSaved(false)} hitSlop={8}>
-                  <Ionicons name="pencil" size={18} color="#24b8b8" />
+                  <Ionicons name="pencil" size={18} color={theme.colors.primaryAccent} />
                 </Pressable>
               </View>
             </View>
           ) : (
             <>
               <View style={styles.bankPicker}>
-                <Ionicons name="business-outline" size={18} color="#668080" />
+                <Ionicons name="business-outline" size={18} color={theme.colors.textSecondary} />
                 <Pressable
                   style={styles.bankPickerPressable}
                   onPress={() => setBankModalVisible(true)}
@@ -223,7 +227,7 @@ export function CheckoutScreen() {
                   <Text style={[styles.bankPickerText, !bank && styles.bankPickerPlaceholder]}>
                     {bank || 'Select your bank'}
                   </Text>
-                  <Ionicons name="chevron-down" size={16} color="#668080" />
+                  <Ionicons name="chevron-down" size={16} color={theme.colors.textSecondary} />
                 </Pressable>
               </View>
 
@@ -232,14 +236,14 @@ export function CheckoutScreen() {
                 onChangeText={setCardName}
                 placeholder="Name on card"
                 style={styles.input}
-                placeholderTextColor="#7b8a8a"
+                placeholderTextColor={theme.colors.textSecondary}
               />
               <TextInput
                 value={cardNumber}
                 onChangeText={(text) => setCardNumber(text.replace(/[^0-9]/g, '').slice(0, 15))}
                 placeholder="Card number"
                 style={styles.input}
-                placeholderTextColor="#7b8a8a"
+                placeholderTextColor={theme.colors.textSecondary}
                 keyboardType="number-pad"
                 maxLength={15}
               />
@@ -256,7 +260,7 @@ export function CheckoutScreen() {
                   }}
                   placeholder="MM/YY"
                   style={[styles.input, styles.cardHalfInput]}
-                  placeholderTextColor="#7b8a8a"
+                  placeholderTextColor={theme.colors.textSecondary}
                   keyboardType="number-pad"
                   maxLength={5}
                 />
@@ -265,7 +269,7 @@ export function CheckoutScreen() {
                   onChangeText={(text) => setCardCvc(text.replace(/[^0-9]/g, '').slice(0, 3))}
                   placeholder="CVC"
                   style={[styles.input, styles.cardHalfInput]}
-                  placeholderTextColor="#7b8a8a"
+                  placeholderTextColor={theme.colors.textSecondary}
                   keyboardType="number-pad"
                   maxLength={3}
                   secureTextEntry
@@ -345,7 +349,7 @@ export function CheckoutScreen() {
               >
                 <Text style={styles.bankModalOptionText}>{bankName}</Text>
                 {bank === bankName ? (
-                  <Ionicons name="checkmark-circle" size={18} color="#24b8b8" />
+                  <Ionicons name="checkmark-circle" size={18} color={theme.colors.primaryAccent} />
                 ) : null}
               </Pressable>
             ))}
@@ -356,10 +360,10 @@ export function CheckoutScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background,
     paddingHorizontal: appTheme.spacing.md,
   },
   headerRow: {
@@ -375,13 +379,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(36, 184, 184, 0.3)',
-    backgroundColor: '#f4fcfc',
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#123f3f',
+    color: theme.colors.textPrimary,
   },
   headerSpacer: {
     width: 38,
@@ -389,17 +393,17 @@ const styles = StyleSheet.create({
   summaryCard: {
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(36,184,184,0.2)',
-    backgroundColor: '#f7fdfd',
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
     padding: appTheme.spacing.md,
     marginBottom: appTheme.spacing.md,
   },
   summaryLabel: {
-    color: '#597575',
+    color: theme.colors.textSecondary,
     fontSize: 12,
   },
   summaryValue: {
-    color: '#0f6464',
+    color: theme.colors.primaryAccent,
     fontSize: 26,
     fontWeight: '900',
     marginTop: 4,
@@ -407,7 +411,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#123f3f',
+    color: theme.colors.textPrimary,
     marginBottom: appTheme.spacing.sm,
   },
   formSection: {
@@ -416,13 +420,13 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: 'rgba(36, 184, 184, 0.24)',
+    borderColor: theme.colors.border,
     borderRadius: 16,
     paddingHorizontal: appTheme.spacing.md,
     paddingVertical: appTheme.spacing.sm,
     fontSize: 15,
-    color: '#213232',
-    backgroundColor: '#fbffff',
+    color: theme.colors.textPrimary,
+    backgroundColor: theme.colors.surface,
   },
   mapHintRow: {
     marginTop: 10,
@@ -441,13 +445,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderStyle: 'dashed',
     borderColor: 'rgba(36,184,184,0.35)',
-    backgroundColor: '#f7fdfd',
+    backgroundColor: theme.colors.surface,
     padding: appTheme.spacing.md,
     alignItems: 'center',
     rowGap: 8,
   },
   mapPlaceholderText: {
-    color: '#5d7676',
+    color: theme.colors.textSecondary,
     fontSize: 12,
     lineHeight: 18,
     textAlign: 'center',
@@ -483,7 +487,7 @@ const styles = StyleSheet.create({
   },
   addressCheckboxText: {
     flex: 1,
-    color: '#4f6e6e',
+    color: theme.colors.textSecondary,
     fontSize: 14,
     lineHeight: 20,
     fontWeight: '500',
@@ -493,11 +497,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     columnGap: 10,
     borderWidth: 1,
-    borderColor: 'rgba(36, 184, 184, 0.24)',
+    borderColor: theme.colors.border,
     borderRadius: 16,
     paddingHorizontal: appTheme.spacing.md,
     paddingVertical: appTheme.spacing.sm,
-    backgroundColor: '#fbffff',
+    backgroundColor: theme.colors.surface,
   },
   bankPickerPressable: {
     flex: 1,
@@ -506,11 +510,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   bankPickerText: {
-    color: '#213232',
+    color: theme.colors.textPrimary,
     fontSize: 15,
   },
   bankPickerPlaceholder: {
-    color: '#7b8a8a',
+    color: theme.colors.textSecondary,
   },
   bankModalBackdrop: {
     flex: 1,
@@ -520,14 +524,14 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   bankModalCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     padding: 16,
     width: '100%',
     maxWidth: 320,
   },
   bankModalTitle: {
-    color: '#123f3f',
+    color: theme.colors.textPrimary,
     fontSize: 17,
     fontWeight: '800',
     marginBottom: 12,
@@ -541,14 +545,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   bankModalOptionText: {
-    color: '#213232',
+    color: theme.colors.textPrimary,
     fontSize: 15,
   },
   savedCard: {
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(36,184,184,0.22)',
-    backgroundColor: '#f0fbfb',
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
     padding: 12,
   },
   savedCardHeader: {
@@ -560,18 +564,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   savedCardBank: {
-    color: '#0f6464',
+    color: theme.colors.primaryAccent,
     fontSize: 13,
     fontWeight: '700',
   },
   savedCardNumber: {
-    color: '#123f3f',
+    color: theme.colors.textPrimary,
     fontSize: 14,
     fontWeight: '800',
     marginTop: 2,
   },
   savedCardName: {
-    color: '#668080',
+    color: theme.colors.textSecondary,
     fontSize: 12,
     marginTop: 2,
   },
@@ -616,7 +620,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: appTheme.spacing.sm,
-    backgroundColor: '#24b8b8',
+    backgroundColor: theme.colors.primaryAccent,
     marginBottom: appTheme.spacing.md,
   },
   payButtonDisabled: {

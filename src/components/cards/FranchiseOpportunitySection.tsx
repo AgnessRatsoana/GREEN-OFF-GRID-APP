@@ -1,6 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { appTheme } from '../../theme';
+import type { AppTheme } from '../../theme';
+import { useAppTheme } from '../../hooks/useAppTheme';
 
 interface OpportunityItem {
   title: string;
@@ -23,6 +25,9 @@ const opportunityItems: OpportunityItem[] = [
 ];
 
 export function FranchiseOpportunitySection() {
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
+
   return (
     <View style={styles.container}>
       <Text style={styles.mainTitle}>
@@ -46,12 +51,12 @@ export function FranchiseOpportunitySection() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     marginTop: appTheme.spacing.xl,
   },
   mainTitle: {
-    color: '#111111',
+    color: theme.colors.textPrimary,
     fontSize: 24,
     lineHeight: 33,
     fontWeight: '800',
@@ -63,21 +68,21 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(36,184,184,0.22)',
-    backgroundColor: '#f5fcfc',
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
     paddingHorizontal: appTheme.spacing.md,
     paddingVertical: appTheme.spacing.md,
     ...appTheme.shadows.card,
   },
   cardTitle: {
-    color: appTheme.colors.textPrimary,
+    color: theme.colors.textPrimary,
     fontSize: 17,
     lineHeight: 23,
     fontWeight: '700',
   },
   cardBody: {
     marginTop: appTheme.spacing.xs,
-    color: appTheme.colors.textSecondary,
+    color: theme.colors.textSecondary,
     fontSize: 14,
     lineHeight: 20,
     fontWeight: '400',

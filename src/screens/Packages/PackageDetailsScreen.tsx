@@ -10,6 +10,8 @@ import { PACKAGES } from '../../data/packages';
 import { RootStackParamList } from '../../navigation/types';
 import { useFavouritesStore } from '../../store/favouritesStore';
 import { appTheme } from '../../theme';
+import type { AppTheme } from '../../theme';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { FLOATING_NAV_CONTENT_INSET } from '../../components/common/FloatingBottomNav';
 
 export function PackageDetailsScreen() {
@@ -19,6 +21,8 @@ export function PackageDetailsScreen() {
   const toggle = useFavouritesStore((s) => s.toggle);
   const favourites = useFavouritesStore((s) => s.favourites);
   const isFavourite = (id: string) => favourites.includes(id);
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
 
   const pkg = PACKAGES.find((p) => p.id === route.params?.packageId);
 
@@ -73,7 +77,7 @@ export function PackageDetailsScreen() {
           hitSlop={8}
           accessibilityLabel="Enquire about this package"
         >
-          <Ionicons name="chatbubble-ellipses-outline" size={17} color="#24b8b8" />
+          <Ionicons name="chatbubble-ellipses-outline" size={17} color={theme.colors.primaryAccent} />
         </Pressable>
 
         {/* Package title overlay */}
@@ -120,7 +124,7 @@ export function PackageDetailsScreen() {
 
         {/* Why choose */}
         <View style={styles.whyCard}>
-          <Ionicons name="leaf" size={18} color="#1f9c91" style={{ marginBottom: 8 }} />
+          <Ionicons name="leaf" size={18} color={theme.colors.primaryAccent} style={{ marginBottom: 8 }} />
           <Text style={styles.whyTitle}>Why Green Off-Grid?</Text>
           <Text style={styles.whyBody}>
             We are the leading off-grid energy franchise in South Africa, committed to
@@ -142,17 +146,17 @@ export function PackageDetailsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background,
   },
   center: {
     alignItems: 'center',
     justifyContent: 'center',
   },
   errorText: {
-    color: '#1a3f3f',
+    color: theme.colors.textPrimary,
     fontSize: 16,
   },
   heroWrap: {
@@ -240,25 +244,25 @@ const styles = StyleSheet.create({
     rowGap: appTheme.spacing.sm,
   },
   priceCard: {
-    backgroundColor: '#f7fdfd',
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     padding: appTheme.spacing.md,
     borderWidth: 1,
-    borderColor: 'rgba(36,184,184,0.2)',
+    borderColor: theme.colors.border,
     marginBottom: 4,
   },
   fromLabel: {
-    color: '#668080',
+    color: theme.colors.textSecondary,
     fontSize: 12,
     marginBottom: 2,
   },
   price: {
-    color: '#123f3f',
+    color: theme.colors.textPrimary,
     fontSize: 32,
     fontWeight: '900',
   },
   sectionLabel: {
-    color: '#24b8b8',
+    color: theme.colors.primaryAccent,
     fontSize: 13,
     fontWeight: '700',
     letterSpacing: 0.8,
@@ -267,7 +271,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   description: {
-    color: '#4f6e6e',
+    color: theme.colors.textSecondary,
     fontSize: 15,
     lineHeight: 24,
     marginBottom: 8,
@@ -285,12 +289,12 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: '#24b8b8',
+    backgroundColor: theme.colors.primaryAccent,
     alignItems: 'center',
     justifyContent: 'center',
   },
   bulletText: {
-    color: '#4f6e6e',
+    color: theme.colors.textSecondary,
     fontSize: 14,
     lineHeight: 20,
     flex: 1,
@@ -300,17 +304,17 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: appTheme.spacing.md,
     borderWidth: 1,
-    borderColor: 'rgba(36,184,184,0.2)',
+    borderColor: theme.colors.border,
     marginVertical: 8,
   },
   whyTitle: {
-    color: '#123f3f',
+    color: theme.colors.textPrimary,
     fontSize: 16,
     fontWeight: '700',
     marginBottom: 8,
   },
   whyBody: {
-    color: '#4f6e6e',
+    color: theme.colors.textSecondary,
     fontSize: 14,
     lineHeight: 22,
   },
@@ -324,10 +328,10 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   tealCta: {
-    backgroundColor: '#24b8b8',
+    backgroundColor: theme.colors.primaryAccent,
   },
   purpleCta: {
-    backgroundColor: '#b89aff',
+    backgroundColor: theme.colors.supportPurple,
   },
   ctaText: {
     color: '#FFFFFF',

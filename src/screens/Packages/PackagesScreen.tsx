@@ -28,6 +28,8 @@ import { FLOATING_NAV_CONTENT_INSET } from '../../components/common/FloatingBott
 import { useCartStore } from '../../store/cartStore';
 import { useFavouritesStore } from '../../store/favouritesStore';
 import { appTheme } from '../../theme';
+import type { AppTheme } from '../../theme';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { getBusinessPrice } from '../../utils/pricing';
 
 const FILTERS = [
@@ -112,6 +114,9 @@ export function PackagesScreen() {
   const searchTranslate = useRef(new Animated.Value(0)).current;
 
   const hideTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const theme = useAppTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
 
   const isFavourite = (id: string) => favourites.includes(id);
 
@@ -201,7 +206,7 @@ export function PackagesScreen() {
           <Ionicons
             name="arrow-back"
             size={22}
-            color="#24b8b8"
+            color={theme.colors.primaryAccent}
           />
         </Pressable>
 
@@ -220,7 +225,7 @@ export function PackagesScreen() {
             <Ionicons
               name="search-outline"
               size={20}
-              color="#0f6464"
+              color={theme.colors.primaryAccent}
             />
           </Pressable>
 
@@ -236,7 +241,7 @@ export function PackagesScreen() {
             <Ionicons
               name="options-outline"
               size={20}
-              color="#0f6464"
+              color={theme.colors.primaryAccent}
             />
           </Pressable>
 
@@ -251,7 +256,7 @@ export function PackagesScreen() {
             <Ionicons
               name="cart-outline"
               size={20}
-              color="#0f6464"
+              color={theme.colors.primaryAccent}
             />
 
             {cartCount > 0 ? (
@@ -283,14 +288,14 @@ export function PackagesScreen() {
             <Ionicons
               name="search-outline"
               size={18}
-              color="#6b7d7d"
+              color={theme.colors.textSecondary}
               style={styles.searchIcon}
             />
 
             <TextInput
               value={searchText}
               placeholder="Search accessories or franchises"
-              placeholderTextColor="#7d8e8e"
+              placeholderTextColor={theme.colors.textSecondary}
               onChangeText={setSearchText}
               style={styles.searchInput}
               autoFocus
@@ -343,7 +348,7 @@ export function PackagesScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor="#24b8b8"
+            tintColor={theme.colors.primaryAccent}
           />
         }
       >
@@ -359,7 +364,7 @@ export function PackagesScreen() {
           <View style={styles.loadingContainer}>
             <ActivityIndicator
               size="large"
-              color="#24b8b8"
+              color={theme.colors.primaryAccent}
             />
 
             <Text style={styles.loadingText}>
@@ -749,10 +754,10 @@ export function PackagesScreen() {
 // STYLES
 // ===========================================================
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background,
   },
 
   header: {
@@ -761,8 +766,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: appTheme.spacing.md,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(36,184,184,0.18)',
-    backgroundColor: '#FFFFFF',
+    borderBottomColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
   },
 
   backBtn: {
@@ -777,7 +782,7 @@ const styles = StyleSheet.create({
 
   headerTitle: {
     flex: 1,
-    color: '#1a3f3f',
+    color: theme.colors.textPrimary,
     fontSize: 22,
     fontWeight: '800',
     letterSpacing: 0.5,
@@ -831,16 +836,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: appTheme.spacing.md,
     paddingTop: 10,
     paddingBottom: 8,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background,
   },
 
   searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F5F7F7',
+    backgroundColor: theme.colors.surface,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(36,184,184,0.18)',
+    borderColor: theme.colors.border,
     paddingHorizontal: 10,
     paddingVertical: 8,
   },
@@ -851,7 +856,7 @@ const styles = StyleSheet.create({
 
   searchInput: {
     flex: 1,
-    color: '#1a3f3f',
+    color: theme.colors.textPrimary,
     fontSize: 14,
     paddingVertical: 0,
   },
@@ -864,21 +869,21 @@ const styles = StyleSheet.create({
   },
 
   filterChip: {
-    backgroundColor: '#F5F7F7',
+    backgroundColor: theme.colors.surface,
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 7,
     borderWidth: 1,
-    borderColor: 'rgba(36,184,184,0.18)',
+    borderColor: theme.colors.border,
   },
 
   filterChipActive: {
-    backgroundColor: '#24b8b8',
-    borderColor: '#24b8b8',
+    backgroundColor: theme.colors.primaryAccent,
+    borderColor: theme.colors.primaryAccent,
   },
 
   filterChipText: {
-    color: '#1a3f3f',
+    color: theme.colors.textPrimary,
     fontSize: 11,
     fontWeight: '700',
   },
@@ -894,7 +899,7 @@ const styles = StyleSheet.create({
   },
 
   sectionLabel: {
-    color: '#1a3f3f',
+    color: theme.colors.textPrimary,
     fontSize: 20,
     lineHeight: 26,
     fontWeight: '800',
@@ -913,7 +918,7 @@ const styles = StyleSheet.create({
 
   loadingText: {
     marginTop: 12,
-    color: '#5a7474',
+    color: theme.colors.textSecondary,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -931,14 +936,14 @@ const styles = StyleSheet.create({
 
   errorTitle: {
     marginTop: 12,
-    color: '#1a3f3f',
+    color: theme.colors.textPrimary,
     fontSize: 17,
     fontWeight: '800',
   },
 
   errorText: {
     marginTop: 8,
-    color: '#6b7d7d',
+    color: theme.colors.textSecondary,
     fontSize: 13,
     lineHeight: 19,
     textAlign: 'center',
@@ -953,7 +958,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 10,
     borderRadius: 999,
-    backgroundColor: '#24b8b8',
+    backgroundColor: theme.colors.primaryAccent,
   },
 
   retryButtonText: {
@@ -971,11 +976,11 @@ const styles = StyleSheet.create({
 
   accessoryCard: {
     width: '48%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface,
     borderRadius: 20,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(36,184,184,0.18)',
+    borderColor: theme.colors.border,
   },
 
   accessoryImageWrap: {
@@ -994,21 +999,21 @@ const styles = StyleSheet.create({
   },
 
   productName: {
-    color: '#111111',
+    color: theme.colors.textPrimary,
     fontSize: 17,
     lineHeight: 23,
     fontWeight: '800',
   },
 
   productDescription: {
-    color: '#5a7474',
+    color: theme.colors.textSecondary,
     fontSize: 12,
     lineHeight: 18,
     marginTop: 6,
   },
 
   brandText: {
-    color: '#6b7d7d',
+    color: theme.colors.textSecondary,
     fontSize: 11,
     lineHeight: 16,
     fontWeight: '600',
@@ -1016,7 +1021,7 @@ const styles = StyleSheet.create({
   },
 
   categoryText: {
-    color: '#24b8b8',
+    color: theme.colors.primaryAccent,
     fontSize: 11,
     lineHeight: 16,
     fontWeight: '700',
@@ -1032,7 +1037,7 @@ const styles = StyleSheet.create({
   },
 
   priceText: {
-    color: '#111111',
+    color: theme.colors.textPrimary,
     fontSize: 20,
     lineHeight: 24,
     fontWeight: '800',
@@ -1045,14 +1050,14 @@ const styles = StyleSheet.create({
   },
 
   originalPriceStrike: {
-    color: '#9fb1b1',
+    color: theme.colors.textSecondary,
     fontSize: 12,
     textDecorationLine: 'line-through',
   },
 
   addButton: {
     borderRadius: 999,
-    backgroundColor: '#24b8b8',
+    backgroundColor: theme.colors.primaryAccent,
     paddingVertical: 10,
     paddingHorizontal: 14,
   },
@@ -1110,9 +1115,9 @@ const styles = StyleSheet.create({
   franchiseCard: {
     borderRadius: 24,
     overflow: 'hidden',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: 'rgba(36,184,184,0.18)',
+    borderColor: theme.colors.border,
     position: 'relative',
   },
 
@@ -1134,7 +1139,7 @@ const styles = StyleSheet.create({
   },
 
   franchiseTitle: {
-    color: '#111111',
+    color: theme.colors.textPrimary,
     fontSize: 18,
     lineHeight: 24,
     fontWeight: '800',
@@ -1146,7 +1151,7 @@ const styles = StyleSheet.create({
   },
 
   bulletText: {
-    color: '#111111',
+    color: theme.colors.textPrimary,
     fontSize: 13,
     lineHeight: 18,
     fontWeight: '400',
@@ -1160,7 +1165,7 @@ const styles = StyleSheet.create({
   },
 
   ratingText: {
-    color: '#111111',
+    color: theme.colors.textPrimary,
     fontSize: 12,
     lineHeight: 16,
     fontWeight: '600',
@@ -1168,7 +1173,7 @@ const styles = StyleSheet.create({
 
   fromText: {
     marginTop: 2,
-    color: '#C7C7C7',
+    color: theme.colors.textSecondary,
     fontSize: 11,
     lineHeight: 14,
     fontWeight: '400',
@@ -1184,11 +1189,11 @@ const styles = StyleSheet.create({
   },
 
   tealBtn: {
-    backgroundColor: '#24b8b8',
+    backgroundColor: theme.colors.primaryAccent,
   },
 
   purpleBtn: {
-    backgroundColor: '#b89aff',
+    backgroundColor: theme.colors.supportPurple,
   },
 
   btnText: {
@@ -1199,7 +1204,7 @@ const styles = StyleSheet.create({
   },
 
   emptyText: {
-    color: '#5a7474',
+    color: theme.colors.textSecondary,
     fontSize: 13,
     lineHeight: 18,
   },

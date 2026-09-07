@@ -22,6 +22,8 @@ import {
   type TrackedOrder,
 } from '../../services/orders/orders';
 import { appTheme } from '../../theme';
+import type { AppTheme } from '../../theme';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { FLOATING_NAV_CONTENT_INSET } from '../../components/common/FloatingBottomNav';
 
 function formatCurrency(cents: number) {
@@ -64,6 +66,8 @@ export function OrderTrackingScreen() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const orderId = route.params.orderId;
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
 
   const loadOrder = useCallback(async () => {
     try {
@@ -91,7 +95,7 @@ export function OrderTrackingScreen() {
     <View style={styles.root}>
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <Pressable onPress={() => navigation.goBack()} style={styles.headerButton} hitSlop={8}>
-          <Ionicons name="arrow-back" size={21} color="#1a3f3f" />
+          <Ionicons name="arrow-back" size={21} color={theme.colors.textPrimary} />
         </Pressable>
         <View style={styles.headerCopy}>
           <Text style={styles.headerTitle}>Track order</Text>
@@ -100,7 +104,7 @@ export function OrderTrackingScreen() {
       </View>
 
       {isLoading ? (
-        <View style={styles.loading}><ActivityIndicator color="#24b8b8" /></View>
+        <View style={styles.loading}><ActivityIndicator color={theme.colors.primaryAccent} /></View>
       ) : errorMessage || !order ? (
         <View style={styles.loading}>
           <Text style={styles.errorText}>{errorMessage ?? 'Order not found.'}</Text>
@@ -160,7 +164,7 @@ export function OrderTrackingScreen() {
                       <Ionicons
                         name={step.icon}
                         size={14}
-                        color={reached ? '#FFFFFF' : '#9fb3b3'}
+                        color={reached ? '#FFFFFF' : theme.colors.textSecondary}
                       />
                     </View>
                     {!isLast ? (
@@ -208,37 +212,37 @@ export function OrderTrackingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FFFFFF' },
+const createStyles = (theme: AppTheme) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: theme.colors.background },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: appTheme.spacing.md,
     paddingBottom: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(36,184,184,0.18)',
+    borderBottomColor: theme.colors.border,
   },
   headerButton: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
   headerCopy: { flex: 1, marginLeft: 4 },
-  headerTitle: { color: '#1a3f3f', fontSize: 21, fontWeight: '800' },
-  headerSubtitle: { color: '#668080', fontSize: 12, marginTop: 2 },
+  headerTitle: { color: theme.colors.textPrimary, fontSize: 21, fontWeight: '800' },
+  headerSubtitle: { color: theme.colors.textSecondary, fontSize: 12, marginTop: 2 },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   errorText: { color: '#b34040', fontSize: 14, textAlign: 'center' },
   content: { padding: appTheme.spacing.md },
   summaryCard: {
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(36,184,184,0.2)',
-    backgroundColor: '#f7fdfd',
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
     padding: appTheme.spacing.md,
     rowGap: 8,
   },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  summaryLabel: { color: '#597575', fontSize: 13 },
-  summaryValue: { color: '#123f3f', fontSize: 13, fontWeight: '700' },
-  summaryTotal: { color: '#0f6464', fontSize: 18, fontWeight: '900' },
+  summaryLabel: { color: theme.colors.textSecondary, fontSize: 13 },
+  summaryValue: { color: theme.colors.textPrimary, fontSize: 13, fontWeight: '700' },
+  summaryTotal: { color: theme.colors.primaryAccent, fontSize: 18, fontWeight: '900' },
   sectionTitle: {
-    color: '#1a3f3f',
+    color: theme.colors.textPrimary,
     fontSize: 16,
     fontWeight: '800',
     marginTop: appTheme.spacing.md,
@@ -247,8 +251,8 @@ const styles = StyleSheet.create({
   itemsCard: {
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(36,184,184,0.18)',
-    backgroundColor: '#FFFFFF',
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
     paddingHorizontal: appTheme.spacing.md,
   },
   itemRow: {
@@ -258,16 +262,16 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     columnGap: 12,
   },
-  itemRowBorder: { borderBottomWidth: 1, borderBottomColor: 'rgba(36,184,184,0.12)' },
+  itemRowBorder: { borderBottomWidth: 1, borderBottomColor: theme.colors.border },
   itemInfo: { flex: 1 },
-  itemName: { color: '#123f3f', fontSize: 14, fontWeight: '700' },
-  itemMeta: { color: '#668080', fontSize: 12, marginTop: 3 },
-  itemTotal: { color: '#0f6464', fontSize: 14, fontWeight: '800' },
+  itemName: { color: theme.colors.textPrimary, fontSize: 14, fontWeight: '700' },
+  itemMeta: { color: theme.colors.textSecondary, fontSize: 12, marginTop: 3 },
+  itemTotal: { color: theme.colors.primaryAccent, fontSize: 14, fontWeight: '800' },
   timelineCard: {
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(36,184,184,0.18)',
-    backgroundColor: '#FFFFFF',
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
     padding: appTheme.spacing.md,
   },
   timelineRow: { flexDirection: 'row', columnGap: 12 },
@@ -278,16 +282,16 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#e2eded',
+    backgroundColor: theme.colors.border,
   },
-  trackerDotReached: { backgroundColor: '#24b8b8' },
-  trackerLine: { flex: 1, width: 2, backgroundColor: '#e2eded', marginVertical: 2 },
-  trackerLineReached: { backgroundColor: '#24b8b8' },
+  trackerDotReached: { backgroundColor: theme.colors.primaryAccent },
+  trackerLine: { flex: 1, width: 2, backgroundColor: theme.colors.border, marginVertical: 2 },
+  trackerLineReached: { backgroundColor: theme.colors.primaryAccent },
   timelineText: { flex: 1, paddingBottom: 18 },
-  timelineLabel: { color: '#7a9494', fontSize: 14, fontWeight: '700' },
-  timelineLabelReached: { color: '#123f3f' },
-  timelineDate: { color: '#668080', fontSize: 12, marginTop: 2 },
-  addressText: { color: '#4f6e6e', fontSize: 13, marginTop: 8 },
+  timelineLabel: { color: theme.colors.textSecondary, fontSize: 14, fontWeight: '700' },
+  timelineLabelReached: { color: theme.colors.textPrimary },
+  timelineDate: { color: theme.colors.textSecondary, fontSize: 12, marginTop: 2 },
+  addressText: { color: theme.colors.textSecondary, fontSize: 13, marginTop: 8 },
   helpButton: {
     position: 'absolute',
     right: 16,
@@ -295,7 +299,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     columnGap: 6,
     borderRadius: 999,
-    backgroundColor: '#0f6464',
+    backgroundColor: theme.colors.primaryAccent,
     paddingHorizontal: 16,
     paddingVertical: 12,
     elevation: 4,

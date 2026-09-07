@@ -54,7 +54,7 @@ export function FloatingBottomNav({ activeKey = 'home', onTabPress, badgeCounts 
                 <Ionicons
                   name={item.icon}
                   size={20}
-                  color={appTheme.colors.background}
+                  color="#FFFFFF"
                 />
                 {(badgeCounts?.[item.key] ?? 0) > 0 ? (
                   <View style={styles.badge}>

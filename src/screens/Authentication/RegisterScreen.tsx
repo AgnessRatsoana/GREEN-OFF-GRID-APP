@@ -12,6 +12,8 @@ import { registerWithSupabase } from '../../services/auth/authActions';
 import { saveAuthTokens } from '../../services/storage/secureStore';
 import { useAuthStore } from '../../store/authStore';
 import { appTheme } from '../../theme';
+import type { AppTheme } from '../../theme';
+import { useAppTheme } from '../../hooks/useAppTheme';
 
 export function RegisterScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -28,6 +30,8 @@ export function RegisterScreen() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
 
   const handleRegister = async () => {
     if (!name.trim() || !email.trim() || !password.trim()) {
@@ -81,7 +85,7 @@ export function RegisterScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-        <Ionicons name="arrow-back" size={20} color={appTheme.colors.primaryAccent} />
+        <Ionicons name="arrow-back" size={20} color={theme.colors.primaryAccent} />
       </Pressable>
 
       <View style={styles.headerSection}>
@@ -179,10 +183,10 @@ export function RegisterScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background,
     paddingHorizontal: appTheme.spacing.md,
   },
   backButton: {
@@ -192,8 +196,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(36, 184, 184, 0.3)',
-    backgroundColor: '#f4fcfc',
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
   headerSection: {
     marginTop: appTheme.spacing.lg,
@@ -202,12 +206,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 30,
     fontWeight: '800',
-    color: '#0d3d3d',
+    color: theme.colors.textPrimary,
   },
   subtitle: {
     fontSize: 15,
     lineHeight: 22,
-    color: '#4c6969',
+    color: theme.colors.textSecondary,
   },
   formSection: {
     marginTop: appTheme.spacing.xl,
@@ -215,13 +219,13 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: 'rgba(36, 184, 184, 0.28)',
+    borderColor: theme.colors.border,
     borderRadius: 16,
     paddingHorizontal: appTheme.spacing.md,
     paddingVertical: appTheme.spacing.sm,
     fontSize: 15,
-    color: '#213232',
-    backgroundColor: '#fbffff',
+    color: theme.colors.textPrimary,
+    backgroundColor: theme.colors.surface,
   },
   errorText: {
     color: '#d14444',
@@ -230,7 +234,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#123f3f',
+    color: theme.colors.textPrimary,
     marginTop: 4,
   },
   accountTypeRow: {
@@ -241,25 +245,25 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(36, 184, 184, 0.28)',
+    borderColor: theme.colors.border,
     paddingVertical: appTheme.spacing.sm,
     alignItems: 'center',
-    backgroundColor: '#fbffff',
+    backgroundColor: theme.colors.surface,
   },
   accountTypeOptionActive: {
-    backgroundColor: '#24b8b8',
-    borderColor: '#24b8b8',
+    backgroundColor: theme.colors.primaryAccent,
+    borderColor: theme.colors.primaryAccent,
   },
   accountTypeText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#213232',
+    color: theme.colors.textPrimary,
   },
   accountTypeTextActive: {
     color: '#FFFFFF',
   },
   successText: {
-    color: '#0f6464',
+    color: theme.colors.primaryAccent,
     fontSize: 13,
   },
   registerButton: {
@@ -268,7 +272,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: appTheme.spacing.sm,
-    backgroundColor: '#24b8b8',
+    backgroundColor: theme.colors.primaryAccent,
   },
   registerButtonText: {
     color: '#FFFFFF',
@@ -278,10 +282,10 @@ const styles = StyleSheet.create({
   switchText: {
     marginTop: appTheme.spacing.sm,
     textAlign: 'center',
-    color: '#4c6969',
+    color: theme.colors.textSecondary,
   },
   switchTextStrong: {
-    color: '#b89aff',
+    color: theme.colors.supportPurple,
     fontWeight: '700',
   },
 });

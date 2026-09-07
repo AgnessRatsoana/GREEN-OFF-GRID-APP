@@ -41,6 +41,8 @@ import { getOrderById, type TrackedOrder } from '../../services/orders/orders';
 import { useAuthStore } from '../../store/authStore';
 import { useMessagingStore } from '../../store/messagingStore';
 import { appTheme } from '../../theme';
+import type { AppTheme } from '../../theme';
+import { useAppTheme } from '../../hooks/useAppTheme';
 import { FLOATING_NAV_CONTENT_INSET } from '../../components/common/FloatingBottomNav';
 
 const PRODUCT_IMAGE = require('../../assets/images/demoAccesories.jpg');
@@ -77,6 +79,8 @@ export function EnquiryScreen() {
   const [isLoading, setIsLoading] = useState(Boolean(conversationId));
   const [remoteProduct, setRemoteProduct] = useState<RemoteMarketplaceProduct | null>(null);
   const [orderItem, setOrderItem] = useState<TrackedOrder | null>(null);
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
 
   const itemType = conversation?.itemType ?? route.params.itemType;
   const itemId = conversation?.itemId ?? route.params.itemId;
@@ -236,7 +240,7 @@ export function EnquiryScreen() {
     >
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <Pressable onPress={() => navigation.goBack()} style={styles.headerButton} hitSlop={8}>
-          <Ionicons name="arrow-back" size={21} color="#1a3f3f" />
+          <Ionicons name="arrow-back" size={21} color={theme.colors.textPrimary} />
         </Pressable>
         <View style={styles.headerCopy}>
           <Text style={styles.headerTitle}>{conversation ? 'Conversation' : 'Enquire'}</Text>
@@ -245,13 +249,13 @@ export function EnquiryScreen() {
           </Text>
         </View>
         <Pressable onPress={() => navigation.goBack()} style={styles.headerButton} hitSlop={8}>
-          <Ionicons name="close" size={22} color="#1a3f3f" />
+          <Ionicons name="close" size={22} color={theme.colors.textPrimary} />
         </Pressable>
       </View>
 
       {isLoading ? (
         <View style={styles.loading}>
-          <ActivityIndicator color="#24b8b8" />
+          <ActivityIndicator color={theme.colors.primaryAccent} />
         </View>
       ) : (
         <ScrollView
@@ -269,7 +273,7 @@ export function EnquiryScreen() {
             <View style={styles.itemCard}>
               {itemType === 'order' ? (
                 <View style={styles.orderIconWrap}>
-                  <Ionicons name="receipt-outline" size={34} color="#0f6464" />
+                  <Ionicons name="receipt-outline" size={34} color={theme.colors.primaryAccent} />
                 </View>
               ) : (
                 <Image source={itemImage} style={styles.itemImage} contentFit="cover" />
@@ -318,7 +322,7 @@ export function EnquiryScreen() {
             multiline
             textAlignVertical="top"
             placeholder="Type a message..."
-            placeholderTextColor="#789292"
+            placeholderTextColor={theme.colors.textSecondary}
             style={styles.input}
             maxLength={4000}
             editable={!isSubmitting}
@@ -344,59 +348,59 @@ export function EnquiryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FFFFFF' },
+const createStyles = (theme: AppTheme) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: theme.colors.background },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: appTheme.spacing.md,
     paddingBottom: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(36,184,184,0.18)',
+    borderBottomColor: theme.colors.border,
   },
   headerButton: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
   headerCopy: { flex: 1, marginLeft: 4 },
-  headerTitle: { color: '#1a3f3f', fontSize: 21, fontWeight: '800' },
-  headerSubtitle: { color: '#668080', fontSize: 12, marginTop: 2 },
+  headerTitle: { color: theme.colors.textPrimary, fontSize: 21, fontWeight: '800' },
+  headerSubtitle: { color: theme.colors.textSecondary, fontSize: 12, marginTop: 2 },
   content: { padding: appTheme.spacing.md, rowGap: appTheme.spacing.sm, flexGrow: 1 },
   itemCard: {
     flexDirection: 'row',
     borderWidth: 1,
-    borderColor: 'rgba(36,184,184,0.22)',
+    borderColor: theme.colors.border,
     borderRadius: 14,
     padding: 10,
-    backgroundColor: '#f7fdfd',
+    backgroundColor: theme.colors.surface,
     minHeight: 110,
   },
-  itemImage: { width: 96, height: 90, borderRadius: 10, backgroundColor: '#dbeeee' },
+  itemImage: { width: 96, height: 90, borderRadius: 10, backgroundColor: theme.colors.surface },
   orderIconWrap: {
     width: 96,
     height: 90,
     borderRadius: 10,
-    backgroundColor: '#e2f4f4',
+    backgroundColor: theme.colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   itemDetails: { flex: 1, paddingLeft: 12, justifyContent: 'center' },
-  itemType: { color: '#24b8b8', fontSize: 10, fontWeight: '800', letterSpacing: 1 },
-  itemName: { color: '#123f3f', fontSize: 16, fontWeight: '800', marginTop: 5 },
-  itemPrice: { color: '#1a3f3f', fontSize: 15, fontWeight: '700', marginTop: 5 },
-  fieldLabel: { color: '#1a3f3f', fontSize: 14, fontWeight: '700', marginTop: 12 },
+  itemType: { color: theme.colors.primaryAccent, fontSize: 10, fontWeight: '800', letterSpacing: 1 },
+  itemName: { color: theme.colors.textPrimary, fontSize: 16, fontWeight: '800', marginTop: 5 },
+  itemPrice: { color: theme.colors.textPrimary, fontSize: 15, fontWeight: '700', marginTop: 5 },
+  fieldLabel: { color: theme.colors.textPrimary, fontSize: 14, fontWeight: '700', marginTop: 12 },
   input: {
     minHeight: 150,
     borderWidth: 1,
-    borderColor: '#c7dddd',
+    borderColor: theme.colors.border,
     borderRadius: 12,
     padding: 14,
-    color: '#1a3f3f',
+    color: theme.colors.textPrimary,
     fontSize: 15,
     lineHeight: 22,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface,
   },
   sendButton: {
     minHeight: 50,
     borderRadius: 12,
-    backgroundColor: '#24b8b8',
+    backgroundColor: theme.colors.primaryAccent,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
@@ -410,10 +414,10 @@ const styles = StyleSheet.create({
   noticeText: { color: '#9a4d3c', fontSize: 14 },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   thread: { rowGap: 10, paddingVertical: 8 },
-  emptyThread: { color: '#789292', fontSize: 13, textAlign: 'center', paddingVertical: 12 },
+  emptyThread: { color: theme.colors.textSecondary, fontSize: 13, textAlign: 'center', paddingVertical: 12 },
   bubble: { maxWidth: '82%', paddingHorizontal: 13, paddingVertical: 9, borderRadius: 16 },
-  ownBubble: { alignSelf: 'flex-end', backgroundColor: '#d7f6f2', borderBottomRightRadius: 4 },
-  otherBubble: { alignSelf: 'flex-start', backgroundColor: '#f0f3f3', borderBottomLeftRadius: 4 },
-  bubbleText: { color: '#123f3f', fontSize: 15, lineHeight: 21 },
-  bubbleTime: { color: '#789292', fontSize: 10, alignSelf: 'flex-end', marginTop: 4 },
+  ownBubble: { alignSelf: 'flex-end', backgroundColor: 'rgba(36,184,184,0.22)', borderBottomRightRadius: 4 },
+  otherBubble: { alignSelf: 'flex-start', backgroundColor: theme.colors.surface, borderBottomLeftRadius: 4 },
+  bubbleText: { color: theme.colors.textPrimary, fontSize: 15, lineHeight: 21 },
+  bubbleTime: { color: theme.colors.textSecondary, fontSize: 10, alignSelf: 'flex-end', marginTop: 4 },
 });
