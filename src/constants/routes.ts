@@ -15,6 +15,7 @@ export const ROUTES = {
   MARKETING_ORDERS: 'MarketingOrders',
   MARKETING_APPLICATIONS: 'MarketingApplications',
   ADD_PRODUCT: 'AddProduct',
+  MARKETING_CAROUSEL: 'MarketingCarousel',
 
   LOGIN: 'Login',
   FORGOT_PASSWORD: 'ForgotPassword',

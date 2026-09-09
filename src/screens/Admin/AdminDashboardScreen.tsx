@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useEffect, useState } from 'react';
@@ -20,7 +21,11 @@ import { RootStackParamList } from '../../navigation/types';
 
 import {
   type AdminDashboardMetrics,
+  type ActiveMarketingProfile,
+  type ActivityLogItem,
+  fetchActiveMarketingProfiles,
   fetchAdminDashboardMetrics,
+  fetchDetailedActivityLogs,
 } from '../../services/admin/dashboard';
 
 import {
@@ -53,6 +58,12 @@ export function AdminDashboardScreen() {
 
   const [loading, setLoading] =
     useState(true);
+
+  const [marketingProfiles, setMarketingProfiles] =
+    useState<ActiveMarketingProfile[]>([]);
+
+  const [detailedLogs, setDetailedLogs] =
+    useState<ActivityLogItem[]>([]);
 
   /*
    * MARKETING EMPLOYEE FORM
@@ -111,6 +122,12 @@ export function AdminDashboardScreen() {
         await fetchAdminDashboardMetrics();
 
       setMetrics(nextMetrics);
+      const [profiles, logs] = await Promise.all([
+        fetchActiveMarketingProfiles(),
+        fetchDetailedActivityLogs(),
+      ]);
+      setMarketingProfiles(profiles);
+      setDetailedLogs(logs);
     } catch (err) {
       const message =
         err instanceof Error
@@ -441,6 +458,48 @@ Green Off-Grid
             <Text style={styles.metricValue}>
               {metrics?.totalLogs ?? 0}
             </Text>
+          </View>
+
+          <View style={styles.managementCard}>
+            <View style={styles.managementHeader}>
+              <View>
+                <Text style={styles.cardTitle}>Marketing team presence</Text>
+                <Text style={styles.cardDescription}>Current profiles and latest activity timestamps.</Text>
+              </View>
+              <Ionicons name="pulse-outline" size={22} color="#24B8B8" />
+            </View>
+            {marketingProfiles.length ? marketingProfiles.map((profile) => (
+              <View key={profile.id} style={styles.profileActivityRow}>
+                <View style={styles.profileStatusDot} />
+                <View style={styles.profileActivityBody}>
+                  <Text style={styles.profileActivityName}>{profile.full_name || profile.email}</Text>
+                  <Text style={styles.profileActivityMeta}>{profile.email} · {profile.employee_number || 'No employee number'}</Text>
+                </View>
+                <Text style={styles.profileActivityTime}>
+                  {profile.last_seen_at ? new Date(profile.last_seen_at).toLocaleString() : 'No recent activity'}
+                </Text>
+              </View>
+            )) : <Text style={styles.logMeta}>No marketing profiles found.</Text>}
+          </View>
+
+          <View style={styles.managementCard}>
+            <View style={styles.managementHeader}>
+              <View>
+                <Text style={styles.cardTitle}>Activity stream</Text>
+                <Text style={styles.cardDescription}>Detailed actions with actor, metadata and time.</Text>
+              </View>
+              <Ionicons name="list-outline" size={22} color="#24B8B8" />
+            </View>
+            {detailedLogs.length ? detailedLogs.map((item) => (
+              <View key={item.id} style={styles.detailedLogRow}>
+                <View style={styles.detailedLogTopRow}>
+                  <Text style={styles.logEvent}>{item.event_type}</Text>
+                  <Text style={styles.logTime}>{new Date(item.created_at).toLocaleString()}</Text>
+                </View>
+                <Text style={styles.logMeta}>{item.actor_email || 'Unknown user'}</Text>
+                <Text style={styles.logDetails}>{item.metadata ? JSON.stringify(item.metadata) : 'No additional details'}</Text>
+              </View>
+            )) : <Text style={styles.logMeta}>No detailed activity yet.</Text>}
           </View>
 
           {/* ============================== */}
@@ -1405,6 +1464,84 @@ const styles = StyleSheet.create({
     color: '#6e8383',
     fontSize: 11,
     marginTop: 4,
+  },
+
+  managementCard: {
+    borderRadius: 18,
+    padding: appTheme.spacing.md,
+    borderWidth: 1,
+    borderColor: 'rgba(36,184,184,0.2)',
+    backgroundColor: '#f7fdfd',
+    rowGap: appTheme.spacing.sm,
+  },
+
+  managementHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+
+  profileActivityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: appTheme.spacing.sm,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(36,184,184,0.14)',
+  },
+
+  profileStatusDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: '#27A66F',
+    marginRight: appTheme.spacing.sm,
+  },
+
+  profileActivityBody: {
+    flex: 1,
+  },
+
+  profileActivityName: {
+    color: '#123f3f',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+
+  profileActivityMeta: {
+    color: '#587272',
+    fontSize: 11,
+    marginTop: 3,
+  },
+
+  profileActivityTime: {
+    maxWidth: 105,
+    color: '#6e8383',
+    fontSize: 10,
+    textAlign: 'right',
+  },
+
+  detailedLogRow: {
+    padding: appTheme.spacing.sm,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(36,184,184,0.14)',
+  },
+
+  detailedLogTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
+  logDetails: {
+    color: '#587272',
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 5,
   },
 
   /*

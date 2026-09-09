@@ -416,10 +416,10 @@ export function MarketingDashboardScreen() {
 
                     <ActionCard
                         title="Media Library"
-                        description="Manage product and package images."
+                        description="Manage carousel images and short advert videos."
                         icon="images-outline"
                         onPress={() => {
-                            // Media management will be connected here.
+                            navigation.navigate(ROUTES.MARKETING_CAROUSEL);
                         }}
                     />
                 </View>

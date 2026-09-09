@@ -275,9 +275,15 @@ export function LoginScreen() {
            * EmployeeProfileScreen
            */
 
-          setError(
-            'Your password has been updated. Employee profile setup will be available next.'
-          );
+          navigation.reset({
+            index: 0,
+            routes: [
+              {
+                name:
+                  ROUTES.EMPLOYEE_PROFILE,
+              },
+            ],
+          });
 
           return;
         }

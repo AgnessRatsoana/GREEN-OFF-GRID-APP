@@ -178,3 +178,41 @@ export async function syncProfileSnapshot(): Promise<void> {
     );
   }
 }
+
+export interface ActiveMarketingProfile {
+  id: string;
+  full_name: string;
+  email: string;
+  employee_number: string | null;
+  last_seen_at: string | null;
+  last_login_at: string | null;
+  invited_at: string | null;
+}
+
+export async function fetchActiveMarketingProfiles(): Promise<ActiveMarketingProfile[]> {
+  const { data, error } = await getSupabaseClient()
+    .from('profiles')
+    .select('id,full_name,email,employee_number,last_seen_at,last_login_at,invited_at')
+    .eq('role', 'marketing')
+    .order('last_seen_at', { ascending: false, nullsFirst: false });
+
+  if (error) {
+    throw new Error(`Unable to load marketing profiles: ${error.message}`);
+  }
+
+  return (data ?? []) as ActiveMarketingProfile[];
+}
+
+export async function fetchDetailedActivityLogs(limit = 40): Promise<ActivityLogItem[]> {
+  const { data, error } = await getSupabaseClient()
+    .from('activity_logs')
+    .select('id,event_type,actor_id,actor_email,metadata,created_at')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(`Unable to load activity logs: ${error.message}`);
+  }
+
+  return (data ?? []) as ActivityLogItem[];
+}

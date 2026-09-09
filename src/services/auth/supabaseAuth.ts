@@ -53,15 +53,17 @@ function mapUser(
    * This is what allows the admin role that you changed
    * in Supabase to actually reach the application.
    */
+  const metadataRole = metadata.role;
   const role =
-    profile?.role === 'admin'
+    profile?.role === 'admin' || metadataRole === 'admin'
       ? 'admin'
-      : profile?.role === 'marketing'
+      : profile?.role === 'marketing' || metadataRole === 'marketing'
         ? 'marketing'
         : 'client';
 
+  const metadataAccountType = metadata.account_type;
   const accountType =
-    profile?.account_type === 'business'
+    profile?.account_type === 'business' || metadataAccountType === 'business'
       ? 'business'
       : 'individual';
 

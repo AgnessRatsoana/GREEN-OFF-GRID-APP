@@ -58,6 +58,8 @@ export function GlobalFloatingBottomNav({
   const insets = useSafeAreaInsets();
 
   const userId = useAuthStore((state) => state.user?.id);
+  const userRole = useAuthStore((state) => state.user?.role);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   const unreadCount = useNotificationStore(
     (state) => state.unreadCount,
@@ -118,7 +120,11 @@ export function GlobalFloatingBottomNav({
     addNotification,
   ]);
 
-  if (!currentRouteName || isHidden) {
+  if (!isAuthenticated || !currentRouteName || isHidden) {
+    return null;
+  }
+
+  if (userRole === 'admin' || userRole === 'marketing') {
     return null;
   }
 

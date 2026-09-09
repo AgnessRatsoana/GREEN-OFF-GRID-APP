@@ -10,6 +10,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { GlobalFloatingBottomNav } from './src/components/common/GlobalFloatingBottomNav';
+import { ManagementFloatingBottomNav } from './src/components/common/ManagementFloatingBottomNav';
 import {
   AppNavigation,
   navigationRef,
@@ -44,6 +45,9 @@ export default function App() {
 
   const clearSession =
     useAuthStore((s) => s.clearSession);
+  const isAuthenticated =
+    useAuthStore((s) => s.isAuthenticated);
+  const userRole = useAuthStore((s) => s.user?.role);
 
   const hydrateFavourites =
     useFavouritesStore((s) => s.hydrate);
@@ -193,13 +197,24 @@ export default function App() {
           }
         />
 
-        <GlobalFloatingBottomNav
-          currentRouteName={
-            currentRouteName
-          }
-          isHidden={isDrawerOpen}
-          navigationRef={navigationRef}
-        />
+        {isAuthenticated ? (
+          <GlobalFloatingBottomNav
+            currentRouteName={
+              currentRouteName
+            }
+            isHidden={isDrawerOpen}
+            navigationRef={navigationRef}
+          />
+        ) : null}
+
+        {isAuthenticated &&
+        (userRole === 'admin' || userRole === 'marketing') ? (
+          <ManagementFloatingBottomNav
+            currentRouteName={currentRouteName}
+            navigationRef={navigationRef}
+            role={userRole}
+          />
+        ) : null}
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

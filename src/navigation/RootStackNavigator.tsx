@@ -36,6 +36,7 @@ import { MarketingApplicationsScreen } from '../screens/Marketing/MarketingAppli
 
 
 import { AddProductScreen } from '../screens/Marketing/Products/AddProductScreen';
+import { MarketingCarouselScreen } from '../screens/Marketing/MarketingCarouselScreen';
 
 import { AppDrawerNavigator } from './AppDrawerNavigator';
 import { ModalHostScreen } from './ModalHostScreen';
@@ -164,6 +165,12 @@ export function RootStackNavigator() {
         options={{
           animation: 'slide_from_right',
         }}
+      />
+
+      <Stack.Screen
+        name={ROUTES.MARKETING_CAROUSEL}
+        component={MarketingCarouselScreen}
+        options={{ animation: 'slide_from_right' }}
       />
 
       {/* =========================
