@@ -18,6 +18,7 @@ import { OrderConfirmationScreen } from '../screens/Checkout/OrderConfirmationSc
 import { OrderTrackingScreen } from '../screens/Orders/OrderTrackingScreen';
 
 import { FavouritesScreen } from '../screens/Favourites/FavouritesScreen';
+import { NotificationsScreen } from '../screens/Notifications/NotificationsScreen';
 
 import { PackageDetailsScreen } from '../screens/Packages/PackageDetailsScreen';
 import { PackagesScreen } from '../screens/Packages/PackagesScreen';
@@ -189,6 +190,14 @@ export function RootStackNavigator() {
       <Stack.Screen
         name={ROUTES.FAVOURITES}
         component={FavouritesScreen}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+
+      <Stack.Screen
+        name={ROUTES.NOTIFICATIONS}
+        component={NotificationsScreen}
         options={{
           animation: 'slide_from_right',
         }}

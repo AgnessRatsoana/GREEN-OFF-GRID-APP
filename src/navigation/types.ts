@@ -22,6 +22,7 @@ export type RootStackParamList = {
   
 
   [ROUTES.FAVOURITES]: undefined;
+  [ROUTES.NOTIFICATIONS]: undefined;
   [ROUTES.CART]: undefined;
 
   [ROUTES.PACKAGES]: undefined;

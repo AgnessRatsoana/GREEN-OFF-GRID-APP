@@ -5,12 +5,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ROUTES } from '../../constants/routes';
 import { RootStackParamList } from '../../navigation/types';
+
 import {
-  fetchViewerUnreadTotal,
-  subscribeToEnquiryActivity,
-} from '../../services/applications/enquiries';
+  subscribeToNotifications,
+} from '../../services/notifications/notifications';
+
 import { useAuthStore } from '../../store/authStore';
-import { useMessagingStore } from '../../store/messagingStore';
+import { useNotificationStore } from '../../store/notificationStore';
+
 import { FloatingBottomNav } from './FloatingBottomNav';
 
 type GlobalFloatingBottomNavProps = {
@@ -30,12 +32,14 @@ const HIDDEN_ROUTE_NAMES: Set<string> = new Set([
   ROUTES.ORDER_TRACKING,
 ]);
 
-function getActiveKey(routeName?: string): 'home' | 'saved' | 'notifications' | 'packages' {
+function getActiveKey(
+  routeName?: string,
+): 'home' | 'saved' | 'notifications' | 'packages' {
   if (routeName === ROUTES.FAVOURITES) {
     return 'saved';
   }
 
-  if (routeName === ROUTES.MESSAGES) {
+  if (routeName === ROUTES.NOTIFICATIONS) {
     return 'notifications';
   }
 
@@ -52,41 +56,73 @@ export function GlobalFloatingBottomNav({
   navigationRef,
 }: GlobalFloatingBottomNavProps) {
   const insets = useSafeAreaInsets();
-  const userId = useAuthStore((state) => state.user?.id);
-  const unreadCount = useMessagingStore((state) => state.unreadCount);
-  const setUnreadCount = useMessagingStore((state) => state.setUnreadCount);
 
-  // Initial unread total plus live updates whenever a message is inserted.
-  // RLS restricts these events to conversations the signed-in user may see.
+  const userId = useAuthStore((state) => state.user?.id);
+
+  const unreadCount = useNotificationStore(
+    (state) => state.unreadCount,
+  );
+
+  const addNotification = useNotificationStore(
+    (state) => state.addNotification,
+  );
+
+  const refreshUnreadCount = useNotificationStore(
+    (state) => state.refreshUnreadCount,
+  );
+  const loadNotifications = useNotificationStore(
+    (state) => state.loadNotifications,
+  );
+
+  /*
+   * Load the current unread notification count and listen for
+   * new realtime notifications.
+   */
   useEffect(() => {
     if (!userId) {
-      setUnreadCount(0);
       return;
     }
 
     let disposed = false;
-    const refreshUnread = () => {
-      fetchViewerUnreadTotal()
-        .then((total) => {
-          if (!disposed) setUnreadCount(total);
-        })
-        .catch(() => undefined);
-    };
 
-    refreshUnread();
-    const unsubscribe = subscribeToEnquiryActivity(refreshUnread);
+    loadNotifications().catch(() => undefined);
+    refreshUnreadCount().catch(() => undefined);
+
+    let unsubscribe: (() => void) | undefined;
+
+    subscribeToNotifications((notification) => {
+      if (disposed) {
+        return;
+      }
+
+      addNotification(notification);
+    })
+      .then((cleanup) => {
+        if (disposed) {
+          cleanup();
+          return;
+        }
+
+        unsubscribe = cleanup;
+      })
+      .catch(() => undefined);
 
     return () => {
       disposed = true;
-      unsubscribe();
+      unsubscribe?.();
     };
-  }, [userId, setUnreadCount]);
+  }, [
+    userId,
+    refreshUnreadCount,
+    loadNotifications,
+    addNotification,
+  ]);
 
   if (!currentRouteName || isHidden) {
     return null;
   }
 
-  if ([...HIDDEN_ROUTE_NAMES].includes(currentRouteName as string)) {
+  if ([...HIDDEN_ROUTE_NAMES].includes(currentRouteName)) {
     return null;
   }
 
@@ -94,14 +130,19 @@ export function GlobalFloatingBottomNav({
     <View style={styles.wrapper} pointerEvents="box-none">
       <FloatingBottomNav
         activeKey={getActiveKey(currentRouteName)}
-        badgeCounts={{ notifications: unreadCount }}
+        badgeCounts={{
+          notifications: unreadCount,
+        }}
         onTabPress={(key) => {
           if (!navigationRef.isReady()) {
             return;
           }
 
           if (key === 'home') {
-            navigationRef.navigate(ROUTES.MAIN_DRAWER, { screen: ROUTES.HOME } as never);
+            navigationRef.navigate(
+              ROUTES.MAIN_DRAWER,
+              { screen: ROUTES.HOME } as never,
+            );
             return;
           }
 
@@ -111,7 +152,7 @@ export function GlobalFloatingBottomNav({
           }
 
           if (key === 'notifications') {
-            navigationRef.navigate(ROUTES.MAIN_DRAWER, { screen: ROUTES.MESSAGES } as never);
+            navigationRef.navigate(ROUTES.NOTIFICATIONS);
             return;
           }
 
@@ -120,6 +161,7 @@ export function GlobalFloatingBottomNav({
           }
         }}
       />
+
       <View style={{ height: insets.bottom }} />
     </View>
   );

@@ -12,7 +12,10 @@ export const appTheme = {
   typography,
 } as const;
 
-export type AppTheme = typeof appTheme;
+export type AppTheme = Omit<typeof appTheme, 'colors'> & {
+  colors: typeof lightColors | typeof darkColors;
+};
+
 export type ThemeMode = 'light' | 'dark';
 
 export function buildTheme(mode: ThemeMode): AppTheme {

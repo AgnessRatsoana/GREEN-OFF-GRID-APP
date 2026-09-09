@@ -49,6 +49,8 @@ export default function App() {
     useFavouritesStore((s) => s.hydrate);
   const hydrateCart =
     useCartStore((s) => s.hydrate);
+  const startCartExpiryWatcher =
+    useCartStore((s) => s.startExpiryWatcher);
   const hydrateTheme =
     useThemeStore((s) => s.hydrate);
   const themeMode =
@@ -136,14 +138,18 @@ export default function App() {
 
     bootstrapAuth();
 
+    const stopCartExpiryWatcher = startCartExpiryWatcher();
+
     return () => {
       subscription.remove();
+      stopCartExpiryWatcher();
     };
   }, [
     clearSession,
     setSession,
     hydrateFavourites,
     hydrateCart,
+    startCartExpiryWatcher,
     hydrateTheme,
   ]);
 

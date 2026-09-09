@@ -22,6 +22,7 @@ export const ROUTES = {
   REGISTER: 'Register',
 
   FAVOURITES: 'Favourites',
+  NOTIFICATIONS: 'Notifications',
   CART: 'Cart',
 
   PACKAGES: 'Marketplace',
