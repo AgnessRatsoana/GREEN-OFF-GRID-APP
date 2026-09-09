@@ -84,6 +84,11 @@ export async function uploadCarouselMedia(uri: string, type: CarouselMediaType):
 }
 
 export async function saveCarouselItem(input: Omit<CarouselItem, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }): Promise<CarouselItem> {
+  const existingItems = await fetchCarouselItems(true);
+  const nextOrder = existingItems.reduce(
+    (highest, item) => Math.max(highest, item.displayOrder),
+    -1,
+  ) + 1;
   const payload = {
     media_type: input.type,
     media_url: input.uri,
@@ -93,20 +98,56 @@ export async function saveCarouselItem(input: Omit<CarouselItem, 'id' | 'created
     point_two: input.pointTwo.trim(),
     primary_button_text: input.primaryButtonText.trim(),
     secondary_button_text: input.secondaryButtonText.trim(),
-    display_order: input.displayOrder,
+    display_order: input.id || input.displayOrder > 0 ? input.displayOrder : nextOrder,
     is_active: input.isActive,
   };
-  const query = getSupabaseClient().from('carousel_slides');
-  const result = input.id
-    ? await query.update(payload).eq('id', input.id).select(COLUMNS).single()
-    : await query.insert(payload).select(COLUMNS).single();
-  if (result.error || !result.data) throw new Error(`Unable to save carousel content: ${result.error?.message ?? 'Unknown error'}`);
-  return mapCarouselItem(result.data as CarouselRow);
+  const supabase = getSupabaseClient();
+
+  if (input.id) {
+    const { error: updateError } = await supabase
+      .from('carousel_slides')
+      .update(payload)
+      .eq('id', input.id);
+
+    if (updateError) {
+      throw new Error(`Unable to save carousel content: ${updateError.message}`);
+    }
+
+    const { data, error: reloadError } = await supabase
+      .from('carousel_slides')
+      .select(COLUMNS)
+      .eq('id', input.id)
+      .maybeSingle();
+
+    if (reloadError || !data) {
+      throw new Error(`Carousel update was not confirmed: ${reloadError?.message ?? 'record not found'}`);
+    }
+
+    return mapCarouselItem(data as CarouselRow);
+  }
+
+  const { data, error: insertError } = await supabase
+    .from('carousel_slides')
+    .insert(payload)
+    .select(COLUMNS)
+    .single();
+
+  if (insertError || !data) {
+    throw new Error(`Unable to publish carousel content: ${insertError?.message ?? 'record was not created'}`);
+  }
+
+  return mapCarouselItem(data as CarouselRow);
 }
 
 export async function deleteCarouselItem(id: string): Promise<void> {
-  const { error } = await getSupabaseClient().from('carousel_slides').delete().eq('id', id);
+  const { data, error } = await getSupabaseClient()
+    .from('carousel_slides')
+    .delete()
+    .eq('id', id)
+    .select('id');
+
   if (error) throw new Error(`Unable to delete carousel content: ${error.message}`);
+  if (!data || data.length === 0) throw new Error('Carousel slide was not deleted. Check your management permissions.');
 }
 
 export function subscribeToCarouselItems(onChange: () => void): () => void {

@@ -20,6 +20,28 @@ create table if not exists public.carousel_slides (
 create index if not exists carousel_slides_active_order_idx
 on public.carousel_slides(is_active, display_order);
 
+create or replace function public.current_user_role()
+returns text
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select role from public.profiles where id = auth.uid();
+$$;
+
+revoke all on function public.current_user_role() from public;
+grant execute on function public.current_user_role() to authenticated;
+
+with ordered as (
+  select id, row_number() over (order by created_at, id) - 1 as next_order
+  from public.carousel_slides
+)
+update public.carousel_slides slides
+set display_order = ordered.next_order
+from ordered
+where slides.id = ordered.id;
+
 do $$
 begin
   if not exists (

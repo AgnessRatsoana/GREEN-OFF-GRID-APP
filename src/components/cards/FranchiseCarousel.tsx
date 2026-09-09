@@ -71,7 +71,7 @@ export function FranchiseCarousel() {
     };
   }, []);
 
-  const slides = remoteSlides.length > 0 ? remoteSlides : fallbackSlides;
+  const slides = [...fallbackSlides, ...remoteSlides];
 
   useEffect(() => {
     if (slides.length < 2) return undefined;
@@ -100,7 +100,7 @@ export function FranchiseCarousel() {
         onMomentumScrollEnd={(event) => setActiveIndex(Math.round(event.nativeEvent.contentOffset.x / cardWidth))}
       >
         {slides.map((slide) => {
-          const remoteSlide = remoteSlides.length > 0 ? slide as CarouselItem : null;
+          const remoteSlide = 'uri' in slide ? slide as CarouselItem : null;
           const content = remoteSlide ?? slide as FallbackSlide;
           return (
             <View key={content.id} style={[styles.card, { width: cardWidth }]}>

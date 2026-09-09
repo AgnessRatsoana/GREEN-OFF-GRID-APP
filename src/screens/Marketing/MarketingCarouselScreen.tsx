@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
+import { useVideoPlayer, VideoView } from 'expo-video';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -28,6 +30,26 @@ import {
   type CarouselMediaType,
 } from '../../services/marketing/carousel';
 import { useAuthStore } from '../../store/authStore';
+
+const builtInSlides = [
+  { id: 'built-in-1', title: "We've got your back", image: require('../../assets/images/franchise-outlet-4.jpeg') },
+  { id: 'built-in-2', title: 'Power every install with quality gear', image: require('../../assets/images/panellCorousel.jpg') },
+  { id: 'built-in-3', title: 'From chargers to clamps, build smarter', image: require('../../assets/images/sollarCorousel.jpg') },
+];
+
+function CarouselPreviewMedia({ type, uri }: { type: CarouselMediaType; uri: string }) {
+  const player = useVideoPlayer(type === 'video' ? uri : '', (videoPlayer) => {
+    videoPlayer.loop = true;
+    videoPlayer.muted = true;
+    videoPlayer.play();
+  });
+
+  if (type === 'video') {
+    return <VideoView player={player} style={styles.previewMedia} contentFit="cover" nativeControls={false} />;
+  }
+
+  return <Image source={{ uri }} style={styles.previewMedia} resizeMode="cover" />;
+}
 
 export function MarketingCarouselScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -218,6 +240,22 @@ export function MarketingCarouselScreen() {
             <TextInput value={displayOrder} onChangeText={setDisplayOrder} keyboardType="number-pad" placeholder="Order" placeholderTextColor="#789292" style={[styles.input, styles.orderInput]} />
             <View style={styles.activeRow}><Text style={styles.activeLabel}>Visible to clients</Text><Switch value={isActive} onValueChange={setIsActive} trackColor={{ false: '#CBD8D8', true: '#8ADBD7' }} thumbColor={isActive ? '#0F6464' : '#FFFFFF'} /></View>
           </View>
+          {mediaUri ? (
+            <View style={styles.previewCard}>
+              <Text style={styles.previewLabel}>LIVE PREVIEW</Text>
+              <View style={styles.previewSlide}>
+                <CarouselPreviewMedia type={mediaType} uri={mediaUri} />
+                <LinearGradient colors={['#24b8b8A6', '#24b8b87A', '#24b8b83D', '#24b8b800']} locations={[0, 0.32, 0.56, 0.78]} start={{ x: 0, y: 0.22 }} end={{ x: 1, y: 0.04 }} style={styles.previewOverlay} />
+                <View style={styles.previewContent}>
+                  <Text style={styles.previewSubtitle}>{subtitle || 'Subtitle'}</Text>
+                  <Text style={styles.previewTitle}>{mainTitle || 'Main title'}</Text>
+                  <Text style={styles.previewPoint}>⚡ {pointOne || 'First bullet point'}</Text>
+                  <Text style={styles.previewPoint}>⚡ {pointTwo || 'Second bullet point'}</Text>
+                  <View style={styles.previewButtons}><Text style={styles.previewPrimary}>{primaryButtonText || 'Explore'}</Text><Text style={styles.previewSecondary}>{secondaryButtonText || 'Learn more'}</Text></View>
+                </View>
+              </View>
+            </View>
+          ) : null}
           {error ? <Text style={styles.error}>{error}</Text> : null}
           <Pressable style={styles.saveButton} onPress={save} disabled={isSaving || isUploading}>
             {isSaving ? <ActivityIndicator color="#FFFFFF" /> : <><Ionicons name="cloud-upload-outline" size={18} color="#FFFFFF" /><Text style={styles.saveButtonText}>{editingId ? 'Save changes' : 'Publish carousel slide'}</Text></>}
@@ -225,9 +263,29 @@ export function MarketingCarouselScreen() {
         </View>
 
         <View style={styles.sectionHeader}><Text style={styles.sectionTitle}>All carousel slides</Text><Text style={styles.count}>{items.length}</Text></View>
+        <Text style={styles.builtInHeading}>Built-in client slides</Text>
+        {builtInSlides.map((item) => (
+          <View key={item.id} style={styles.itemCard}>
+            <View style={styles.itemMedia}><Image source={item.image} style={styles.itemImage} resizeMode="cover" /></View>
+            <View style={styles.itemBody}>
+              <Text style={styles.itemType}>BUILT-IN · CLIENT DEFAULT</Text>
+              <Text style={styles.itemTitle}>{item.title}</Text>
+              <Text style={styles.itemMeta}>Available on the client dashboard fallback carousel.</Text>
+            </View>
+          </View>
+        ))}
         {items.map((item) => (
           <View key={item.id} style={styles.itemCard}>
-            <View style={[styles.itemMedia, item.type === 'video' && styles.videoMedia]}><Ionicons name={item.type === 'video' ? 'videocam' : 'image'} size={23} color="#24B8B8" /></View>
+            <View style={[styles.itemMedia, item.type === 'video' && styles.videoMedia]}>
+              {item.type === 'image' ? (
+                <Image source={{ uri: item.uri }} style={styles.itemImage} resizeMode="cover" />
+              ) : (
+                <>
+                  <Ionicons name="videocam" size={23} color="#24B8B8" />
+                  <Text style={styles.videoBadge}>VIDEO</Text>
+                </>
+              )}
+            </View>
             <View style={styles.itemBody}>
               <Text style={styles.itemType}>{item.type.toUpperCase()} · {item.isActive ? 'VISIBLE' : 'HIDDEN'}</Text>
               <Text style={styles.itemTitle}>{item.mainTitle}</Text>
@@ -265,6 +323,18 @@ const styles = StyleSheet.create({
   mediaButtonTextActive: { color: '#FFFFFF' },
   mediaPreview: { padding: 12, borderRadius: 12, backgroundColor: '#F0FAFA', borderWidth: 1, borderColor: '#C6E7E5' },
   mediaPreviewText: { color: '#0F6464', fontSize: 12, fontWeight: '700', textAlign: 'center' },
+  previewCard: { marginTop: 3, gap: 7 },
+  previewLabel: { color: '#0F6464', fontSize: 10, fontWeight: '800', letterSpacing: 1 },
+  previewSlide: { height: 190, borderRadius: 18, overflow: 'hidden', position: 'relative', backgroundColor: '#0D6464' },
+  previewMedia: { ...StyleSheet.absoluteFillObject },
+  previewOverlay: { ...StyleSheet.absoluteFillObject },
+  previewContent: { flex: 1, padding: 16, justifyContent: 'flex-start' },
+  previewSubtitle: { color: '#FFFFFF', fontSize: 15, fontWeight: '400' },
+  previewTitle: { color: '#FFFFFF', fontSize: 21, lineHeight: 25, fontWeight: '800', maxWidth: '84%', marginTop: 3 },
+  previewPoint: { color: '#FFFFFF', fontSize: 10, lineHeight: 14, marginTop: 6 },
+  previewButtons: { flexDirection: 'row', gap: 6, marginTop: 10 },
+  previewPrimary: { color: '#1F7F7F', backgroundColor: '#FFFFFF', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, fontSize: 9, fontWeight: '700' },
+  previewSecondary: { color: '#FFFFFF', borderWidth: 1, borderColor: '#FFFFFF', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, fontSize: 9, fontWeight: '700' },
   input: { borderWidth: 1, borderColor: '#C8DCDC', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11, color: '#163838', backgroundColor: '#FFFFFF', fontSize: 14 },
   splitRow: { flexDirection: 'row', gap: 8 },
   splitInput: { flex: 1 },
@@ -276,8 +346,11 @@ const styles = StyleSheet.create({
   saveButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: '#24B8B8', borderRadius: 12, paddingVertical: 12 },
   saveButtonText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
   itemCard: { flexDirection: 'row', alignItems: 'center', padding: 11, borderRadius: 16, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#DDEAEA', gap: 11 },
+  builtInHeading: { color: '#557070', fontSize: 12, fontWeight: '800', marginTop: -4 },
   itemMedia: { width: 58, height: 58, borderRadius: 12, backgroundColor: '#EEF9F9', alignItems: 'center', justifyContent: 'center' },
   videoMedia: { backgroundColor: '#E6F5F4' },
+  itemImage: { width: '100%', height: '100%' },
+  videoBadge: { color: '#0F6464', fontSize: 8, fontWeight: '800', marginTop: 3 },
   itemBody: { flex: 1 },
   itemType: { color: '#0F6464', fontSize: 9, fontWeight: '800', letterSpacing: 0.8 },
   itemTitle: { color: '#163838', fontSize: 14, fontWeight: '800', marginTop: 3 },

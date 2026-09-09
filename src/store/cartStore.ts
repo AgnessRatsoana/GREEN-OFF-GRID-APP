@@ -12,6 +12,7 @@ export type CartLine = {
   type: 'accessory' | 'franchise';
   imageUrl?: string | null;
   addedAt: number;
+  reminderSentAt?: number | null;
 };
 
 interface CartStore {
@@ -25,7 +26,7 @@ interface CartStore {
 }
 
 const STORAGE_KEY = 'cart-storage';
-const CART_EXPIRY_MS = 10 * 60 * 1000;
+const CART_REMINDER_MS = 60 * 60 * 1000;
 
 function persist(items: CartLine[]) {
   void AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(items)).catch(() => undefined);
@@ -46,7 +47,7 @@ export const useCartStore = create<CartStore>((set, get) => ({
           )
         : [
             ...state.items,
-            { id, name, price, quantity, type, imageUrl: imageUrl ?? null, addedAt: now },
+            { id, name, price, quantity, type, imageUrl: imageUrl ?? null, addedAt: now, reminderSentAt: null },
           ];
 
       persist(items);
@@ -59,7 +60,7 @@ export const useCartStore = create<CartStore>((set, get) => ({
         userId,
         type: 'cart',
         title: 'Cart updated',
-        message: `${name} is waiting in your cart. Complete checkout within 10 minutes.`,
+        message: `${name} is waiting in your cart. Complete checkout when you are ready.`,
         referenceId: null,
         referenceType: 'cart',
       });
@@ -79,6 +80,7 @@ export const useCartStore = create<CartStore>((set, get) => ({
     persist([]);
     set({ items: [] });
     useNotificationStore.getState().removeLocalNotifications('local-cart-');
+    useNotificationStore.getState().removeLocalNotifications('local-cart-reminder-');
   },
   hydrate: async () => {
     try {
@@ -86,9 +88,11 @@ export const useCartStore = create<CartStore>((set, get) => ({
       if (stored) {
         const parsedItems = JSON.parse(stored) as Array<CartLine & { addedAt?: number }>;
         const now = Date.now();
-        const items = parsedItems
-          .map((item) => ({ ...item, addedAt: item.addedAt ?? now }))
-          .filter((item) => now - item.addedAt < CART_EXPIRY_MS);
+        const items = parsedItems.map((item) => ({
+          ...item,
+          addedAt: item.addedAt ?? now,
+          reminderSentAt: item.reminderSentAt ?? null,
+        }));
 
         set({ items });
         persist(items);
@@ -100,21 +104,30 @@ export const useCartStore = create<CartStore>((set, get) => ({
   expireStaleItems: () => {
     const now = Date.now();
     const currentItems = get().items;
-    const items = currentItems.filter(
-      (item) => now - item.addedAt < CART_EXPIRY_MS,
-    );
+    let changed = false;
+    const items = currentItems.map((item) => {
+      if (now - item.addedAt >= CART_REMINDER_MS && !item.reminderSentAt) {
+        const userId = useAuthStore.getState().user?.id;
+        if (userId) {
+          useNotificationStore.getState().addLocalNotification({
+            id: `local-cart-reminder-${item.id}`,
+            userId,
+            type: 'cart',
+            title: 'Cart reminder',
+            message: `${item.name} is still in your cart. Complete checkout when you are ready.`,
+            referenceId: null,
+            referenceType: 'cart',
+          });
+        }
+        changed = true;
+        return { ...item, reminderSentAt: now };
+      }
+      return item;
+    });
 
-    if (items.length !== currentItems.length) {
+    if (changed) {
       persist(items);
       set({ items });
-      const activeIds = new Set(items.map((item) => item.id));
-      currentItems
-        .filter((item) => !activeIds.has(item.id))
-        .forEach((item) =>
-          useNotificationStore
-            .getState()
-            .removeLocalNotifications(`local-cart-${item.id}`),
-        );
     }
   },
   startExpiryWatcher: () => {
