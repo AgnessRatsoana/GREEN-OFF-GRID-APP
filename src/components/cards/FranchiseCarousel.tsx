@@ -128,8 +128,8 @@ export function FranchiseCarousel() {
 const styles = StyleSheet.create({
   wrapper: { width: '100%' },
   card: { height: 286, borderRadius: CARD_BORDER_RADIUS, overflow: 'hidden', marginRight: appTheme.spacing.md },
-  backgroundImage: { ...StyleSheet.absoluteFillObject },
-  gradientOverlay: { ...StyleSheet.absoluteFillObject },
+ backgroundImage: { ...StyleSheet.absoluteFill },
+gradientOverlay: { ...StyleSheet.absoluteFill },
   contentArea: { flex: 1, paddingHorizontal: appTheme.spacing.lg, paddingVertical: appTheme.spacing.md, justifyContent: 'flex-start' },
   subTitle: { color: '#FFFFFF', fontSize: 24, lineHeight: 28, fontWeight: '400', opacity: 0.95 },
   mainTitle: { marginTop: appTheme.spacing.xs, color: '#FFFFFF', fontSize: 30, lineHeight: 34, fontWeight: '800', maxWidth: '82%' },

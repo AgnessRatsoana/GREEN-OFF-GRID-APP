@@ -150,10 +150,10 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderColor: 'rgba(36,184,184,0.18)',
   },
   image: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   cardOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(10,41,41,0.26)',
   },
   heartBtn: {

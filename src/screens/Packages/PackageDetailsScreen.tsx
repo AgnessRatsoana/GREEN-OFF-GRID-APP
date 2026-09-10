@@ -168,7 +168,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     height: '100%',
   },
   heroDim: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.22)',
   },
   floatBtn: {

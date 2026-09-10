@@ -175,7 +175,7 @@ export function GlobalFloatingBottomNav({
 
 const styles = StyleSheet.create({
   wrapper: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     justifyContent: 'flex-end',
     zIndex: 40,
   },
