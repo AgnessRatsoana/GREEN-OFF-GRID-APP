@@ -10,7 +10,10 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import MapView, { Marker } from 'react-native-maps';
+import MapView, {
+  Marker,
+  PROVIDER_GOOGLE,
+} from 'react-native-maps';
 
 import {
   geocodeAddress,
@@ -144,26 +147,27 @@ export function AddressMapPreview({
         </View>
       ) : coordinates ? (
         <MapView
-          style={styles.map}
-          initialRegion={{
-            latitude: coordinates.latitude,
-            longitude: coordinates.longitude,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
-          }}
-          showsUserLocation={false}
-          showsMyLocationButton={false}
-          loadingEnabled
-        >
-          <Marker
-            coordinate={{
-              latitude: coordinates.latitude,
-              longitude: coordinates.longitude,
-            }}
-            title="Selected location"
-            description={coordinates.displayName}
-          />
-        </MapView>
+  provider={PROVIDER_GOOGLE}
+  style={styles.map}
+  region={{
+    latitude: coordinates.latitude,
+    longitude: coordinates.longitude,
+    latitudeDelta: 0.005,
+    longitudeDelta: 0.005,
+  }}
+  showsUserLocation={false}
+  showsMyLocationButton={false}
+  loadingEnabled
+>
+  <Marker
+    coordinate={{
+      latitude: coordinates.latitude,
+      longitude: coordinates.longitude,
+    }}
+    title="Selected location"
+    description={coordinates.displayName}
+  />
+</MapView>
       ) : (
         <View style={styles.centerContent}>
           <Text style={styles.statusText}>

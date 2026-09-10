@@ -1,16 +1,10 @@
+import * as Location from 'expo-location';
+
 export interface Coordinates {
   latitude: number;
   longitude: number;
   displayName: string;
 }
-
-interface NominatimResult {
-  lat: string;
-  lon: string;
-  display_name: string;
-}
-
-const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
 
 export async function geocodeAddress(
   address: string,
@@ -21,35 +15,46 @@ export async function geocodeAddress(
     return null;
   }
 
-  const params = new URLSearchParams({
-    q: trimmedAddress,
-    format: 'jsonv2',
-    limit: '1',
-    countrycodes: 'za',
-  });
+  try {
+    // Android requires foreground location permission
+    // before geocoding can be used.
+    if (process.env.EXPO_OS === 'android') {
+      const permission =
+        await Location.getForegroundPermissionsAsync();
 
-  const response = await fetch(`${NOMINATIM_URL}?${params.toString()}`, {
-    headers: {
-      Accept: 'application/json',
-      'User-Agent': 'GreenOffGridMobileApp/1.0',
-    },
-  });
+      if (permission.status !== Location.PermissionStatus.GRANTED) {
+        const requested =
+          await Location.requestForegroundPermissionsAsync();
 
-  if (!response.ok) {
-    throw new Error(`Geocoding failed with status ${response.status}`);
+        if (requested.status !== Location.PermissionStatus.GRANTED) {
+          throw new Error(
+            'Location permission is required to find this address.',
+          );
+        }
+      }
+    }
+
+    const results = await Location.geocodeAsync(trimmedAddress);
+
+    if (!results.length) {
+      return null;
+    }
+
+    const result = results[0];
+
+    console.log('GEOCODE RESULT:', {
+  latitude: result.latitude,
+  longitude: result.longitude,
+  address: trimmedAddress,
+});
+
+    return {
+      latitude: result.latitude,
+      longitude: result.longitude,
+      displayName: trimmedAddress,
+    };
+  } catch (error) {
+    console.error('Address geocoding failed:', error);
+    throw error;
   }
-
-  const results = (await response.json()) as NominatimResult[];
-
-  if (!results.length) {
-    return null;
-  }
-
-  const result = results[0];
-
-  return {
-    latitude: Number(result.lat),
-    longitude: Number(result.lon),
-    displayName: result.display_name,
-  };
 }
