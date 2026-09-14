@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 
 import {
@@ -38,76 +39,88 @@ export function AddressMapPreview({
   const [coordinates, setCoordinates] =
     useState<Coordinates | null>(null);
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] =
+    useState(false);
 
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] =
+    useState<string | null>(null);
 
   useEffect(() => {
     if (Platform.OS === 'web') {
       return;
     }
 
-    let cancelled = false;
+    const trimmedQuery = query.trim();
 
-    async function loadCoordinates() {
-      const trimmedQuery = query.trim();
-
-      if (!trimmedQuery) {
-        setCoordinates(null);
-        setError(null);
-        return;
-      }
-
-      setIsLoading(true);
+    if (!trimmedQuery) {
+      setCoordinates(null);
       setError(null);
-
-      try {
-        const result = await geocodeAddress(trimmedQuery);
-
-        if (cancelled) {
-          return;
-        }
-
-        if (!result) {
-          setCoordinates(null);
-          setError('We could not find this address.');
-          return;
-        }
-
-        setCoordinates(result);
-      } catch (geocodingError) {
-        if (cancelled) {
-          return;
-        }
-
-        console.error(
-          'Address geocoding failed:',
-          geocodingError,
-        );
-
-        setCoordinates(null);
-        setError(
-          'Unable to load the map for this address.',
-        );
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      }
+      setIsLoading(false);
+      return;
     }
 
-    void loadCoordinates();
+    let cancelled = false;
+
+    /*
+     * Wait until the user stops typing before
+     * requesting coordinates.
+     */
+    const timeout = setTimeout(() => {
+      async function loadCoordinates() {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+          const result =
+            await geocodeAddress(trimmedQuery);
+
+          if (cancelled) {
+            return;
+          }
+
+          if (!result) {
+            setCoordinates(null);
+            setError(
+              'We could not find this address.',
+            );
+            return;
+          }
+
+          setCoordinates(result);
+        } catch (geocodingError) {
+          if (cancelled) {
+            return;
+          }
+
+          console.error(
+            'Address geocoding failed:',
+            geocodingError,
+          );
+
+          setCoordinates(null);
+          setError(
+            'Unable to load the map for this address.',
+          );
+        } finally {
+          if (!cancelled) {
+            setIsLoading(false);
+          }
+        }
+      }
+
+      void loadCoordinates();
+    }, 1200);
 
     return () => {
       cancelled = true;
+      clearTimeout(timeout);
     };
   }, [query]);
 
   /*
    * WEB
    *
-   * Keep the existing Google Maps iframe because
-   * your web version is already working.
+   * Keep Google Maps iframe for the web version.
    */
   if (Platform.OS === 'web') {
     return (
@@ -123,7 +136,8 @@ export function AddressMapPreview({
             display: 'block',
           },
           allowFullScreen: true,
-          referrerPolicy: 'no-referrer-when-downgrade',
+          referrerPolicy:
+            'no-referrer-when-downgrade',
           title: 'Location map',
         })}
       </View>
@@ -131,9 +145,10 @@ export function AddressMapPreview({
   }
 
   /*
-   * ANDROID + IOS
+   * NATIVE
    *
-   * Use the native react-native-maps component.
+   * Android uses Google Maps.
+   * iOS uses the native Apple Maps provider.
    */
   return (
     <View style={[styles.frame, style]}>
@@ -147,27 +162,33 @@ export function AddressMapPreview({
         </View>
       ) : coordinates ? (
         <MapView
-  provider={PROVIDER_GOOGLE}
-  style={styles.map}
-  region={{
-    latitude: coordinates.latitude,
-    longitude: coordinates.longitude,
-    latitudeDelta: 0.005,
-    longitudeDelta: 0.005,
-  }}
-  showsUserLocation={false}
-  showsMyLocationButton={false}
-  loadingEnabled
->
-  <Marker
-    coordinate={{
-      latitude: coordinates.latitude,
-      longitude: coordinates.longitude,
-    }}
-    title="Selected location"
-    description={coordinates.displayName}
-  />
-</MapView>
+          provider={
+            Platform.OS === 'android'
+              ? PROVIDER_GOOGLE
+              : undefined
+          }
+          style={styles.map}
+          initialRegion={{
+            latitude: coordinates.latitude,
+            longitude: coordinates.longitude,
+            latitudeDelta: 0.005,
+            longitudeDelta: 0.005,
+          }}
+          showsUserLocation={false}
+          showsMyLocationButton={false}
+          loadingEnabled
+        >
+          <Marker
+            coordinate={{
+              latitude: coordinates.latitude,
+              longitude: coordinates.longitude,
+            }}
+            title="Selected location"
+            description={
+              coordinates.displayName
+            }
+          />
+        </MapView>
       ) : (
         <View style={styles.centerContent}>
           <Text style={styles.statusText}>
@@ -186,7 +207,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(36,184,184,0.25)',
+    borderColor:
+      'rgba(36,184,184,0.25)',
     backgroundColor: '#eef6f6',
   },
 
@@ -208,3 +230,4 @@ const styles = StyleSheet.create({
     color: '#5f6b6b',
   },
 });
+
