@@ -1,9 +1,7 @@
-
 import React, { useEffect, useState } from 'react';
 
 import {
   ActivityIndicator,
-  Platform,
   StyleSheet,
   Text,
   View,
@@ -13,7 +11,6 @@ import {
 
 import MapView, {
   Marker,
-  PROVIDER_GOOGLE,
 } from 'react-native-maps';
 
 import {
@@ -24,12 +21,6 @@ import {
 interface AddressMapPreviewProps {
   query: string;
   style?: StyleProp<ViewStyle>;
-}
-
-function buildWebEmbedUrl(query: string): string {
-  return `https://maps.google.com/maps?output=embed&q=${encodeURIComponent(
-    query,
-  )}`;
 }
 
 export function AddressMapPreview({
@@ -46,10 +37,6 @@ export function AddressMapPreview({
     useState<string | null>(null);
 
   useEffect(() => {
-    if (Platform.OS === 'web') {
-      return;
-    }
-
     const trimmedQuery = query.trim();
 
     if (!trimmedQuery) {
@@ -61,10 +48,6 @@ export function AddressMapPreview({
 
     let cancelled = false;
 
-    /*
-     * Wait until the user stops typing before
-     * requesting coordinates.
-     */
     const timeout = setTimeout(() => {
       async function loadCoordinates() {
         setIsLoading(true);
@@ -117,39 +100,6 @@ export function AddressMapPreview({
     };
   }, [query]);
 
-  /*
-   * WEB
-   *
-   * Keep Google Maps iframe for the web version.
-   */
-  if (Platform.OS === 'web') {
-    return (
-      <View style={[styles.frame, style]}>
-        {React.createElement('iframe', {
-          key: query,
-          src: buildWebEmbedUrl(query),
-          style: {
-            border: 0,
-            width: '100%',
-            height: '100%',
-            borderRadius: 14,
-            display: 'block',
-          },
-          allowFullScreen: true,
-          referrerPolicy:
-            'no-referrer-when-downgrade',
-          title: 'Location map',
-        })}
-      </View>
-    );
-  }
-
-  /*
-   * NATIVE
-   *
-   * Android uses Google Maps.
-   * iOS uses the native Apple Maps provider.
-   */
   return (
     <View style={[styles.frame, style]}>
       {isLoading ? (
@@ -157,16 +107,11 @@ export function AddressMapPreview({
           <ActivityIndicator size="small" />
 
           <Text style={styles.statusText}>
-            Loading location...
+            Loading Apple Maps...
           </Text>
         </View>
       ) : coordinates ? (
         <MapView
-          provider={
-            Platform.OS === 'android'
-              ? PROVIDER_GOOGLE
-              : undefined
-          }
           style={styles.map}
           initialRegion={{
             latitude: coordinates.latitude,
@@ -183,10 +128,8 @@ export function AddressMapPreview({
               latitude: coordinates.latitude,
               longitude: coordinates.longitude,
             }}
-            title="Selected location"
-            description={
-              coordinates.displayName
-            }
+            title="Delivery location"
+            description={coordinates.displayName}
           />
         </MapView>
       ) : (
@@ -207,8 +150,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor:
-      'rgba(36,184,184,0.25)',
+    borderColor: 'rgba(36,184,184,0.25)',
     backgroundColor: '#eef6f6',
   },
 
@@ -230,4 +172,3 @@ const styles = StyleSheet.create({
     color: '#5f6b6b',
   },
 });
-

@@ -22,6 +22,8 @@ import {
 
 import { ROUTES } from '../../constants/routes';
 import { RootStackParamList } from '../../navigation/types';
+import { logoutFromSupabase } from '../../services/auth/authActions';
+import { clearAuthTokens } from '../../services/storage/secureStore';
 import { useAuthStore } from '../../store/authStore';
 import { fetchMarketingDashboardStats } from '../../services/marketing/dashboard';
 
@@ -181,15 +183,29 @@ export function MarketingDashboardScreen() {
     const employeeNumber =
         user?.employeeNumber || 'Not assigned';
 
+    const clearSession = useAuthStore(
+        (state) => state.clearSession,
+    );
+
     const handleProfile = () => {
         navigation.navigate(
             ROUTES.EMPLOYEE_PROFILE
         );
     };
 
-    const handleLogout = () => {
-        // Logout functionality will be connected
-        // to the central authentication flow.
+    const handleLogout = async () => {
+        try {
+            await logoutFromSupabase();
+        } catch {
+            // Remote logout can fail due to stale session; we still clear the local session.
+        } finally {
+            await clearAuthTokens();
+            clearSession();
+            navigation.reset({
+                index: 0,
+                routes: [{ name: ROUTES.LOGIN }],
+            });
+        }
     };
 
     return (

@@ -46,6 +46,9 @@ export function AdminDashboardScreen() {
   const isAdmin = useAuthStore(
     (state) => state.user?.role === 'admin',
   );
+  const clearSession = useAuthStore(
+    (state) => state.clearSession,
+  );
 
   /*
    * DASHBOARD DATA
@@ -353,6 +356,21 @@ Green Off-Grid
       setCopySuccess(false);
     };
 
+  const handleLogout = async () => {
+    try {
+      await logoutFromSupabase();
+    } catch {
+      // Remote logout can fail; clear local state anyway.
+    } finally {
+      await clearAuthTokens();
+      clearSession();
+      navigation.reset({
+        index: 0,
+        routes: [{ name: ROUTES.LOGIN }],
+      });
+    }
+  };
+
   /*
    * RENDER
    */
@@ -379,11 +397,16 @@ Green Off-Grid
           </Text>
         </View>
 
-        <View style={styles.decorIcon}>
+        <Pressable
+          style={styles.decorIcon}
+          onPress={handleLogout}
+          accessibilityRole="button"
+          accessibilityLabel="Sign out"
+        >
           <Text style={styles.decorIconText}>
             A
           </Text>
-        </View>
+        </Pressable>
       </View>
 
       {loading ? (

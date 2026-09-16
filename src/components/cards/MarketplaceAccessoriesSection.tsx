@@ -3,10 +3,14 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Image } from 'expo-image';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
 
 import { ROUTES } from '../../constants/routes';
-import { MARKETPLACE_PRODUCTS } from '../../data/marketplace';
 import { RootStackParamList } from '../../navigation/types';
+import {
+  fetchMarketplaceProducts,
+  type MarketplaceProduct,
+} from '../../services/marketplace/marketplace';
 import { useAuthStore } from '../../store/authStore';
 import { useCartStore } from '../../store/cartStore';
 import { useFavouritesStore } from '../../store/favouritesStore';
@@ -15,230 +19,403 @@ import type { AppTheme } from '../../theme';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { getBusinessPrice } from '../../utils/pricing';
 
-const homeAccessories = MARKETPLACE_PRODUCTS.slice(0, 8);
-
 export function MarketplaceAccessoriesSection() {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const isBusiness = useAuthStore((s) => s.user?.accountType === 'business');
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  const isBusiness = useAuthStore(
+    (s) => s.user?.accountType === 'business',
+  );
+
   const addItem = useCartStore((s) => s.addItem);
   const cartItems = useCartStore((s) => s.items);
-  const isInCart = (id: string) => cartItems.some((entry) => entry.id === id);
+
   const toggle = useFavouritesStore((s) => s.toggle);
   const favourites = useFavouritesStore((s) => s.favourites);
-  const isFavourite = (id: string) => favourites.includes(id);
+
   const theme = useAppTheme();
   const styles = createStyles(theme);
 
+  const [products, setProducts] = useState<MarketplaceProduct[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const isInCart = (id: string) =>
+    cartItems.some((entry) => entry.id === id);
+
+  const isFavourite = (id: string) =>
+    favourites.includes(id);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadProducts = async () => {
+      try {
+        setLoading(true);
+
+        const marketplaceProducts =
+          await fetchMarketplaceProducts();
+
+        if (mounted) {
+          // Same product source as Marketplace
+          setProducts(marketplaceProducts.slice(0, 8));
+        }
+      } catch (error) {
+        console.error(
+          'Failed to load Home marketplace accessories:',
+          error,
+        );
+
+        if (mounted) {
+          setProducts([]);
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadProducts();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const openProduct = (productId: string) => {
     navigation.navigate(ROUTES.PACKAGES);
+
     setTimeout(() => {
-      navigation.navigate(ROUTES.PRODUCT_DETAILS, { productId });
+      navigation.navigate(
+        ROUTES.PRODUCT_DETAILS,
+        { productId },
+      );
     }, 0);
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionLabel}>More Accessories</Text>
-      <View style={styles.accessoriesRow}>
-        {homeAccessories.map((item) => (
-          <Pressable key={item.id} style={styles.accessoryCard} onPress={() => openProduct(item.id)}>
-            <View style={styles.accessoryImageWrap}>
-              <Image
-                source={require('../../assets/images/demoAccesories.jpg')}
-                style={styles.accessoryImage}
-                contentFit="cover"
-              />
+      <Text style={styles.sectionLabel}>
+        More Accessories
+      </Text>
 
-              <Pressable
-                style={[styles.heartBtn, isFavourite(item.id) && styles.heartBtnActive]}
-                onPress={(e) => {
-                  e.stopPropagation();
-                  toggle(item.id);
-                }}
-                hitSlop={8}
-              >
-                <Ionicons name={isFavourite(item.id) ? 'heart' : 'heart-outline'} size={16} color={isFavourite(item.id) ? '#FFFFFF' : '#b89aff'} />
-              </Pressable>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>
+            Loading accessories...
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.accessoriesRow}>
+          {products.map((item) => (
+            <Pressable
+              key={item.id}
+              style={styles.accessoryCard}
+              onPress={() => openProduct(item.id)}
+            >
+              <View style={styles.accessoryImageWrap}>
+                <Image
+                  source={require('../../assets/images/demoAccesories.jpg')}
+                  style={styles.accessoryImage}
+                  contentFit="cover"
+                />
 
-              <View style={styles.ratingBadge}>
-                <Ionicons name="star" size={11} color="#F4C542" />
-                <Text style={styles.ratingBadgeText}>4.8</Text>
-              </View>
-            </View>
-
-            <View style={styles.accessoryContent}>
-              <Text style={styles.productName}>{item.name}</Text>
-              {item.description ? <Text style={styles.productDescription}>{item.description}</Text> : null}
-              <Text style={styles.categoryText}>{item.category || 'General'}</Text>
-              <View style={styles.cardFooter}>
-                {isBusiness ? (
-                  <View style={styles.priceRow}>
-                    <Text style={styles.originalPriceStrike}>R {item.price.toLocaleString()}</Text>
-                    <Text style={styles.priceText}>R {getBusinessPrice(item.price).toLocaleString()}</Text>
-                  </View>
-                ) : (
-                  <Text style={styles.priceText}>R {item.price.toLocaleString()}</Text>
-                )}
                 <Pressable
-                  style={[styles.addButton, isInCart(item.id) && styles.addButtonAdded]}
+                  style={[
+                    styles.heartBtn,
+                    isFavourite(item.id) &&
+                      styles.heartBtnActive,
+                  ]}
                   onPress={(e) => {
                     e.stopPropagation();
 
-                    if (isBusiness) {
-                      openProduct(item.id);
-                    } else {
-                      addItem(
-                        {
-                          id: item.id,
-                          name: item.name,
-                          price: item.price,
-                          type: 'accessory',
-                        },
-                        1
-                      );
-                    }
+                    // Uses the SAME favourite store
+                    // and SAME Supabase product ID
+                    toggle(item.id);
                   }}
+                  hitSlop={8}
                 >
-                  <Text style={styles.addButtonText}>
-                    {isBusiness ? 'View' : isInCart(item.id) ? 'Added ✓' : 'Add'}
-                  </Text>
+                  <Ionicons
+                    name={
+                      isFavourite(item.id)
+                        ? 'heart'
+                        : 'heart-outline'
+                    }
+                    size={16}
+                    color={
+                      isFavourite(item.id)
+                        ? '#FFFFFF'
+                        : '#b89aff'
+                    }
+                  />
                 </Pressable>
+
+                <View style={styles.ratingBadge}>
+                  <Ionicons
+                    name="star"
+                    size={11}
+                    color="#F4C542"
+                  />
+
+                  <Text
+                    style={styles.ratingBadgeText}
+                  >
+                    4.8
+                  </Text>
+                </View>
               </View>
-            </View>
-          </Pressable>
-        ))}
-      </View>
+
+              <View style={styles.accessoryContent}>
+                <Text style={styles.productName}>
+                  {item.name}
+                </Text>
+
+                {item.description ? (
+                  <Text
+                    style={styles.productDescription}
+                  >
+                    {item.description}
+                  </Text>
+                ) : null}
+
+                <Text style={styles.categoryText}>
+                  {item.category || 'General'}
+                </Text>
+
+                <View style={styles.cardFooter}>
+                  {isBusiness ? (
+                    <View style={styles.priceRow}>
+                      <Text
+                        style={
+                          styles.originalPriceStrike
+                        }
+                      >
+                        R{' '}
+                        {Number(
+                          item.price,
+                        ).toLocaleString()}
+                      </Text>
+
+                      <Text style={styles.priceText}>
+                        R{' '}
+                        {getBusinessPrice(
+                          Number(item.price),
+                        ).toLocaleString()}
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.priceText}>
+                      R{' '}
+                      {Number(
+                        item.price,
+                      ).toLocaleString()}
+                    </Text>
+                  )}
+
+                  <Pressable
+                    style={[
+                      styles.addButton,
+                      isInCart(item.id) &&
+                        styles.addButtonAdded,
+                    ]}
+                    onPress={(e) => {
+                      e.stopPropagation();
+
+                      if (isBusiness) {
+                        openProduct(item.id);
+                      } else {
+                        addItem(
+                          {
+                            id: item.id,
+                            name: item.name,
+                            price: Number(item.price),
+                            type: 'accessory',
+                          },
+                          1,
+                        );
+                      }
+                    }}
+                  >
+                    <Text
+                      style={styles.addButtonText}
+                    >
+                      {isBusiness
+                        ? 'View'
+                        : isInCart(item.id)
+                          ? 'Added ✓'
+                          : 'Add'}
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+            </Pressable>
+          ))}
+        </View>
+      )}
     </View>
   );
 }
 
-const createStyles = (theme: AppTheme) => StyleSheet.create({
-  container: {
-    marginTop: appTheme.spacing.xl,
-  },
-  sectionLabel: {
-    color: theme.colors.textPrimary,
-    fontSize: 20,
-    lineHeight: 26,
-    fontWeight: '800',
-    marginBottom: 10,
-  },
-  accessoriesRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    rowGap: 12,
-  },
-  accessoryCard: {
-    width: '48%',
-    backgroundColor: theme.colors.surface,
-    borderRadius: 20,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  accessoryImageWrap: {
-    height: 160,
-    width: '100%',
-    position: 'relative',
-  },
-  accessoryImage: {
-    width: '100%',
-    height: '100%',
-  },
-  heartBtn: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: '#b89aff',
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10,
-  },
-  heartBtnActive: {
-    backgroundColor: '#b89aff',
-    borderColor: '#b89aff',
-  },
-  ratingBadge: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    columnGap: 3,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  ratingBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  accessoryContent: {
-    padding: appTheme.spacing.md,
-  },
-  productName: {
-    color: theme.colors.textPrimary,
-    fontSize: 16,
-    lineHeight: 22,
-    fontWeight: '800',
-  },
-  productDescription: {
-    color: theme.colors.textSecondary,
-    fontSize: 12,
-    lineHeight: 18,
-    marginTop: 6,
-  },
-  categoryText: {
-    color: theme.colors.primaryAccent,
-    fontSize: 11,
-    lineHeight: 16,
-    fontWeight: '700',
-    marginTop: 8,
-    textTransform: 'uppercase',
-  },
-  cardFooter: {
-    marginTop: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  priceText: {
-    color: theme.colors.textPrimary,
-    fontSize: 18,
-    lineHeight: 22,
-    fontWeight: '800',
-  },
-  priceRow: {
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    rowGap: 2,
-  },
-  originalPriceStrike: {
-    color: theme.colors.textSecondary,
-    fontSize: 11,
-    textDecorationLine: 'line-through',
-  },
-  addButton: {
-    borderRadius: 999,
-    backgroundColor: theme.colors.primaryAccent,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-  },
-  addButtonAdded: {
-    backgroundColor: '#178a6a',
-  },
-  addButtonText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '700',
-  },
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    container: {
+      marginTop: appTheme.spacing.xl,
+    },
+
+    sectionLabel: {
+      color: theme.colors.textPrimary,
+      fontSize: 20,
+      lineHeight: 26,
+      fontWeight: '800',
+      marginBottom: 10,
+    },
+
+    loadingContainer: {
+      paddingVertical: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    loadingText: {
+      color: theme.colors.textSecondary,
+      fontSize: 13,
+      fontWeight: '600',
+    },
+
+    accessoriesRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+      rowGap: 12,
+    },
+
+    accessoryCard: {
+      width: '48%',
+      backgroundColor: theme.colors.surface,
+      borderRadius: 20,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+
+    accessoryImageWrap: {
+      height: 160,
+      width: '100%',
+      position: 'relative',
+    },
+
+    accessoryImage: {
+      width: '100%',
+      height: '100%',
+    },
+
+    heartBtn: {
+      position: 'absolute',
+      top: 10,
+      left: 10,
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      borderWidth: 1.5,
+      borderColor: '#b89aff',
+      backgroundColor: 'transparent',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 10,
+    },
+
+    heartBtnActive: {
+      backgroundColor: '#b89aff',
+      borderColor: '#b89aff',
+    },
+
+    ratingBadge: {
+      position: 'absolute',
+      top: 12,
+      right: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      columnGap: 3,
+      backgroundColor: 'rgba(0,0,0,0.55)',
+      borderRadius: 999,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+    },
+
+    ratingBadgeText: {
+      color: '#FFFFFF',
+      fontSize: 12,
+      fontWeight: '700',
+    },
+
+    accessoryContent: {
+      padding: appTheme.spacing.md,
+    },
+
+    productName: {
+      color: theme.colors.textPrimary,
+      fontSize: 16,
+      lineHeight: 22,
+      fontWeight: '800',
+    },
+
+    productDescription: {
+      color: theme.colors.textSecondary,
+      fontSize: 12,
+      lineHeight: 18,
+      marginTop: 6,
+    },
+
+    categoryText: {
+      color: theme.colors.primaryAccent,
+      fontSize: 11,
+      lineHeight: 16,
+      fontWeight: '700',
+      marginTop: 8,
+      textTransform: 'uppercase',
+    },
+
+    cardFooter: {
+      marginTop: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+
+    priceText: {
+      color: theme.colors.textPrimary,
+      fontSize: 18,
+      lineHeight: 22,
+      fontWeight: '800',
+    },
+
+    priceRow: {
+      flexDirection: 'column',
+      alignItems: 'flex-start',
+      rowGap: 2,
+    },
+
+    originalPriceStrike: {
+      color: theme.colors.textSecondary,
+      fontSize: 11,
+      textDecorationLine: 'line-through',
+    },
+
+    addButton: {
+      borderRadius: 999,
+      backgroundColor: theme.colors.primaryAccent,
+      paddingVertical: 10,
+      paddingHorizontal: 14,
+    },
+
+    addButtonAdded: {
+      backgroundColor: '#178a6a',
+    },
+
+    addButtonText: {
+      color: '#FFFFFF',
+      fontSize: 12,
+      lineHeight: 16,
+      fontWeight: '700',
+    },
+  });
