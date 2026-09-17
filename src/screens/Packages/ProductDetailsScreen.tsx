@@ -23,6 +23,7 @@ import { useFavouritesStore } from '../../store/favouritesStore';
 import { appTheme } from '../../theme';
 import type { AppTheme } from '../../theme';
 import { useAppTheme } from '../../hooks/useAppTheme';
+import { ExpandableDescription } from '../../components/common/ExpandableDescription';
 import { FLOATING_NAV_CONTENT_INSET } from '../../components/common/FloatingBottomNav';
 import {
   BUSINESS_DISCOUNT_MIN_QUANTITY,
@@ -73,9 +74,9 @@ export function ProductDetailsScreen() {
       try {
         const loadedProduct = isSupabaseId
           ? await fetchMarketplaceProductById(
-              route.params.productId,
-              route.params.catalogue,
-            )
+            route.params.productId,
+            route.params.catalogue,
+          )
           : null;
         if (isMounted) {
           if (loadedProduct) {
@@ -93,14 +94,14 @@ export function ProductDetailsScreen() {
           setProduct(
             catalogueProduct
               ? {
-                  ...catalogueProduct,
-                  costPrice: null,
-                  imageUrl: null,
-                  images: [],
-                  isActive: true,
-                  createdAt: '',
-                  updatedAt: '',
-                }
+                ...catalogueProduct,
+                costPrice: null,
+                imageUrl: null,
+                images: [],
+                isActive: true,
+                createdAt: '',
+                updatedAt: '',
+              }
               : null,
           );
         }
@@ -237,7 +238,10 @@ export function ProductDetailsScreen() {
         </View>
 
         <Text style={styles.productName}>{product.name}</Text>
-        {product.description ? <Text style={styles.productDescription}>{product.description}</Text> : null}
+        <ExpandableDescription
+          text={product.description}
+          textStyle={styles.productDescription}
+        />
         <Text style={styles.metaText}>Category: {product.category || 'General'}</Text>
         <Text style={styles.metaText}>SKU: {product.sku || 'N/A'}</Text>
         {isBusiness ? (

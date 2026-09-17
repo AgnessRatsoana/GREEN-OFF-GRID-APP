@@ -13,6 +13,7 @@ import { appTheme } from '../../theme';
 import type { AppTheme } from '../../theme';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { FLOATING_NAV_CONTENT_INSET } from '../../components/common/FloatingBottomNav';
+import { ExpandableDescription } from '../../components/common/ExpandableDescription';
 
 export function PackageDetailsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -107,7 +108,11 @@ export function PackageDetailsScreen() {
 
         {/* Description */}
         <Text style={styles.sectionLabel}>About this package</Text>
-        <Text style={styles.description}>{pkg.description}</Text>
+
+        <ExpandableDescription
+          text={pkg.description}
+          textStyle={styles.description}
+        />
 
         {/* What's included */}
         <Text style={styles.sectionLabel}>What's included</Text>
