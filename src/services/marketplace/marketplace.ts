@@ -14,6 +14,7 @@ export interface MarketplaceProduct {
   costPrice: number | null;
   quantity: number;
   imageUrl: string | null;
+  images: string[];
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -29,6 +30,7 @@ export interface CreateMarketplaceProductInput {
   costPrice?: number | null;
   quantity: number;
   imageUrl?: string | null;
+  images?: string[];
   isActive?: boolean;
 }
 
@@ -42,6 +44,7 @@ export interface UpdateMarketplaceProductInput {
   costPrice?: number | null;
   quantity?: number;
   imageUrl?: string | null;
+  images?: string[];
   isActive?: boolean;
 }
 
@@ -56,18 +59,30 @@ type MarketplaceProductRow = {
   cost_price: number | string | null;
   quantity: number | string;
   image_url: string | null;
+  images: unknown;
   is_active: boolean;
   created_at: string;
   updated_at: string;
 };
 
 const PRODUCT_COLUMNS =
-  'id,name,description,price,brand,category,sku,cost_price,quantity,image_url,is_active,created_at,updated_at';
+  'id,name,description,price,brand,category,sku,cost_price,quantity,image_url,images,is_active,created_at,updated_at';
 
 function getProductTable(catalogue: ProductCatalogue) {
   return catalogue === 'preowned'
     ? 'preowned_products'
     : 'marketplace_products';
+}
+
+function mapImages(value: unknown, fallbackImageUrl: string | null): string[] {
+  if (Array.isArray(value)) {
+    const urls = value.filter((item): item is string => typeof item === 'string');
+    if (urls.length) {
+      return urls;
+    }
+  }
+
+  return fallbackImageUrl ? [fallbackImageUrl] : [];
 }
 
 const mapProduct = (
@@ -86,6 +101,7 @@ const mapProduct = (
       : Number(product.cost_price),
   quantity: Number(product.quantity),
   imageUrl: product.image_url,
+  images: mapImages(product.images, product.image_url),
   isActive: product.is_active,
   createdAt: product.created_at,
   updatedAt: product.updated_at,
@@ -231,7 +247,8 @@ export async function createMarketplaceProduct(
       sku: input.sku.trim(),
       cost_price: input.costPrice ?? null,
       quantity: input.quantity,
-      image_url: input.imageUrl ?? null,
+      image_url: input.images?.[0] ?? input.imageUrl ?? null,
+      images: input.images ?? (input.imageUrl ? [input.imageUrl] : []),
       is_active: input.isActive ?? true,
     })
     .select(PRODUCT_COLUMNS)
@@ -298,6 +315,11 @@ export async function updateMarketplaceProduct(
 
   if (input.imageUrl !== undefined) {
     updateData.image_url = input.imageUrl;
+  }
+
+  if (input.images !== undefined) {
+    updateData.images = input.images;
+    updateData.image_url = input.images[0] ?? null;
   }
 
   if (input.isActive !== undefined) {

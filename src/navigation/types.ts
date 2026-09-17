@@ -27,6 +27,7 @@ export type RootStackParamList = {
   [ROUTES.MARKETING_CAROUSEL]: undefined;
   [ROUTES.ACCESSORIES_ONLY]: undefined;
   [ROUTES.COMBO_DEALS]: undefined;
+  [ROUTES.COMBO_DETAILS]: { comboId: string };
   
 
   [ROUTES.FAVOURITES]: undefined;

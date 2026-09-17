@@ -43,7 +43,7 @@ export function ComboDealsSection() {
 
       <View style={styles.grid}>
         {items.map((deal) => (
-          <Pressable key={deal.id} style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]} onPress={() => navigation.navigate(ROUTES.COMBO_DEALS)}>
+          <Pressable key={deal.id} style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]} onPress={() => navigation.navigate(ROUTES.COMBO_DETAILS, { comboId: deal.id })}>
             <View style={styles.imageWrap}>
               <Image source={deal.imageUrl ? { uri: deal.imageUrl } : require('../../assets/images/demoAccesories.jpg')} style={styles.image} contentFit="cover" />
             </View>

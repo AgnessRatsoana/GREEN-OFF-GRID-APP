@@ -3,6 +3,7 @@ export {
   loginWithSupabase,
   requestPasswordReset,
   updatePassword,
+  updateClientProfile,
   completeEmployeePasswordSetup,
   logoutFromSupabase,
   hydrateCurrentSession,

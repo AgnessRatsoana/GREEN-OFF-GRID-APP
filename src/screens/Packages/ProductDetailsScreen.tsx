@@ -4,13 +4,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Image } from 'expo-image';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ROUTES } from '../../constants/routes';
 import { MARKETPLACE_PRODUCTS } from '../../data/marketplace';
 import { PACKAGES } from '../../data/packages';
-import { fetchMarketplaceProductById, type MarketplaceProduct } from '../../services/marketplace/marketplace';
+import {
+  fetchMarketplaceProductById,
+  fetchMarketplaceProducts,
+  fetchPreOwnedProducts,
+  type MarketplaceProduct,
+} from '../../services/marketplace/marketplace';
 import { RootStackParamList } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
 import { useCartStore } from '../../store/cartStore';
@@ -41,9 +46,12 @@ export function ProductDetailsScreen() {
 
   const [product, setProduct] = useState<MarketplaceProduct | null>(null);
   const [isLoadingProduct, setIsLoadingProduct] = useState(true);
+  const [recommendedProducts, setRecommendedProducts] = useState<MarketplaceProduct[]>([]);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
   const isInCart = product ? cartItems.some((entry) => entry.id === product.id) : false;
   const theme = useAppTheme();
   const styles = createStyles(theme);
+  const isPreOwned = route.params?.catalogue === 'preowned';
 
   useEffect(() => {
     let isMounted = true;
@@ -88,6 +96,7 @@ export function ProductDetailsScreen() {
                   ...catalogueProduct,
                   costPrice: null,
                   imageUrl: null,
+                  images: [],
                   isActive: true,
                   createdAt: '',
                   updatedAt: '',
@@ -108,6 +117,33 @@ export function ProductDetailsScreen() {
     };
   }, [route.params?.productId]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadRecommended = async () => {
+      try {
+        const list = isPreOwned
+          ? await fetchPreOwnedProducts()
+          : await fetchMarketplaceProducts();
+
+        if (isMounted) {
+          setRecommendedProducts(
+            list.filter((item) => item.id !== route.params?.productId).slice(0, 4),
+          );
+        }
+      } catch {
+        if (isMounted) {
+          setRecommendedProducts([]);
+        }
+      }
+    };
+
+    void loadRecommended();
+    return () => {
+      isMounted = false;
+    };
+  }, [isPreOwned, route.params?.productId]);
+
   if (isLoadingProduct) {
     return (
       <View style={[styles.root, styles.centerWrap]}>
@@ -124,9 +160,10 @@ export function ProductDetailsScreen() {
     );
   }
 
-  const recommendedProducts = MARKETPLACE_PRODUCTS.filter((p) => p.id !== product.id).slice(0, 4);
   const recommendedPackage = PACKAGES[0];
   const saved = isFavourite(product.id);
+  const galleryImages = product.images.length ? product.images : product.imageUrl ? [product.imageUrl] : [];
+  const heroWidth = Dimensions.get('window').width - appTheme.spacing.md * 2;
 
   return (
     <View style={styles.root}>
@@ -154,11 +191,49 @@ export function ProductDetailsScreen() {
 
       <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + FLOATING_NAV_CONTENT_INSET }]} showsVerticalScrollIndicator={false}>
         <View style={styles.heroWrap}>
-          <Image source={require('../../assets/images/demoAccesories.jpg')} style={styles.heroImage} contentFit="cover" />
+          {galleryImages.length ? (
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              style={styles.heroScroll}
+              onMomentumScrollEnd={(e) => {
+                const index = Math.round(e.nativeEvent.contentOffset.x / heroWidth);
+                setActiveImageIndex(index);
+              }}
+            >
+              {galleryImages.map((uri) => (
+                <Image
+                  key={uri}
+                  source={{ uri }}
+                  style={[styles.heroImage, { width: heroWidth }]}
+                  contentFit="cover"
+                />
+              ))}
+            </ScrollView>
+          ) : (
+            <Image
+              source={require('../../assets/images/demoAccesories.jpg')}
+              style={styles.heroImage}
+              contentFit="cover"
+            />
+          )}
+
           <View style={styles.ratingBadge}>
             <Ionicons name="star" size={11} color="#F4C542" />
             <Text style={styles.ratingBadgeText}>4.8</Text>
           </View>
+
+          {galleryImages.length > 1 ? (
+            <View style={styles.dotsRow}>
+              {galleryImages.map((uri, index) => (
+                <View
+                  key={uri}
+                  style={[styles.dot, index === activeImageIndex && styles.dotActive]}
+                />
+              ))}
+            </View>
+          ) : null}
         </View>
 
         <Text style={styles.productName}>{product.name}</Text>
@@ -238,7 +313,7 @@ export function ProductDetailsScreen() {
           </Text>
         </Pressable>
 
-        <Text style={styles.sectionTitle}>More accessories</Text>
+        <Text style={styles.sectionTitle}>{isPreOwned ? 'More pre-owned products' : 'More accessories'}</Text>
         <View style={styles.recommendGrid}>
           {recommendedProducts.map((item) => {
             const itemSaved = isFavourite(item.id);
@@ -246,10 +321,14 @@ export function ProductDetailsScreen() {
               <Pressable
                 key={item.id}
                 style={styles.recommendCard}
-                onPress={() => navigation.push(ROUTES.PRODUCT_DETAILS, { productId: item.id })}
+                onPress={() => navigation.push(ROUTES.PRODUCT_DETAILS, { productId: item.id, catalogue: isPreOwned ? 'preowned' : 'products' })}
               >
                 <View style={styles.recommendImageWrap}>
-                  <Image source={require('../../assets/images/demoAccesories.jpg')} style={styles.recommendImage} contentFit="cover" />
+                  <Image
+                    source={item.imageUrl ? { uri: item.imageUrl } : require('../../assets/images/demoAccesories.jpg')}
+                    style={styles.recommendImage}
+                    contentFit="cover"
+                  />
                   <Pressable
                     style={[styles.cardHeartBtn, itemSaved && styles.heartBtnActive]}
                     onPress={(e) => {
@@ -361,9 +440,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
   },
+  heroScroll: {
+    height: 220,
+  },
   heroImage: {
     width: '100%',
-    height: '100%',
+    height: 220,
   },
   ratingBadge: {
     position: 'absolute',
@@ -381,6 +463,25 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '700',
+  },
+  dotsRow: {
+    position: 'absolute',
+    bottom: 10,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    columnGap: 5,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.5)',
+  },
+  dotActive: {
+    backgroundColor: '#FFFFFF',
+    width: 16,
   },
   productName: {
     color: theme.colors.textPrimary,

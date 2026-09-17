@@ -2,19 +2,19 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { getSupabaseClient } from '../auth/supabaseClient';
 
-const BUCKET_NAME = 'combo-deals';
+const BUCKET_NAME = 'avatars';
 
-export async function pickComboDealImage(): Promise<string | null> {
+export async function pickProfileImage(): Promise<string | null> {
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
   if (!permission.granted) {
-    throw new Error('Media library permission is required to choose a combo deal image.');
+    throw new Error('Media library permission is required to choose a profile image.');
   }
 
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
     allowsEditing: true,
-    aspect: [16, 9],
+    aspect: [1, 1],
     quality: 0.85,
   });
 
@@ -23,30 +23,6 @@ export async function pickComboDealImage(): Promise<string | null> {
   }
 
   return result.assets[0].uri;
-}
-
-/**
- * Pick multiple combo deal images at once.
- * The first image in the returned order becomes the cover/thumbnail.
- */
-export async function pickComboDealImages(): Promise<string[]> {
-  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-  if (!permission.granted) {
-    throw new Error('Media library permission is required to choose images.');
-  }
-
-  const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ['images'],
-    allowsMultipleSelection: true,
-    quality: 0.85,
-  });
-
-  if (result.canceled || !result.assets || result.assets.length === 0) {
-    return [];
-  }
-
-  return result.assets.map((asset) => asset.uri);
 }
 
 function getFileExtension(uri: string): string {
@@ -72,31 +48,35 @@ function getContentType(extension: string): string {
   }
 }
 
-export async function uploadComboDealImage(uri: string): Promise<string> {
+export async function uploadProfileImage(uri: string, userId: string): Promise<string> {
   const supabase = getSupabaseClient();
+
   const extension = getFileExtension(uri);
   const contentType = getContentType(extension);
-  const fileName = `combo-${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${extension}`;
-  const filePath = `combo-deals/${fileName}`;
+  const fileName = `avatar-${Date.now()}.${extension}`;
+  const filePath = `${userId}/${fileName}`;
 
   const response = await fetch(uri);
+
   if (!response.ok) {
-    throw new Error('Unable to read the selected combo deal image.');
+    throw new Error('Unable to read the selected profile image.');
   }
 
   const arrayBuffer = await response.arrayBuffer();
+
   const { error } = await supabase.storage.from(BUCKET_NAME).upload(filePath, arrayBuffer, {
     contentType,
-    upsert: false,
+    upsert: true,
   });
 
   if (error) {
-    throw new Error(`Combo deal image upload failed: ${error.message}`);
+    throw new Error(`Profile image upload failed: ${error.message}`);
   }
 
   const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath);
+
   if (!data.publicUrl) {
-    throw new Error('Combo deal image uploaded, but no public URL was returned.');
+    throw new Error('Profile image uploaded, but a public image URL could not be generated.');
   }
 
   return data.publicUrl;

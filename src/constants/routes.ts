@@ -20,6 +20,7 @@ export const ROUTES = {
   MARKETING_CAROUSEL: 'MarketingCarousel',
   ACCESSORIES_ONLY: 'AccessoriesOnly',
   COMBO_DEALS: 'ComboDeals',
+  COMBO_DETAILS: 'ComboDetails',
 
   LOGIN: 'Login',
   FORGOT_PASSWORD: 'ForgotPassword',

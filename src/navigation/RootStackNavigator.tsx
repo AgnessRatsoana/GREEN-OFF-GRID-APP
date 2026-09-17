@@ -39,6 +39,7 @@ import { AddProductScreen } from '../screens/Marketing/Products/AddProductScreen
 import { MarketingCarouselScreen } from '../screens/Marketing/MarketingCarouselScreen';
 import { AccessoriesOnlyScreen } from '../screens/Packages/AccessoriesOnlyScreen';
 import { ComboDealsScreen } from '../screens/Packages/ComboDealsScreen';
+import { ComboDealDetailsScreen } from '../screens/Packages/ComboDealDetailsScreen';
 import { PackagesOnlyScreen } from '../screens/Packages/PackagesOnlyScreen';
 
 import { AppDrawerNavigator } from './AppDrawerNavigator';
@@ -199,6 +200,12 @@ export function RootStackNavigator() {
       <Stack.Screen
         name={ROUTES.COMBO_DEALS}
         component={ComboDealsScreen}
+        options={{ animation: 'slide_from_right' }}
+      />
+
+      <Stack.Screen
+        name={ROUTES.COMBO_DETAILS}
+        component={ComboDealDetailsScreen}
         options={{ animation: 'slide_from_right' }}
       />
 

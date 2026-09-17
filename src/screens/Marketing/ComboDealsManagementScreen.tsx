@@ -25,7 +25,7 @@ import {
   type ComboDeal,
 } from '../../services/marketing/comboDeals';
 import {
-  pickComboDealImage,
+  pickComboDealImages,
   uploadComboDealImage,
 } from '../../services/marketing/comboMedia';
 import { useAuthStore } from '../../store/authStore';
@@ -41,8 +41,7 @@ export function ComboDealsManagementScreen() {
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
   const [rating, setRating] = useState('4.8');
-  const [imageUrl, setImageUrl] = useState('');
-  const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
+  const [images, setImages] = useState<{ uri: string; isNew: boolean }[]>([]);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [bulletsInput, setBulletsInput] = useState('');
   const [displayOrder, setDisplayOrder] = useState('0');
@@ -77,8 +76,7 @@ export function ComboDealsManagementScreen() {
     setDescription('');
     setPrice('');
     setRating('4.8');
-    setImageUrl('');
-    setSelectedImageUri(null);
+    setImages([]);
     setBulletsInput('');
     setDisplayOrder('0');
     setIsActive(true);
@@ -90,8 +88,13 @@ export function ComboDealsManagementScreen() {
     setDescription(item.description);
     setPrice(String(item.price));
     setRating(String(item.rating));
-    setImageUrl(item.imageUrl ?? '');
-    setSelectedImageUri(null);
+    setImages(
+      item.images.length
+        ? item.images.map((url) => ({ uri: url, isNew: false }))
+        : item.imageUrl
+          ? [{ uri: item.imageUrl, isNew: false }]
+          : [],
+    );
     setBulletsInput(item.bullets.join('\n'));
     setDisplayOrder(String(item.displayOrder));
     setIsActive(item.isActive);
@@ -101,15 +104,37 @@ export function ComboDealsManagementScreen() {
     try {
       setError(null);
 
-      const pickedUri = await pickComboDealImage();
-      if (!pickedUri) {
+      const pickedUris = await pickComboDealImages();
+      if (!pickedUris.length) {
         return;
       }
 
-      setSelectedImageUri(pickedUri);
+      setImages((current) => [
+        ...current,
+        ...pickedUris.map((uri) => ({ uri, isNew: true })),
+      ]);
     } catch (pickerError) {
-      setError(pickerError instanceof Error ? pickerError.message : 'Unable to select a combo image.');
+      setError(pickerError instanceof Error ? pickerError.message : 'Unable to select combo images.');
     }
+  };
+
+  const handleRemoveImage = (uri: string) => {
+    setImages((current) => current.filter((image) => image.uri !== uri));
+  };
+
+  const handleSetCoverImage = (uri: string) => {
+    setImages((current) => {
+      const index = current.findIndex((image) => image.uri === uri);
+
+      if (index <= 0) {
+        return current;
+      }
+
+      const next = [...current];
+      const [selected] = next.splice(index, 1);
+      next.unshift(selected);
+      return next;
+    });
   };
 
   const handleSave = async () => {
@@ -122,11 +147,17 @@ export function ComboDealsManagementScreen() {
       setIsSaving(true);
       setError(null);
 
-      let finalImageUrl = imageUrl;
+      let finalImages: string[] = [];
 
-      if (selectedImageUri) {
+      if (images.some((image) => image.isNew)) {
         setIsUploadingImage(true);
-        finalImageUrl = await uploadComboDealImage(selectedImageUri);
+        finalImages = await Promise.all(
+          images.map((image) =>
+            image.isNew ? uploadComboDealImage(image.uri) : Promise.resolve(image.uri),
+          ),
+        );
+      } else {
+        finalImages = images.map((image) => image.uri);
       }
 
       const parsedBullets = bulletsInput
@@ -139,7 +170,7 @@ export function ComboDealsManagementScreen() {
         description,
         price: Number(price),
         rating: Number(rating || 4.8),
-        imageUrl: finalImageUrl.trim() || null,
+        images: finalImages,
         bullets: parsedBullets,
         isActive,
         displayOrder: Number(displayOrder || 0),
@@ -219,34 +250,47 @@ export function ComboDealsManagementScreen() {
           <TextInput value={rating} onChangeText={setRating} placeholder="Rating" keyboardType="decimal-pad" style={styles.input} placeholderTextColor="#789292" />
 
           <View style={styles.imageSection}>
-            <Text style={styles.imageSectionTitle}>Combo deal image</Text>
-            <Text style={styles.imageSectionSubtitle}>Choose the image customers will see for this deal.</Text>
+            <Text style={styles.imageSectionTitle}>Combo deal images</Text>
+            <Text style={styles.imageSectionSubtitle}>Add one or more images. The first image is the cover shown on cards and in the cart.</Text>
 
-            {selectedImageUri || imageUrl ? (
-              <View style={styles.previewWrap}>
-                <Image source={{ uri: selectedImageUri ?? imageUrl }} style={styles.previewImage} resizeMode="cover" />
-                <View style={selectedImageUri ? styles.newImageBadge : styles.currentImageBadge}>
-                  <Ionicons name={selectedImageUri ? 'checkmark-circle' : 'image-outline'} size={15} color={selectedImageUri ? '#FFFFFF' : '#0F6464'} />
-                  <Text style={selectedImageUri ? styles.newImageBadgeText : styles.currentImageBadgeText}>
-                    {selectedImageUri ? 'New image selected' : 'Current combo image'}
-                  </Text>
-                </View>
-              </View>
+            {images.length ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageGalleryScroll} contentContainerStyle={styles.imageGalleryRow}>
+                {images.map((image, index) => (
+                  <View key={image.uri} style={styles.imageThumbWrap}>
+                    <Image source={{ uri: image.uri }} style={styles.imageThumb} resizeMode="cover" />
+
+                    {index === 0 ? (
+                      <View style={styles.coverBadge}>
+                        <Ionicons name="star" size={11} color="#FFFFFF" />
+                        <Text style={styles.coverBadgeText}>Cover</Text>
+                      </View>
+                    ) : (
+                      <Pressable style={styles.setCoverButton} onPress={() => handleSetCoverImage(image.uri)} disabled={isSaving || isUploadingImage} hitSlop={6}>
+                        <Ionicons name="star-outline" size={13} color="#FFFFFF" />
+                      </Pressable>
+                    )}
+
+                    <Pressable style={styles.removeImageButton} onPress={() => handleRemoveImage(image.uri)} disabled={isSaving || isUploadingImage} hitSlop={6}>
+                      <Ionicons name="close" size={13} color="#FFFFFF" />
+                    </Pressable>
+                  </View>
+                ))}
+              </ScrollView>
             ) : (
               <View style={styles.imagePlaceholder}>
                 <View style={styles.imagePlaceholderIcon}>
                   <Ionicons name="image-outline" size={32} color="#0F6464" />
                 </View>
-                <Text style={styles.imagePlaceholderTitle}>No image selected</Text>
-                <Text style={styles.imagePlaceholderText}>Choose an image from your device media library.</Text>
+                <Text style={styles.imagePlaceholderTitle}>No images selected</Text>
+                <Text style={styles.imagePlaceholderText}>Choose one or more images from your device media library.</Text>
               </View>
             )}
 
             <Pressable style={[styles.imagePickerButton, (isSaving || isUploadingImage) && styles.disabledButton]} onPress={handleImagePick} disabled={isSaving || isUploadingImage}>
               {isUploadingImage ? <ActivityIndicator color="#FFFFFF" /> : <Ionicons name="cloud-upload-outline" size={20} color="#FFFFFF" />}
-              <Text style={styles.imagePickerButtonText}>{selectedImageUri ? 'Choose Different Image' : imageUrl ? 'Replace Image' : 'Choose Image'}</Text>
+              <Text style={styles.imagePickerButtonText}>{images.length ? 'Add More Images' : 'Choose Images'}</Text>
             </Pressable>
-            <Text style={styles.imageHint}>JPG, JPEG, PNG, WEBP, GIF and HEIC images are supported.</Text>
+            <Text style={styles.imageHint}>JPG, JPEG, PNG, WEBP, GIF and HEIC images are supported. Tap the star to set the cover image.</Text>
           </View>
 
           <TextInput value={bulletsInput} onChangeText={setBulletsInput} placeholder="Each bullet on a new line" style={[styles.input, styles.textArea]} multiline placeholderTextColor="#789292" />
@@ -320,12 +364,14 @@ const styles = StyleSheet.create({
   imagePlaceholderText: { color: '#557070', fontSize: 12, textAlign: 'center', lineHeight: 17 },
   imagePickerButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#0F6464', borderRadius: 12, paddingVertical: 12 },
   imagePickerButtonText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
-  previewWrap: { position: 'relative', padding: 10, borderRadius: 12, backgroundColor: '#EEF9F9', borderWidth: 1, borderColor: '#C6E7E5' },
-  previewImage: { width: '100%', height: 160, borderRadius: 10 },
-  newImageBadge: { position: 'absolute', left: 18, bottom: 18, flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#0F6464', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 5 },
-  newImageBadgeText: { color: '#FFFFFF', fontSize: 11, fontWeight: '700' },
-  currentImageBadge: { position: 'absolute', left: 18, bottom: 18, flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#FFFFFF', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 5 },
-  currentImageBadgeText: { color: '#0F6464', fontSize: 11, fontWeight: '700' },
+  imageGalleryScroll: { marginBottom: 4 },
+  imageGalleryRow: { flexDirection: 'row', columnGap: 10 },
+  imageThumbWrap: { width: 120, height: 120, borderRadius: 12, overflow: 'hidden', backgroundColor: '#EEF9F9', position: 'relative' },
+  imageThumb: { width: '100%', height: '100%' },
+  coverBadge: { position: 'absolute', left: 6, bottom: 6, flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: 'rgba(15,100,100,0.92)', borderRadius: 8, paddingHorizontal: 7, paddingVertical: 4 },
+  coverBadgeText: { color: '#FFFFFF', fontSize: 9, fontWeight: '800' },
+  setCoverButton: { position: 'absolute', left: 6, bottom: 6, width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
+  removeImageButton: { position: 'absolute', right: 6, top: 6, width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.55)' },
   imageHint: { color: '#789292', fontSize: 11, lineHeight: 15 },
   disabledButton: { opacity: 0.6 },
   saveButton: { backgroundColor: '#24B8B8', borderRadius: 12, paddingVertical: 12, alignItems: 'center', justifyContent: 'center' },

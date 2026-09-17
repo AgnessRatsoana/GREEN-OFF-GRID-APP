@@ -456,7 +456,7 @@ export function PackagesScreen() {
                   <Pressable
                     key={item.id}
                     style={styles.accessoryCard}
-                    onPress={() => navigation.navigate(ROUTES.PRODUCT_DETAILS, { productId: item.id, catalogue: 'preowned' })}
+                    onPress={() => navigation.navigate(ROUTES.PRODUCT_DETAILS, { productId: item.id })}
                   >
                     <View style={styles.accessoryImageWrap}>
                       <Image
@@ -535,7 +535,7 @@ export function PackagesScreen() {
                 <Pressable
                   key={deal.id}
                   style={styles.accessoryCard}
-                  onPress={() => navigation.navigate(ROUTES.COMBO_DEALS)}
+                  onPress={() => navigation.navigate(ROUTES.COMBO_DETAILS, { comboId: deal.id })}
                 >
                   <View style={styles.accessoryImageWrap}>
                     <Image
@@ -586,7 +586,7 @@ export function PackagesScreen() {
                   <Pressable
                     key={item.id}
                     style={styles.accessoryCard}
-                    onPress={() => navigation.navigate(ROUTES.PRODUCT_DETAILS, { productId: item.id })}
+                    onPress={() => navigation.navigate(ROUTES.PRODUCT_DETAILS, { productId: item.id, catalogue: 'preowned' })}
                   >
                     <View style={styles.accessoryImageWrap}>
                       <Image
@@ -941,7 +941,7 @@ export function PackagesScreen() {
         ) : comboPreview.length ? (
           <View style={styles.accessoriesRow}>
             {comboPreview.map((deal) => (
-              <Pressable key={deal.id} style={styles.accessoryCard} onPress={() => navigation.navigate(ROUTES.COMBO_DEALS)}>
+              <Pressable key={deal.id} style={styles.accessoryCard} onPress={() => navigation.navigate(ROUTES.COMBO_DETAILS, { comboId: deal.id })}>
                 <View style={styles.accessoryImageWrap}>
                   <Image source={deal.imageUrl ? { uri: deal.imageUrl } : require('../../assets/images/demoAccesories.jpg')} style={styles.accessoryImage} contentFit="cover" />
                 </View>

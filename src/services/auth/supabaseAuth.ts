@@ -480,6 +480,80 @@ export async function logoutFromSupabase(): Promise<void> {
 }
 
 /**
+ * Update the current client's own profile details.
+ *
+ * Used by the client Profile screen to edit name,
+ * contact number and profile image.
+ */
+export async function updateClientProfile(
+  userId: string,
+  input: {
+    fullName?: string;
+    contactNumber?: string | null;
+    avatarUrl?: string | null;
+    businessName?: string | null;
+  }
+): Promise<AuthUser> {
+  const supabase = getSupabaseClient();
+
+  const updateData: Record<string, unknown> = {};
+
+  if (input.fullName !== undefined) {
+    updateData.full_name = input.fullName.trim();
+  }
+
+  if (input.contactNumber !== undefined) {
+    updateData.contact_number = input.contactNumber?.trim() || null;
+  }
+
+  if (input.avatarUrl !== undefined) {
+    updateData.avatar_url = input.avatarUrl;
+  }
+
+  if (input.businessName !== undefined) {
+    updateData.business_name = input.businessName?.trim() || null;
+  }
+
+  const { error: updateError } = await supabase
+    .from('profiles')
+    .update(updateData)
+    .eq('id', userId);
+
+  if (updateError) {
+    throw new Error(`Unable to update profile: ${updateError.message}`);
+  }
+
+  /*
+   * IMPORTANT:
+   *
+   * syncProfileSnapshot() runs on every login/session refresh and
+   * re-upserts public.profiles from auth user_metadata. If the auth
+   * metadata is not updated here too, the next app reload overwrites
+   * these edits back to the original registration values.
+   */
+  const { error: metadataError } = await supabase.auth.updateUser({
+    data: updateData,
+  });
+
+  if (metadataError) {
+    throw new Error(`Unable to sync profile metadata: ${metadataError.message}`);
+  }
+
+  const {
+    data: { user: authUser },
+    error: getUserError,
+  } = await supabase.auth.getUser();
+
+  if (getUserError || !authUser) {
+    throw new Error(getUserError?.message ?? 'Unable to load the updated session.');
+  }
+
+  const profile = await getUserProfile(userId);
+
+  return mapUser(authUser, profile);
+}
+
+/**
  * Update password.
  */
 export async function updatePassword(

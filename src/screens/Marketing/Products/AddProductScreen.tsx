@@ -45,7 +45,7 @@ import {
 } from '../../../services/marketplace/marketplace';
 
 import {
-  pickMarketingImage,
+  pickMarketingImages,
   uploadMarketingImage,
 } from '../../../services/marketing/media';
 
@@ -107,16 +107,13 @@ export function AddProductScreen() {
     useState('');
 
   /*
-   * Existing image URL from Supabase.
+   * Ordered product images.
+   * The first entry is used as the cover/thumbnail everywhere
+   * the product is shown (cards, cart, recommendations).
+   * `isNew` entries hold a local file uri that still needs uploading.
    */
-  const [imageUrl, setImageUrl] =
-    useState<string | null>(null);
-
-  /*
-   * Newly selected local image.
-   */
-  const [selectedImageUri, setSelectedImageUri] =
-    useState<string | null>(null);
+  const [images, setImages] =
+    useState<{ uri: string; isNew: boolean }[]>([]);
 
   const [isActive, setIsActive] =
     useState(true);
@@ -226,11 +223,13 @@ export function AddProductScreen() {
             : '',
         );
 
-        setImageUrl(
-          product.imageUrl ?? null,
+        setImages(
+          product.images?.length
+            ? product.images.map((url) => ({ uri: url, isNew: false }))
+            : product.imageUrl
+              ? [{ uri: product.imageUrl, isNew: false }]
+              : [],
         );
-
-        setSelectedImageUri(null);
 
         setIsActive(
           product.isActive ?? true,
@@ -272,7 +271,7 @@ export function AddProductScreen() {
      IMAGE PICKER
   ============================================================ */
 
-  const handleChooseImage = async () => {
+  const handleAddImages = async () => {
     if (
       saving ||
       isUploadingImage
@@ -283,19 +282,17 @@ export function AddProductScreen() {
     try {
       setError('');
 
-      const uri =
-        await pickMarketingImage();
+      const uris =
+        await pickMarketingImages();
 
-      if (!uri) {
+      if (!uris.length) {
         return;
       }
 
-      console.log(
-        'IMAGE SELECTED:',
-        uri,
-      );
-
-      setSelectedImageUri(uri);
+      setImages((current) => [
+        ...current,
+        ...uris.map((uri) => ({ uri, isNew: true })),
+      ]);
     } catch (pickerError) {
       console.error(
         'IMAGE PICKER ERROR:',
@@ -305,7 +302,7 @@ export function AddProductScreen() {
       const message =
         pickerError instanceof Error
           ? pickerError.message
-          : 'Unable to select the product image.';
+          : 'Unable to select product images.';
 
       setError(message);
 
@@ -314,6 +311,25 @@ export function AddProductScreen() {
         message,
       );
     }
+  };
+
+  const handleRemoveImage = (uri: string) => {
+    setImages((current) => current.filter((image) => image.uri !== uri));
+  };
+
+  const handleSetCoverImage = (uri: string) => {
+    setImages((current) => {
+      const index = current.findIndex((image) => image.uri === uri);
+
+      if (index <= 0) {
+        return current;
+      }
+
+      const next = [...current];
+      const [selected] = next.splice(index, 1);
+      next.unshift(selected);
+      return next;
+    });
   };
 
   /* ============================================================
@@ -427,50 +443,28 @@ export function AddProductScreen() {
     try {
       setSaving(true);
 
-      let finalImageUrl =
-        imageUrl;
-
       /*
-       * If the user selected a new local image,
-       * upload it before creating/updating the product.
+       * Upload any newly-picked local images, preserving order.
+       * The first image in the final list is the cover image.
        */
-      if (selectedImageUri) {
+      let finalImages: string[] = [];
+
+      if (images.some((image) => image.isNew)) {
         try {
           setIsUploadingImage(true);
 
-          console.log(
-            '========================================',
-          );
-
-          console.log(
-            'UPLOADING PRODUCT IMAGE',
-          );
-
-          console.log(
-            'Local image:',
-            selectedImageUri,
-          );
-
-          const uploadedImageUrl =
-            await uploadMarketingImage(
-              selectedImageUri,
-              catalogue,
-            );
-
-          finalImageUrl =
-            uploadedImageUrl;
-
-          console.log(
-            'PRODUCT IMAGE UPLOADED:',
-            uploadedImageUrl,
-          );
-
-          console.log(
-            '========================================',
+          finalImages = await Promise.all(
+            images.map((image) =>
+              image.isNew
+                ? uploadMarketingImage(image.uri, catalogue)
+                : Promise.resolve(image.uri),
+            ),
           );
         } finally {
           setIsUploadingImage(false);
         }
+      } else {
+        finalImages = images.map((image) => image.uri);
       }
 
       const numericPrice =
@@ -496,8 +490,7 @@ export function AddProductScreen() {
         sku: sku.trim(),
         quantity:
           numericQuantity,
-        imageUrl:
-          finalImageUrl || null,
+        images: finalImages,
         isActive,
       };
 
@@ -619,14 +612,6 @@ export function AddProductScreen() {
       setIsUploadingImage(false);
     }
   };
-
-  /* ============================================================
-     IMAGE PREVIEW
-  ============================================================ */
-
-  const previewImage =
-    selectedImageUri ||
-    imageUrl;
 
   /* ============================================================
      LOADING
@@ -953,7 +938,7 @@ export function AddProductScreen() {
             <Text
               style={styles.sectionTitle}
             >
-              Product Image
+              Product Images
             </Text>
 
             <Text
@@ -961,9 +946,10 @@ export function AddProductScreen() {
                 styles.sectionSubtitle
               }
             >
-              Choose an image directly from
-              your computer or device media
-              library.
+              Add one or more images. The
+              first image is used as the
+              cover photo shown on cards
+              and in the cart.
             </Text>
           </View>
 
@@ -973,68 +959,48 @@ export function AddProductScreen() {
             }
           >
 
-            {previewImage ? (
-              <View
-                style={
-                  styles.imagePreviewContainer
-                }
+            {images.length ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.imageGalleryScroll}
+                contentContainerStyle={styles.imageGalleryRow}
               >
-                <Image
-                  source={{
-                    uri: previewImage,
-                  }}
-                  style={
-                    styles.imagePreview
-                  }
-                  resizeMode="cover"
-                />
-
-                {selectedImageUri ? (
-                  <View
-                    style={
-                      styles.newImageBadge
-                    }
-                  >
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={16}
-                      color={
-                        COLORS.white
-                      }
+                {images.map((image, index) => (
+                  <View key={image.uri} style={styles.imageThumbWrap}>
+                    <Image
+                      source={{ uri: image.uri }}
+                      style={styles.imageThumb}
+                      resizeMode="cover"
                     />
 
-                    <Text
-                      style={
-                        styles.newImageBadgeText
-                      }
-                    >
-                      New image selected
-                    </Text>
-                  </View>
-                ) : (
-                  <View
-                    style={
-                      styles.currentImageBadge
-                    }
-                  >
-                    <Ionicons
-                      name="image-outline"
-                      size={16}
-                      color={
-                        COLORS.tealDark
-                      }
-                    />
+                    {index === 0 ? (
+                      <View style={styles.coverBadge}>
+                        <Ionicons name="star" size={11} color={COLORS.white} />
+                        <Text style={styles.coverBadgeText}>Cover</Text>
+                      </View>
+                    ) : (
+                      <Pressable
+                        style={styles.setCoverButton}
+                        onPress={() => handleSetCoverImage(image.uri)}
+                        disabled={saving || isUploadingImage}
+                        hitSlop={6}
+                      >
+                        <Ionicons name="star-outline" size={13} color={COLORS.white} />
+                      </Pressable>
+                    )}
 
-                    <Text
-                      style={
-                        styles.currentImageBadgeText
-                      }
+                    <Pressable
+                      style={styles.removeImageButton}
+                      onPress={() => handleRemoveImage(image.uri)}
+                      disabled={saving || isUploadingImage}
+                      hitSlop={6}
                     >
-                      Current product image
-                    </Text>
+                      <Ionicons name="close" size={13} color={COLORS.white} />
+                    </Pressable>
                   </View>
-                )}
-              </View>
+                ))}
+              </ScrollView>
             ) : (
               <View
                 style={
@@ -1060,7 +1026,7 @@ export function AddProductScreen() {
                     styles.imagePlaceholderTitle
                   }
                 >
-                  No image selected
+                  No images selected
                 </Text>
 
                 <Text
@@ -1068,9 +1034,9 @@ export function AddProductScreen() {
                     styles.imagePlaceholderText
                   }
                 >
-                  Choose a product image
-                  from your computer or
-                  device media library.
+                  Choose one or more product
+                  images from your device
+                  media library.
                 </Text>
               </View>
             )}
@@ -1087,7 +1053,7 @@ export function AddProductScreen() {
                   styles.disabledButton,
               ]}
               onPress={
-                handleChooseImage
+                handleAddImages
               }
               disabled={
                 saving ||
@@ -1117,11 +1083,9 @@ export function AddProductScreen() {
                   styles.imagePickerButtonText
                 }
               >
-                {selectedImageUri
-                  ? 'Choose Different Image'
-                  : previewImage
-                    ? 'Replace Image'
-                    : 'Choose Image'}
+                {images.length
+                  ? 'Add More Images'
+                  : 'Choose Images'}
               </Text>
             </Pressable>
 
@@ -1132,6 +1096,8 @@ export function AddProductScreen() {
             >
               JPG, JPEG, PNG, WEBP, GIF or
               HEIC images are supported.
+              Tap the star to set an
+              image as the cover.
             </Text>
 
           </View>
@@ -1722,46 +1688,75 @@ const styles = StyleSheet.create({
     height: '100%',
   },
 
-  newImageBadge: {
+  imageGalleryScroll: {
+    marginBottom: 14,
+  },
+
+  imageGalleryRow: {
+    flexDirection: 'row',
+    columnGap: 10,
+  },
+
+  imageThumbWrap: {
+    width: 130,
+    height: 130,
+    borderRadius: 15,
+    overflow: 'hidden',
+    backgroundColor:
+      COLORS.tealLight,
+    position: 'relative',
+  },
+
+  imageThumb: {
+    width: '100%',
+    height: '100%',
+  },
+
+  coverBadge: {
     position: 'absolute',
-    left: 12,
-    bottom: 12,
+    left: 6,
+    bottom: 6,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 10,
+    columnGap: 3,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: 8,
     backgroundColor:
       'rgba(13,100,100,0.92)',
   },
 
-  newImageBadgeText: {
-    marginLeft: 5,
-    fontSize: 11,
+  coverBadgeText: {
+    fontSize: 9,
     fontWeight: '800',
     color:
       COLORS.white,
   },
 
-  currentImageBadge: {
+  setCoverButton: {
     position: 'absolute',
-    left: 12,
-    bottom: 12,
-    flexDirection: 'row',
+    left: 6,
+    bottom: 6,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 10,
+    justifyContent: 'center',
     backgroundColor:
-      'rgba(255,255,255,0.94)',
+      'rgba(0,0,0,0.5)',
   },
 
-  currentImageBadgeText: {
-    marginLeft: 5,
-    fontSize: 11,
-    fontWeight: '800',
-    color:
-      COLORS.tealDark,
+  removeImageButton: {
+    position: 'absolute',
+    right: 6,
+    top: 6,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor:
+      'rgba(0,0,0,0.55)',
   },
 
   imagePlaceholder: {

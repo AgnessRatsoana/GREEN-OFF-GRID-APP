@@ -67,7 +67,11 @@ export function ComboDealsScreen() {
             const isInCart = cartItems.some((entry) => entry.id === item.id);
             const price = isBusiness ? getBusinessPrice(item.price) : item.price;
             return (
-              <Pressable key={item.id} style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+              <Pressable
+                key={item.id}
+                style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+                onPress={() => navigation.navigate(ROUTES.COMBO_DETAILS, { comboId: item.id })}
+              >
                 <View style={styles.imageWrap}>
                   <Image source={item.imageUrl ? { uri: item.imageUrl } : require('../../assets/images/demoAccesories.jpg')} style={styles.image} contentFit="cover" />
                 </View>

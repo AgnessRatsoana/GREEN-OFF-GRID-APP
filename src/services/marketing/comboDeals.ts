@@ -7,6 +7,7 @@ export interface ComboDeal {
   price: number;
   rating: number;
   imageUrl: string | null;
+  images: string[];
   bullets: string[];
   isActive: boolean;
   displayOrder: number;
@@ -20,6 +21,7 @@ export interface CreateComboDealInput {
   price: number;
   rating: number;
   imageUrl?: string | null;
+  images?: string[];
   bullets: string[];
   isActive: boolean;
   displayOrder: number;
@@ -36,6 +38,7 @@ type ComboDealRow = {
   price: number | string;
   rating: number | string;
   image_url: string | null;
+  images: unknown;
   bullets: unknown;
   is_active: boolean;
   display_order: number;
@@ -70,6 +73,7 @@ function mapComboDeal(row: ComboDealRow): ComboDeal {
     price: Number(row.price),
     rating: Number(row.rating),
     imageUrl: row.image_url,
+    images: mapImages(row.images, row.image_url),
     bullets: mapBullets(row.bullets),
     isActive: row.is_active,
     displayOrder: Number(row.display_order),
@@ -78,7 +82,18 @@ function mapComboDeal(row: ComboDealRow): ComboDeal {
   };
 }
 
-const COMBO_COLUMNS = 'id,title,description,price,rating,image_url,bullets,is_active,display_order,created_at,updated_at';
+function mapImages(value: unknown, fallbackImageUrl: string | null): string[] {
+  if (Array.isArray(value)) {
+    const urls = value.filter((item): item is string => typeof item === 'string');
+    if (urls.length) {
+      return urls;
+    }
+  }
+
+  return fallbackImageUrl ? [fallbackImageUrl] : [];
+}
+
+const COMBO_COLUMNS = 'id,title,description,price,rating,image_url,images,bullets,is_active,display_order,created_at,updated_at';
 
 export async function fetchComboDeals(): Promise<ComboDeal[]> {
   const supabase = getSupabaseClient();
@@ -109,6 +124,21 @@ export async function fetchAllComboDeals(): Promise<ComboDeal[]> {
   return (data ?? []).map((item) => mapComboDeal(item as ComboDealRow));
 }
 
+export async function fetchComboDealById(id: string): Promise<ComboDeal> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from('combo_deals')
+    .select(COMBO_COLUMNS)
+    .eq('id', id)
+    .single();
+
+  if (error || !data) {
+    throw new Error(`Unable to load combo deal: ${error?.message ?? 'Not found'}`);
+  }
+
+  return mapComboDeal(data as ComboDealRow);
+}
+
 export async function createComboDeal(input: CreateComboDealInput): Promise<ComboDeal> {
   const supabase = getSupabaseClient();
 
@@ -119,7 +149,8 @@ export async function createComboDeal(input: CreateComboDealInput): Promise<Comb
       description: input.description.trim(),
       price: input.price,
       rating: input.rating,
-      image_url: input.imageUrl?.trim() || null,
+      image_url: input.images?.[0]?.trim() || input.imageUrl?.trim() || null,
+      images: input.images ?? (input.imageUrl ? [input.imageUrl] : []),
       bullets: input.bullets,
       is_active: input.isActive,
       display_order: input.displayOrder,
@@ -144,7 +175,8 @@ export async function updateComboDeal(input: UpdateComboDealInput): Promise<Comb
       description: input.description.trim(),
       price: input.price,
       rating: input.rating,
-      image_url: input.imageUrl?.trim() || null,
+      image_url: input.images?.[0]?.trim() || input.imageUrl?.trim() || null,
+      images: input.images ?? (input.imageUrl ? [input.imageUrl] : []),
       bullets: input.bullets,
       is_active: input.isActive,
       display_order: input.displayOrder,

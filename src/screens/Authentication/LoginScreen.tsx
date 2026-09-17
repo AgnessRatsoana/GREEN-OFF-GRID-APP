@@ -2,6 +2,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Image } from 'expo-image';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -407,6 +408,12 @@ navigation.reset({
           styles.headerSection
         }
       >
+        <Image
+          source={require('../../assets/images/Green-Off-Grid-Logo.jpg')}
+          style={styles.logo}
+          contentFit="contain"
+        />
+
         <Text
           style={styles.title}
         >
@@ -554,18 +561,28 @@ const createStyles = (theme: AppTheme) =>
         appTheme.spacing.lg,
       rowGap:
         appTheme.spacing.xs,
+      alignItems: 'center',
+    },
+
+    logo: {
+      width: 180,
+      height: 84,
+      marginBottom: appTheme.spacing.md,
+      alignSelf: 'center',
     },
 
     title: {
       fontSize: 30,
       fontWeight: '800',
       color: theme.colors.textPrimary,
+      textAlign: 'center',
     },
 
     subtitle: {
       fontSize: 15,
       lineHeight: 22,
       color: theme.colors.textSecondary,
+      textAlign: 'center',
     },
 
     formSection: {
@@ -573,9 +590,12 @@ const createStyles = (theme: AppTheme) =>
         appTheme.spacing.xl,
       rowGap:
         appTheme.spacing.sm,
+      alignItems: 'center',
+      width: '100%',
     },
 
     input: {
+      width: '100%',
       borderWidth: 1,
       borderColor:
         theme.colors.border,
@@ -588,6 +608,7 @@ const createStyles = (theme: AppTheme) =>
       color: theme.colors.textPrimary,
       backgroundColor:
         theme.colors.surface,
+      textAlign: 'center',
     },
 
     errorText: {
@@ -596,6 +617,7 @@ const createStyles = (theme: AppTheme) =>
     },
 
     loginButton: {
+      width: '100%',
       marginTop:
         appTheme.spacing.sm,
       borderRadius: 16,

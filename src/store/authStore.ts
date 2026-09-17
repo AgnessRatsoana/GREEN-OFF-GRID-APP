@@ -1,10 +1,11 @@
 import { create } from 'zustand';
 
-import { AuthPayload, AuthState } from '../types/auth';
+import { AuthPayload, AuthState, AuthUser } from '../types/auth';
 
 interface AuthStore extends AuthState {
   setSession: (payload: AuthPayload) => void;
   clearSession: () => void;
+  updateUser: (user: AuthUser) => void;
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
@@ -24,5 +25,8 @@ export const useAuthStore = create<AuthStore>((set) => ({
       user: null,
       isAuthenticated: false,
     });
+  },
+  updateUser: (user) => {
+    set({ user });
   },
 }));

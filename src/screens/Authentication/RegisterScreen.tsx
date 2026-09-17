@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Image } from 'expo-image';
 import { useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -89,6 +90,12 @@ export function RegisterScreen() {
       </Pressable>
 
       <View style={styles.headerSection}>
+        <Image
+          source={require('../../assets/images/Green-Off-Grid-Logo.jpg')}
+          style={styles.logo}
+          contentFit="contain"
+        />
+
         <Text style={styles.title}>Create Account</Text>
         <Text style={styles.subtitle}>Register and unlock your personalized profile menu.</Text>
       </View>
@@ -202,22 +209,34 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   headerSection: {
     marginTop: appTheme.spacing.lg,
     rowGap: appTheme.spacing.xs,
+    alignItems: 'center',
+  },
+  logo: {
+    width: 180,
+    height: 84,
+    marginBottom: appTheme.spacing.md,
+    alignSelf: 'center',
   },
   title: {
     fontSize: 30,
     fontWeight: '800',
     color: theme.colors.textPrimary,
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 15,
     lineHeight: 22,
     color: theme.colors.textSecondary,
+    textAlign: 'center',
   },
   formSection: {
     marginTop: appTheme.spacing.xl,
     rowGap: appTheme.spacing.sm,
+    alignItems: 'center',
+    width: '100%',
   },
   input: {
+    width: '100%',
     borderWidth: 1,
     borderColor: theme.colors.border,
     borderRadius: 16,
@@ -226,6 +245,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontSize: 15,
     color: theme.colors.textPrimary,
     backgroundColor: theme.colors.surface,
+    textAlign: 'center',
   },
   errorText: {
     color: '#d14444',
@@ -236,8 +256,10 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontWeight: '700',
     color: theme.colors.textPrimary,
     marginTop: 4,
+    alignSelf: 'flex-start',
   },
   accountTypeRow: {
+    width: '100%',
     flexDirection: 'row',
     columnGap: appTheme.spacing.sm,
   },
@@ -267,6 +289,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontSize: 13,
   },
   registerButton: {
+    width: '100%',
     marginTop: appTheme.spacing.sm,
     borderRadius: 16,
     alignItems: 'center',

@@ -40,6 +40,39 @@ export async function pickMarketingImage(): Promise<string | null> {
   return result.assets[0].uri;
 }
 
+/**
+ * Pick multiple product images at once.
+ * The order returned is the order to store/display them in,
+ * with the first image used as the cover/thumbnail.
+ */
+export async function pickMarketingImages(): Promise<string[]> {
+  const permission =
+    await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+  if (!permission.granted) {
+    throw new Error(
+      'Media library permission is required to choose images.',
+    );
+  }
+
+  const result =
+    await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: true,
+      quality: 0.85,
+    });
+
+  if (
+    result.canceled ||
+    !result.assets ||
+    result.assets.length === 0
+  ) {
+    return [];
+  }
+
+  return result.assets.map((asset) => asset.uri);
+}
+
 function getFileExtension(uri: string): string {
   const cleanUri = uri.split('?')[0];
   const extension = cleanUri.split('.').pop();
