@@ -40,6 +40,7 @@ import type {
 import {
   createMarketplaceProduct,
   fetchMarketplaceProductById,
+  type ProductCatalogue,
   updateMarketplaceProduct,
 } from '../../../services/marketplace/marketplace';
 
@@ -53,7 +54,8 @@ type NavigationProp =
 
 type AddProductRouteProp = RouteProp<
   RootStackParamList,
-  typeof ROUTES.ADD_PRODUCT
+  | typeof ROUTES.ADD_PRODUCT
+  | typeof ROUTES.ADD_PREOWNED_PRODUCT
 >;
 
 export function AddProductScreen() {
@@ -65,6 +67,13 @@ export function AddProductScreen() {
 
   const productId =
     route.params?.productId;
+
+  const catalogue: ProductCatalogue =
+    route.name === ROUTES.ADD_PREOWNED_PRODUCT
+      ? 'preowned'
+      : 'products';
+
+  const isPreOwned = catalogue === 'preowned';
 
   const isEditMode =
     Boolean(productId);
@@ -152,11 +161,13 @@ export function AddProductScreen() {
         console.log(
           'Product ID:',
           productId,
+          catalogue,
         );
 
         const product =
           await fetchMarketplaceProductById(
             productId,
+            catalogue,
           );
 
         if (!mounted) {
@@ -255,7 +266,7 @@ export function AddProductScreen() {
     return () => {
       mounted = false;
     };
-  }, [productId]);
+  }, [catalogue, productId]);
 
   /* ============================================================
      IMAGE PICKER
@@ -443,6 +454,7 @@ export function AddProductScreen() {
           const uploadedImageUrl =
             await uploadMarketingImage(
               selectedImageUri,
+              catalogue,
             );
 
           finalImageUrl =
@@ -525,6 +537,7 @@ export function AddProductScreen() {
           await updateMarketplaceProduct(
             productId,
             productData,
+            catalogue,
           );
 
         console.log(
@@ -550,6 +563,7 @@ export function AddProductScreen() {
       const createdProduct =
         await createMarketplaceProduct(
           productData,
+          catalogue,
         );
 
       console.log(
@@ -739,16 +753,20 @@ export function AddProductScreen() {
                 style={styles.title}
               >
                 {isEditMode
-                  ? 'Edit Product'
-                  : 'Add Product'}
+                  ? isPreOwned
+                    ? 'Edit Pre-owned Product'
+                    : 'Edit Product'
+                  : isPreOwned
+                    ? 'Create Pre-owned Product'
+                    : 'Add Product'}
               </Text>
 
               <Text
                 style={styles.subtitle}
               >
                 {isEditMode
-                  ? 'Update the existing Green Off-Grid catalogue product.'
-                  : 'Create a product for the Green Off-Grid catalogue.'}
+                  ? `Update this ${isPreOwned ? 'pre-owned' : 'catalogue'} product.`
+                  : `Create a product in the ${isPreOwned ? 'pre-owned' : 'general'} catalogue.`}
               </Text>
             </View>
           </View>
@@ -833,8 +851,8 @@ export function AddProductScreen() {
             />
 
             <FormField
-              label="Category"
-              placeholder="e.g. Solar Equipment"
+              label={isPreOwned ? 'Pre-owned Category' : 'Category'}
+              placeholder={isPreOwned ? 'e.g. Pre-owned inverter' : 'e.g. Solar Equipment'}
               value={category}
               onChangeText={setCategory}
               required
@@ -1288,8 +1306,12 @@ export function AddProductScreen() {
                       ? 'Updating...'
                       : 'Creating...'
                   : isEditMode
-                    ? 'Update Product'
-                    : 'Save Product'}
+                    ? isPreOwned
+                      ? 'Update Pre-owned Product'
+                      : 'Update Product'
+                    : isPreOwned
+                      ? 'Create Pre-owned Product'
+                      : 'Save Product'}
               </Text>
 
             </Pressable>

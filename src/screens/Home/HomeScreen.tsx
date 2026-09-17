@@ -12,6 +12,7 @@ import { FranchiseOpportunitySection } from '../../components/cards/FranchiseOpp
 import { FranchisePackages } from '../../components/cards/FranchisePackages';
 import { InbuiltFranchiseServices } from '../../components/cards/InbuiltFranchiseServices';
 import { MarketplaceAccessoriesSection } from '../../components/cards/MarketplaceAccessoriesSection';
+import { ComboDealsSection } from '../../components/cards/ComboDealsSection';
 import { FloatingProfileMenuButton } from '../../components/common/FloatingProfileMenuButton';
 import { FLOATING_NAV_CONTENT_INSET } from '../../components/common/FloatingBottomNav';
 import { RootStackParamList } from '../../navigation/types';
@@ -104,6 +105,8 @@ export function HomeScreen() {
         <FranchiseOpportunitySection />
 
         <MarketplaceAccessoriesSection />
+
+        <ComboDealsSection />
 
         <ExistingClientChecklistSection />
       </ScrollView>

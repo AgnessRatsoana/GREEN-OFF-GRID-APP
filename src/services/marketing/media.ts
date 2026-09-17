@@ -3,7 +3,13 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { getSupabaseClient } from '../auth/supabaseClient';
 
-const BUCKET_NAME = 'marketplace-products';
+type ProductImageCatalogue = 'products' | 'preowned';
+
+function getBucketName(catalogue: ProductImageCatalogue) {
+  return catalogue === 'preowned'
+    ? 'preowned-products'
+    : 'marketplace-products';
+}
 
 export async function pickMarketingImage(): Promise<string | null> {
   const permission =
@@ -68,8 +74,10 @@ function getContentType(extension: string): string {
 
 export async function uploadMarketingImage(
   uri: string,
+  catalogue: ProductImageCatalogue = 'products',
 ): Promise<string> {
   const supabase = getSupabaseClient();
+  const bucketName = getBucketName(catalogue);
 
   const extension = getFileExtension(uri);
   const contentType = getContentType(extension);
@@ -94,7 +102,7 @@ export async function uploadMarketingImage(
 
   const { error } =
     await supabase.storage
-      .from(BUCKET_NAME)
+      .from(bucketName)
       .upload(
         filePath,
         arrayBuffer,
@@ -112,7 +120,7 @@ export async function uploadMarketingImage(
 
   const { data } =
     supabase.storage
-      .from(BUCKET_NAME)
+      .from(bucketName)
       .getPublicUrl(filePath);
 
   if (!data.publicUrl) {

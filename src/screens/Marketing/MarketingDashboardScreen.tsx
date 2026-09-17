@@ -431,6 +431,15 @@ export function MarketingDashboardScreen() {
                     />
 
                     <ActionCard
+                        title="Combo Deals"
+                        description="Create and manage full solar-system bundles."
+                        icon="bag-outline"
+                        onPress={() => {
+                            navigation.navigate(ROUTES.MARKETING_COMBO_DEALS);
+                        }}
+                    />
+
+                    <ActionCard
                         title="Media Library"
                         description="Manage carousel images and short advert videos."
                         icon="images-outline"

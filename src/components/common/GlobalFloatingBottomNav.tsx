@@ -124,6 +124,10 @@ export function GlobalFloatingBottomNav({
     return null;
   }
 
+  if (currentRouteName === ROUTES.MAIN_DRAWER) {
+    return null;
+  }
+
   if (userRole === 'admin' || userRole === 'marketing') {
     return null;
   }

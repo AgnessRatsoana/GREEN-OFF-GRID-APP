@@ -64,7 +64,10 @@ export function ProductDetailsScreen() {
 
       try {
         const loadedProduct = isSupabaseId
-          ? await fetchMarketplaceProductById(route.params.productId)
+          ? await fetchMarketplaceProductById(
+              route.params.productId,
+              route.params.catalogue,
+            )
           : null;
         if (isMounted) {
           if (loadedProduct) {

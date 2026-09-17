@@ -19,8 +19,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ROUTES } from '../../constants/routes';
 import {
   fetchMarketplaceProducts,
+  fetchPreOwnedProducts,
   type MarketplaceProduct,
 } from '../../services/marketplace/marketplace';
+import { fetchComboDeals, type ComboDeal } from '../../services/marketing/comboDeals';
 import { PACKAGES } from '../../data/packages';
 import { RootStackParamList } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
@@ -36,6 +38,7 @@ const FILTERS = [
   'All',
   'Accessories',
   'Franchises',
+  'Pre-owned products',
   'Lights',
   'Wires',
   'Inverters',
@@ -69,7 +72,10 @@ export function PackagesScreen() {
   // ---------------------------------------------------------
 
   const [products, setProducts] = useState<MarketplaceProduct[]>([]);
+  const [preOwnedProducts, setPreOwnedProducts] = useState<MarketplaceProduct[]>([]);
+  const [comboDeals, setComboDeals] = useState<ComboDeal[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [loadingComboDeals, setLoadingComboDeals] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [productsError, setProductsError] = useState<string | null>(null);
 
@@ -77,9 +83,13 @@ export function PackagesScreen() {
     try {
       setProductsError(null);
 
-      const marketplaceProducts = await fetchMarketplaceProducts();
+      const [marketplaceProducts, preOwned] = await Promise.all([
+        fetchMarketplaceProducts(),
+        fetchPreOwnedProducts(),
+      ]);
 
       setProducts(marketplaceProducts);
+      setPreOwnedProducts(preOwned);
     } catch (error) {
       const message =
         error instanceof Error
@@ -93,8 +103,21 @@ export function PackagesScreen() {
     }
   };
 
+  const loadComboDeals = async () => {
+    try {
+      const deals = await fetchComboDeals();
+      setComboDeals(deals);
+    } catch (error) {
+      console.error('COMBO DEALS LOAD ERROR:', error);
+      setComboDeals([]);
+    } finally {
+      setLoadingComboDeals(false);
+    }
+  };
+
   useEffect(() => {
-    loadProducts();
+    void loadProducts();
+    void loadComboDeals();
   }, []);
 
   const handleRefresh = () => {
@@ -110,6 +133,9 @@ export function PackagesScreen() {
   const [searchVisible, setSearchVisible] = useState(false);
   const [filterVisible, setFilterVisible] = useState(false);
   const [activeFilter, setActiveFilter] = useState('All');
+  const [selectedCategory, setSelectedCategory] = useState<
+    'accessories' | 'combo' | 'preowned' | 'packages' | null
+  >(null);
 
   const searchTranslate = useRef(new Animated.Value(0)).current;
 
@@ -159,6 +185,64 @@ export function PackagesScreen() {
     );
   }, [searchText]);
 
+  const filteredPreOwnedProducts = useMemo(() => {
+    const query = searchText.trim().toLowerCase();
+
+    return preOwnedProducts.filter((product) => {
+      const matchesSearch =
+        !query ||
+        product.name.toLowerCase().includes(query) ||
+        product.description.toLowerCase().includes(query) ||
+        product.category.toLowerCase().includes(query) ||
+        product.sku.toLowerCase().includes(query) ||
+        product.brand.toLowerCase().includes(query);
+
+      const matchesFilter =
+        activeFilter === 'All' ||
+        activeFilter === 'Pre-owned products' ||
+        product.category.toLowerCase() === activeFilter.toLowerCase();
+
+      return matchesSearch && matchesFilter;
+    });
+  }, [activeFilter, preOwnedProducts, searchText]);
+
+  const accessoryPreview = filteredProducts.slice(0, 6);
+  const comboPreview = comboDeals.slice(0, 3);
+  const preOwnedPreview = filteredPreOwnedProducts.slice(0, 6);
+  const packagePreview = franchiseResults.slice(0, 3);
+
+  const filteredCategoryProducts = useMemo(() => {
+    if (!selectedCategory) {
+      return [] as MarketplaceProduct[];
+    }
+
+    if (selectedCategory === 'accessories') {
+      return filteredProducts;
+    }
+
+    if (selectedCategory === 'preowned') {
+      return filteredPreOwnedProducts;
+    }
+
+    return [] as MarketplaceProduct[];
+  }, [filteredPreOwnedProducts, filteredProducts, selectedCategory]);
+
+  const filteredComboDeals = useMemo(() => {
+    if (selectedCategory !== 'combo') {
+      return [] as ComboDeal[];
+    }
+
+    return comboDeals;
+  }, [comboDeals, selectedCategory]);
+
+  const filteredPackages = useMemo(() => {
+    if (selectedCategory !== 'packages') {
+      return [] as typeof PACKAGES;
+    }
+
+    return franchiseResults;
+  }, [franchiseResults, selectedCategory]);
+
   // ---------------------------------------------------------
   // SEARCH ANIMATION
   // ---------------------------------------------------------
@@ -186,6 +270,432 @@ export function PackagesScreen() {
   // ---------------------------------------------------------
   // RENDER
   // ---------------------------------------------------------
+
+  const renderSectionFooter = (
+    category: 'accessories' | 'combo' | 'preowned' | 'packages',
+    hasMore: boolean,
+  ) => {
+    if (!hasMore) {
+      return null;
+    }
+
+    return (
+      <View style={styles.sectionFooterRow}>
+        <Pressable
+          style={styles.seeMoreButton}
+          onPress={() => setSelectedCategory(category)}
+        >
+          <Text style={styles.seeMoreText}>See more</Text>
+        </Pressable>
+      </View>
+    );
+  };
+
+  const renderCategoryOnlyView = () => {
+    if (!selectedCategory) {
+      return null;
+    }
+
+    const headerTitle =
+      selectedCategory === 'accessories'
+        ? 'Accessories'
+        : selectedCategory === 'combo'
+          ? 'Combo deals'
+          : selectedCategory === 'preowned'
+            ? 'Pre-owned products'
+            : 'Packages';
+
+    return (
+      <View style={styles.root}>
+        <View
+          style={[
+            styles.header,
+            {
+              paddingTop: insets.top + 12,
+            },
+          ]}
+        >
+          <Pressable
+            style={styles.backBtn}
+            onPress={() => setSelectedCategory(null)}
+            hitSlop={8}
+          >
+            <Ionicons
+              name="arrow-back"
+              size={22}
+              color={theme.colors.primaryAccent}
+            />
+          </Pressable>
+
+          <Text style={styles.headerTitle}>{headerTitle}</Text>
+
+          <View style={styles.headerActions}>
+            <Pressable
+              style={styles.iconButton}
+              onPress={() => {
+                setSearchVisible((prev) => !prev);
+                setFilterVisible(false);
+              }}
+              hitSlop={8}
+            >
+              <Ionicons
+                name="search-outline"
+                size={20}
+                color={theme.colors.primaryAccent}
+              />
+            </Pressable>
+
+            <Pressable
+              style={styles.iconButton}
+              onPress={() => {
+                setFilterVisible((prev) => !prev);
+                setSearchVisible(false);
+              }}
+              hitSlop={8}
+            >
+              <Ionicons
+                name="options-outline"
+                size={20}
+                color={theme.colors.primaryAccent}
+              />
+            </Pressable>
+
+            <Pressable
+              style={styles.cartButton}
+              onPress={() => navigation.navigate(ROUTES.CART)}
+              hitSlop={8}
+            >
+              <Ionicons
+                name="cart-outline"
+                size={20}
+                color={theme.colors.primaryAccent}
+              />
+
+              {cartCount > 0 ? (
+                <View style={styles.cartBadge}>
+                  <Text style={styles.cartBadgeText}>{cartCount}</Text>
+                </View>
+              ) : null}
+            </Pressable>
+          </View>
+        </View>
+
+        <Animated.View
+          style={[
+            styles.toolPanel,
+            {
+              transform: [{ translateY: searchTranslate }],
+            },
+          ]}
+        >
+          {searchVisible ? (
+            <View style={styles.searchWrap}>
+              <Ionicons
+                name="search-outline"
+                size={18}
+                color={theme.colors.textSecondary}
+                style={styles.searchIcon}
+              />
+
+              <TextInput
+                value={searchText}
+                placeholder="Search accessories or franchises"
+                placeholderTextColor={theme.colors.textSecondary}
+                onChangeText={setSearchText}
+                style={styles.searchInput}
+                autoFocus
+              />
+            </View>
+          ) : null}
+
+          {filterVisible ? (
+            <View style={styles.filterRow}>
+              {FILTERS.map((filter) => (
+                <Pressable
+                  key={filter}
+                  style={[
+                    styles.filterChip,
+                    activeFilter === filter && styles.filterChipActive,
+                  ]}
+                  onPress={() => {
+                    setActiveFilter(filter);
+                    setFilterVisible(false);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      activeFilter === filter && styles.filterChipTextActive,
+                    ]}
+                  >
+                    {filter}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
+        </Animated.View>
+
+        <ScrollView
+          contentContainerStyle={[
+            styles.list,
+            {
+              paddingBottom: insets.bottom + FLOATING_NAV_CONTENT_INSET,
+            },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
+          {selectedCategory === 'accessories' && filteredCategoryProducts.length ? (
+            <View style={styles.accessoriesRow}>
+              {filteredCategoryProducts.map((item) => {
+                const saved = isFavourite(item.id);
+                const rating = (item as MarketplaceProduct & { rating?: number }).rating ?? 4.8;
+                const displayPrice = isBusiness ? getBusinessPrice(item.price) : item.price;
+
+                return (
+                  <Pressable
+                    key={item.id}
+                    style={styles.accessoryCard}
+                    onPress={() => navigation.navigate(ROUTES.PRODUCT_DETAILS, { productId: item.id, catalogue: 'preowned' })}
+                  >
+                    <View style={styles.accessoryImageWrap}>
+                      <Image
+                        source={item.imageUrl ? { uri: item.imageUrl } : require('../../assets/images/demoAccesories.jpg')}
+                        style={styles.accessoryImage}
+                        contentFit="cover"
+                      />
+                      <Pressable
+                        style={[styles.heartBtn, saved && styles.heartBtnActive]}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          toggle(item.id);
+                        }}
+                        hitSlop={8}
+                      >
+                        <Ionicons
+                          name={saved ? 'heart' : 'heart-outline'}
+                          size={16}
+                          color={saved ? '#FFFFFF' : '#b89aff'}
+                        />
+                      </Pressable>
+                      <View style={styles.ratingBadge}>
+                        <Ionicons name="star" size={11} color="#F4C542" />
+                        <Text style={styles.ratingBadgeText}>{rating.toFixed(1)}</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.accessoryContent}>
+                      <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
+                      {item.description ? (
+                        <Text style={styles.productDescription} numberOfLines={3}>
+                          {item.description}
+                        </Text>
+                      ) : null}
+                      {item.brand ? (
+                        <Text style={styles.brandText} numberOfLines={1}>{item.brand}</Text>
+                      ) : null}
+                      <Text style={styles.categoryText}>{item.category || 'General'}</Text>
+                      <View style={styles.cardFooter}>
+                        {isBusiness ? (
+                          <View style={styles.priceRow}>
+                            <Text style={styles.originalPriceStrike}>R {item.price.toLocaleString()}</Text>
+                            <Text style={styles.priceText}>R {displayPrice.toLocaleString()}</Text>
+                          </View>
+                        ) : (
+                          <Text style={styles.priceText}>R {displayPrice.toLocaleString()}</Text>
+                        )}
+                        <Pressable
+                          style={[styles.addButton, cartItemsHas(item.id) && styles.addButtonAdded]}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            addItem({
+                              id: item.id,
+                              name: item.name,
+                              price: item.price,
+                              type: 'accessory',
+                              imageUrl: item.imageUrl,
+                            });
+                          }}
+                        >
+                          <Text style={styles.addButtonText}>{
+                            cartItemsHas(item.id) ? 'Added ✓' : 'Add'
+                          }</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : null}
+
+          {selectedCategory === 'combo' && filteredComboDeals.length ? (
+            <View style={styles.accessoriesRow}>
+              {filteredComboDeals.map((deal) => (
+                <Pressable
+                  key={deal.id}
+                  style={styles.accessoryCard}
+                  onPress={() => navigation.navigate(ROUTES.COMBO_DEALS)}
+                >
+                  <View style={styles.accessoryImageWrap}>
+                    <Image
+                      source={deal.imageUrl ? { uri: deal.imageUrl } : require('../../assets/images/demoAccesories.jpg')}
+                      style={styles.accessoryImage}
+                      contentFit="cover"
+                    />
+                  </View>
+                  <View style={styles.accessoryContent}>
+                    <Text style={styles.productName} numberOfLines={2}>{deal.title}</Text>
+                    {deal.description ? (
+                      <Text style={styles.productDescription} numberOfLines={3}>
+                        {deal.description}
+                      </Text>
+                    ) : null}
+                    <View style={styles.cardFooter}>
+                      <Text style={styles.priceText}>R {Number(deal.price).toLocaleString()}</Text>
+                      <Pressable
+                        style={[styles.addButton]}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          addItem({
+                            id: deal.id,
+                            name: deal.title,
+                            price: deal.price,
+                            type: 'accessory',
+                            imageUrl: deal.imageUrl,
+                          });
+                        }}
+                      >
+                        <Text style={styles.addButtonText}>Add</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
+
+          {selectedCategory === 'preowned' && filteredCategoryProducts.length ? (
+            <View style={styles.accessoriesRow}>
+              {filteredCategoryProducts.map((item) => {
+                const saved = isFavourite(item.id);
+                const rating = (item as MarketplaceProduct & { rating?: number }).rating ?? 4.8;
+                const displayPrice = isBusiness ? getBusinessPrice(item.price) : item.price;
+
+                return (
+                  <Pressable
+                    key={item.id}
+                    style={styles.accessoryCard}
+                    onPress={() => navigation.navigate(ROUTES.PRODUCT_DETAILS, { productId: item.id })}
+                  >
+                    <View style={styles.accessoryImageWrap}>
+                      <Image
+                        source={item.imageUrl ? { uri: item.imageUrl } : require('../../assets/images/demoAccesories.jpg')}
+                        style={styles.accessoryImage}
+                        contentFit="cover"
+                      />
+                      <Pressable
+                        style={[styles.heartBtn, saved && styles.heartBtnActive]}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          toggle(item.id);
+                        }}
+                        hitSlop={8}
+                      >
+                        <Ionicons
+                          name={saved ? 'heart' : 'heart-outline'}
+                          size={16}
+                          color={saved ? '#FFFFFF' : '#b89aff'}
+                        />
+                      </Pressable>
+                      <View style={styles.ratingBadge}>
+                        <Ionicons name="star" size={11} color="#F4C542" />
+                        <Text style={styles.ratingBadgeText}>{rating.toFixed(1)}</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.accessoryContent}>
+                      <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
+                      {item.description ? (
+                        <Text style={styles.productDescription} numberOfLines={3}>
+                          {item.description}
+                        </Text>
+                      ) : null}
+                      {item.brand ? (
+                        <Text style={styles.brandText} numberOfLines={1}>{item.brand}</Text>
+                      ) : null}
+                      <Text style={styles.categoryText}>{item.category || 'General'}</Text>
+                      <View style={styles.cardFooter}>
+                        {isBusiness ? (
+                          <View style={styles.priceRow}>
+                            <Text style={styles.originalPriceStrike}>R {item.price.toLocaleString()}</Text>
+                            <Text style={styles.priceText}>R {displayPrice.toLocaleString()}</Text>
+                          </View>
+                        ) : (
+                          <Text style={styles.priceText}>R {displayPrice.toLocaleString()}</Text>
+                        )}
+                        <Pressable
+                          style={[styles.addButton, cartItemsHas(item.id) && styles.addButtonAdded]}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            addItem({
+                              id: item.id,
+                              name: item.name,
+                              price: item.price,
+                              type: 'accessory',
+                              imageUrl: item.imageUrl,
+                            });
+                          }}
+                        >
+                          <Text style={styles.addButtonText}>
+                            {cartItemsHas(item.id) ? 'Added ✓' : 'Add'}
+                          </Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : null}
+
+          {selectedCategory === 'packages' && filteredPackages.length ? (
+            <View style={styles.verticalCategoryList}>
+              {filteredPackages.map((item) => (
+                <Pressable
+                  key={item.id}
+                  style={styles.packageCategoryCard}
+                  onPress={() => navigation.navigate(ROUTES.PACKAGE_DETAILS, { packageId: item.id })}
+                >
+                  <View style={styles.accessoryImageWrap}>
+                    <Image source={item.imageSource} style={styles.accessoryImage} contentFit="cover" />
+                  </View>
+                  <View style={styles.accessoryContent}>
+                    <Text style={styles.productName} numberOfLines={2}>{item.title}</Text>
+                    {item.bullets.length ? (
+                      <View style={styles.bulletList}>
+                        {item.bullets.slice(0, 2).map((bullet) => (
+                          <Text key={bullet} style={styles.bulletText}>- {bullet}</Text>
+                        ))}
+                      </View>
+                    ) : null}
+                    <View style={styles.cardFooter}>
+                      <Text style={styles.fromText}>From</Text>
+                      <Text style={styles.priceText}>{item.price}</Text>
+                    </View>
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
+        </ScrollView>
+      </View>
+    );
+  };
+
+  if (selectedCategory) {
+    return renderCategoryOnlyView();
+  }
 
   return (
     <View style={styles.root}>
@@ -352,240 +862,60 @@ export function PackagesScreen() {
           />
         }
       >
-        {/* ================================================= */}
-        {/* ACCESSORIES                                      */}
-        {/* ================================================= */}
-
-        <Text style={styles.sectionLabel}>
-          Accessories
-        </Text>
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionLabel}>Accessories</Text>
+        </View>
 
         {loadingProducts ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator
-              size="large"
-              color={theme.colors.primaryAccent}
-            />
-
-            <Text style={styles.loadingText}>
-              Loading marketplace products...
-            </Text>
+            <ActivityIndicator size="large" color={theme.colors.primaryAccent} />
+            <Text style={styles.loadingText}>Loading marketplace products...</Text>
           </View>
         ) : productsError ? (
           <View style={styles.errorContainer}>
-            <Ionicons
-              name="cloud-offline-outline"
-              size={42}
-              color="#E63946"
-            />
-
-            <Text style={styles.errorTitle}>
-              Unable to load products
-            </Text>
-
-            <Text style={styles.errorText}>
-              {productsError}
-            </Text>
-
-            <Pressable
-              style={styles.retryButton}
-              onPress={loadProducts}
-            >
-              <Ionicons
-                name="refresh-outline"
-                size={16}
-                color="#FFFFFF"
-              />
-
-              <Text style={styles.retryButtonText}>
-                Retry
-              </Text>
+            <Ionicons name="cloud-offline-outline" size={42} color="#E63946" />
+            <Text style={styles.errorTitle}>Unable to load products</Text>
+            <Text style={styles.errorText}>{productsError}</Text>
+            <Pressable style={styles.retryButton} onPress={loadProducts}>
+              <Ionicons name="refresh-outline" size={16} color="#FFFFFF" />
+              <Text style={styles.retryButtonText}>Retry</Text>
             </Pressable>
           </View>
-        ) : filteredProducts.length ? (
+        ) : accessoryPreview.length ? (
           <View style={styles.accessoriesRow}>
-            {filteredProducts.map((item) => {
+            {accessoryPreview.map((item) => {
               const saved = isFavourite(item.id);
-
-              const rating =
-                (
-                  item as MarketplaceProduct & {
-                    rating?: number;
-                  }
-                ).rating ?? 4.8;
-
-              const displayPrice = isBusiness
-                ? getBusinessPrice(item.price)
-                : item.price;
+              const rating = (item as MarketplaceProduct & { rating?: number }).rating ?? 4.8;
+              const displayPrice = isBusiness ? getBusinessPrice(item.price) : item.price;
 
               return (
-                <Pressable
-                  key={item.id}
-                  style={styles.accessoryCard}
-                  onPress={() =>
-                    navigation.navigate(
-                      ROUTES.PRODUCT_DETAILS,
-                      {
-                        productId: item.id,
-                      },
-                    )
-                  }
-                >
-                  {/* PRODUCT IMAGE */}
-                  <View
-                    style={styles.accessoryImageWrap}
-                  >
-                    <Image
-                      source={
-                        item.imageUrl
-                          ? { uri: item.imageUrl }
-                          : require('../../assets/images/demoAccesories.jpg')
-                      }
-                      style={styles.accessoryImage}
-                      contentFit="cover"
-                    />
-
-                    {/* FAVOURITE */}
-                    <Pressable
-                      style={[
-                        styles.heartBtn,
-                        saved &&
-                          styles.heartBtnActive,
-                      ]}
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        toggle(item.id);
-                      }}
-                      hitSlop={8}
-                    >
-                      <Ionicons
-                        name={
-                          saved
-                            ? 'heart'
-                            : 'heart-outline'
-                        }
-                        size={16}
-                        color={
-                          saved
-                            ? '#FFFFFF'
-                            : '#b89aff'
-                        }
-                      />
+                <Pressable key={item.id} style={styles.accessoryCard} onPress={() => navigation.navigate(ROUTES.PRODUCT_DETAILS, { productId: item.id })}>
+                  <View style={styles.accessoryImageWrap}>
+                    <Image source={item.imageUrl ? { uri: item.imageUrl } : require('../../assets/images/demoAccesories.jpg')} style={styles.accessoryImage} contentFit="cover" />
+                    <Pressable style={[styles.heartBtn, saved && styles.heartBtnActive]} onPress={(e) => { e.stopPropagation(); toggle(item.id); }} hitSlop={8}>
+                      <Ionicons name={saved ? 'heart' : 'heart-outline'} size={16} color={saved ? '#FFFFFF' : '#b89aff'} />
                     </Pressable>
-
-                    {/* RATING */}
-                    <View
-                      style={styles.ratingBadge}
-                    >
-                      <Ionicons
-                        name="star"
-                        size={11}
-                        color="#F4C542"
-                      />
-
-                      <Text
-                        style={
-                          styles.ratingBadgeText
-                        }
-                      >
-                        {rating.toFixed(1)}
-                      </Text>
+                    <View style={styles.ratingBadge}>
+                      <Ionicons name="star" size={11} color="#F4C542" />
+                      <Text style={styles.ratingBadgeText}>{rating.toFixed(1)}</Text>
                     </View>
                   </View>
-
-                  {/* PRODUCT CONTENT */}
-                  <View
-                    style={styles.accessoryContent}
-                  >
-                    <Text
-                      style={styles.productName}
-                      numberOfLines={2}
-                    >
-                      {item.name}
-                    </Text>
-
-                    {item.description ? (
-                      <Text
-                        style={
-                          styles.productDescription
-                        }
-                        numberOfLines={3}
-                      >
-                        {item.description}
-                      </Text>
-                    ) : null}
-
-                    {item.brand ? (
-                      <Text
-                        style={styles.brandText}
-                        numberOfLines={1}
-                      >
-                        {item.brand}
-                      </Text>
-                    ) : null}
-
-                    <Text
-                      style={styles.categoryText}
-                    >
-                      {item.category || 'General'}
-                    </Text>
-
-                    {/* FOOTER */}
-                    <View
-                      style={styles.cardFooter}
-                    >
+                  <View style={styles.accessoryContent}>
+                    <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
+                    {item.description ? <Text style={styles.productDescription} numberOfLines={3}>{item.description}</Text> : null}
+                    {item.brand ? <Text style={styles.brandText} numberOfLines={1}>{item.brand}</Text> : null}
+                    <Text style={styles.categoryText}>{item.category || 'General'}</Text>
+                    <View style={styles.cardFooter}>
                       {isBusiness ? (
-                        <View
-                          style={styles.priceRow}
-                        >
-                          <Text
-                            style={
-                              styles.originalPriceStrike
-                            }
-                          >
-                            R{' '}
-                            {item.price.toLocaleString()}
-                          </Text>
-
-                          <Text
-                            style={
-                              styles.priceText
-                            }
-                          >
-                            R{' '}
-                            {displayPrice.toLocaleString()}
-                          </Text>
+                        <View style={styles.priceRow}>
+                          <Text style={styles.originalPriceStrike}>R {item.price.toLocaleString()}</Text>
+                          <Text style={styles.priceText}>R {displayPrice.toLocaleString()}</Text>
                         </View>
                       ) : (
-                        <Text
-                          style={styles.priceText}
-                        >
-                          R{' '}
-                          {displayPrice.toLocaleString()}
-                        </Text>
+                        <Text style={styles.priceText}>R {displayPrice.toLocaleString()}</Text>
                       )}
-
-                      <Pressable
-                        style={[styles.addButton, cartItemsHas(item.id) && styles.addButtonAdded]}
-                        onPress={(e) => {
-                          e.stopPropagation();
-
-                          addItem({
-                            id: item.id,
-                            name: item.name,
-                            price: item.price,
-                            type: 'accessory',
-                            imageUrl: item.imageUrl,
-                          });
-                        }}
-                      >
-                        <Text
-                          style={
-                            styles.addButtonText
-                          }
-                        >
-                          {cartItemsHas(item.id) ? 'Added ✓' : 'Add'}
-                        </Text>
+                      <Pressable style={[styles.addButton, cartItemsHas(item.id) && styles.addButtonAdded]} onPress={(e) => { e.stopPropagation(); addItem({ id: item.id, name: item.name, price: item.price, type: 'accessory', imageUrl: item.imageUrl }); }}>
+                        <Text style={styles.addButtonText}>{cartItemsHas(item.id) ? 'Added ✓' : 'Add'}</Text>
                       </Pressable>
                     </View>
                   </View>
@@ -594,157 +924,126 @@ export function PackagesScreen() {
             })}
           </View>
         ) : (
-          <Text style={styles.emptyText}>
-            No accessories match your search.
-          </Text>
+          <Text style={styles.emptyText}>No accessories match your search.</Text>
         )}
 
-        {/* ================================================= */}
-        {/* FRANCHISES                                       */}
-        {/* ================================================= */}
+        {renderSectionFooter('accessories', filteredProducts.length > 0)}
 
-        <Text
-          style={[
-            styles.sectionLabel,
-            styles.franchiseLabel,
-          ]}
-        >
-          Franchises
-        </Text>
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionLabel}>Combo deals</Text>
+        </View>
 
-        {franchiseResults.length ? (
-          franchiseResults.map((item) => {
-            const saved = isFavourite(item.id);
-            const isTeal =
-              item.buttonVariant === 'teal';
-
-            return (
-              <Pressable
-                key={item.id}
-                style={styles.franchiseCard}
-                onPress={() =>
-                  navigation.navigate(
-                    ROUTES.PACKAGE_DETAILS,
-                    {
-                      packageId: item.id,
-                    },
-                  )
-                }
-              >
-                <View
-                  style={styles.franchiseImageWrap}
-                >
-                  <Image
-                    source={item.imageSource}
-                    style={styles.franchiseImage}
-                    contentFit="cover"
-                  />
-
-                  <Pressable
-                    style={[
-                      styles.heartBtn,
-                      saved &&
-                        styles.heartBtnActive,
-                    ]}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      toggle(item.id);
-                    }}
-                    hitSlop={8}
-                  >
-                    <Ionicons
-                      name={
-                        saved
-                          ? 'heart'
-                          : 'heart-outline'
-                      }
-                      size={16}
-                      color={
-                        saved
-                          ? '#FFFFFF'
-                          : '#b89aff'
-                      }
-                    />
-                  </Pressable>
+        {loadingComboDeals ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color={theme.colors.primaryAccent} />
+            <Text style={styles.loadingText}>Loading combo deals...</Text>
+          </View>
+        ) : comboPreview.length ? (
+          <View style={styles.accessoriesRow}>
+            {comboPreview.map((deal) => (
+              <Pressable key={deal.id} style={styles.accessoryCard} onPress={() => navigation.navigate(ROUTES.COMBO_DEALS)}>
+                <View style={styles.accessoryImageWrap}>
+                  <Image source={deal.imageUrl ? { uri: deal.imageUrl } : require('../../assets/images/demoAccesories.jpg')} style={styles.accessoryImage} contentFit="cover" />
                 </View>
-
-                <View
-                  style={styles.franchiseContent}
-                >
-                  <Text
-                    style={styles.franchiseTitle}
-                  >
-                    {item.title}
-                  </Text>
-
-                  <View style={styles.bulletList}>
-                    {item.bullets.map((bullet) => (
-                      <Text
-                        key={bullet}
-                        style={styles.bulletText}
-                      >
-                        - {bullet}
-                      </Text>
-                    ))}
+                <View style={styles.accessoryContent}>
+                  <Text style={styles.productName} numberOfLines={2}>{deal.title}</Text>
+                  {deal.description ? <Text style={styles.productDescription} numberOfLines={3}>{deal.description}</Text> : null}
+                  <View style={styles.cardFooter}>
+                    <Text style={styles.priceText}>R {Number(deal.price).toLocaleString()}</Text>
+                    <Pressable style={[styles.addButton]} onPress={(e) => { e.stopPropagation(); addItem({ id: deal.id, name: deal.title, price: deal.price, type: 'accessory', imageUrl: deal.imageUrl }); }}>
+                      <Text style={styles.addButtonText}>Add</Text>
+                    </Pressable>
                   </View>
-
-                  <View
-                    style={styles.ratingRow}
-                  >
-                    <Ionicons
-                      name="star"
-                      size={12}
-                      color="#F4C542"
-                    />
-
-                    <Text
-                      style={styles.ratingText}
-                    >
-                      {item.rating}
-                    </Text>
-                  </View>
-
-                  <Text style={styles.fromText}>
-                    From
-                  </Text>
-
-                  <Text
-                    style={styles.priceText}
-                  >
-                    {item.price}
-                  </Text>
-
-                  <Pressable
-                    style={[
-                      styles.btn,
-                      isTeal
-                        ? styles.tealBtn
-                        : styles.purpleBtn,
-                    ]}
-                    onPress={(e) => {
-                      e.stopPropagation();
-
-                      navigation.navigate(
-                        ROUTES.APPLICATION_FORM,
-                        {
-                          packageId: item.id,
-                        },
-                      );
-                    }}
-                  >
-                    <Text style={styles.btnText}>
-                      {item.buttonLabel}
-                    </Text>
-                  </Pressable>
                 </View>
               </Pressable>
-            );
-          })
+            ))}
+          </View>
         ) : (
-          <Text style={styles.emptyText}>
-            No franchise matches your search.
-          </Text>
+          <Text style={styles.emptyText}>No combo deals available.</Text>
         )}
+
+        {renderSectionFooter('combo', comboDeals.length > 0)}
+
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionLabel}>Pre-owned products</Text>
+        </View>
+
+        {loadingProducts ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color={theme.colors.primaryAccent} />
+            <Text style={styles.loadingText}>Loading pre-owned products...</Text>
+          </View>
+        ) : preOwnedPreview.length ? (
+          <View style={styles.accessoriesRow}>
+            {preOwnedPreview.map((item) => {
+              const saved = isFavourite(item.id);
+              const rating = (item as MarketplaceProduct & { rating?: number }).rating ?? 4.8;
+              const displayPrice = isBusiness ? getBusinessPrice(item.price) : item.price;
+
+              return (
+                <Pressable key={item.id} style={styles.accessoryCard} onPress={() => navigation.navigate(ROUTES.PRODUCT_DETAILS, { productId: item.id, catalogue: 'preowned' })}>
+                  <View style={styles.accessoryImageWrap}>
+                    <Image source={item.imageUrl ? { uri: item.imageUrl } : require('../../assets/images/demoAccesories.jpg')} style={styles.accessoryImage} contentFit="cover" />
+                    <Pressable style={[styles.heartBtn, saved && styles.heartBtnActive]} onPress={(e) => { e.stopPropagation(); toggle(item.id); }} hitSlop={8}>
+                      <Ionicons name={saved ? 'heart' : 'heart-outline'} size={16} color={saved ? '#FFFFFF' : '#b89aff'} />
+                    </Pressable>
+                    <View style={styles.ratingBadge}>
+                      <Ionicons name="star" size={11} color="#F4C542" />
+                      <Text style={styles.ratingBadgeText}>{rating.toFixed(1)}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.accessoryContent}>
+                    <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
+                    {item.description ? <Text style={styles.productDescription} numberOfLines={3}>{item.description}</Text> : null}
+                    {item.brand ? <Text style={styles.brandText} numberOfLines={1}>{item.brand}</Text> : null}
+                    <Text style={styles.categoryText}>{item.category || 'General'}</Text>
+                    <View style={styles.cardFooter}>
+                      {isBusiness ? (
+                        <View style={styles.priceRow}>
+                          <Text style={styles.originalPriceStrike}>R {item.price.toLocaleString()}</Text>
+                          <Text style={styles.priceText}>R {displayPrice.toLocaleString()}</Text>
+                        </View>
+                      ) : (
+                        <Text style={styles.priceText}>R {displayPrice.toLocaleString()}</Text>
+                      )}
+                      <Pressable style={[styles.addButton, cartItemsHas(item.id) && styles.addButtonAdded]} onPress={(e) => { e.stopPropagation(); addItem({ id: item.id, name: item.name, price: item.price, type: 'accessory', imageUrl: item.imageUrl }); }}>
+                        <Text style={styles.addButtonText}>{cartItemsHas(item.id) ? 'Added ✓' : 'Add'}</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : (
+          <Text style={styles.emptyText}>No pre-owned products available.</Text>
+        )}
+
+        {renderSectionFooter('preowned', true)}
+
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionLabel}>Packages</Text>
+        </View>
+
+        {packagePreview.map((item) => (
+          <Pressable key={item.id} style={styles.franchiseCard} onPress={() => navigation.navigate(ROUTES.PACKAGE_DETAILS, { packageId: item.id })}>
+            <View style={styles.franchiseImageWrap}>
+              <Image source={item.imageSource} style={styles.franchiseImage} contentFit="cover" />
+            </View>
+            <View style={styles.franchiseContent}>
+              <Text style={styles.franchiseTitle}>{item.title}</Text>
+              <View style={styles.bulletList}>
+                {item.bullets.map((bullet) => (
+                  <Text key={bullet} style={styles.bulletText}>- {bullet}</Text>
+                ))}
+              </View>
+              <Text style={styles.fromText}>From</Text>
+              <Text style={styles.priceText}>{item.price}</Text>
+            </View>
+          </Pressable>
+        ))}
+
+        {renderSectionFooter('packages', franchiseResults.length > 0)}
       </ScrollView>
     </View>
   );
@@ -898,12 +1197,36 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     rowGap: 18,
   },
 
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+
+  sectionFooterRow: {
+    width: '100%',
+    alignItems: 'flex-end',
+    marginTop: 6,
+    marginBottom: 2,
+  },
+
   sectionLabel: {
     color: theme.colors.textPrimary,
     fontSize: 20,
     lineHeight: 26,
     fontWeight: '800',
-    marginBottom: 4,
+  },
+
+  seeMoreButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 0,
+  },
+
+  seeMoreText: {
+    color: theme.colors.primaryAccent,
+    fontSize: 13,
+    fontWeight: '700',
   },
 
   franchiseLabel: {
@@ -972,6 +1295,19 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     rowGap: 12,
+  },
+
+  verticalCategoryList: {
+    rowGap: 12,
+  },
+
+  packageCategoryCard: {
+    width: '100%',
+    backgroundColor: theme.colors.surface,
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
 
   accessoryCard: {

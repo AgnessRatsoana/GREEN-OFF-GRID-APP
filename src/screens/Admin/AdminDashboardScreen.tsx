@@ -18,6 +18,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuthStore } from '../../store/authStore';
 import { RootStackParamList } from '../../navigation/types';
+import { ROUTES } from '../../constants/routes';
+import { logoutFromSupabase } from '../../services/auth/authActions';
+import { clearAuthTokens } from '../../services/storage/secureStore';
 
 import {
   type AdminDashboardMetrics,
@@ -403,9 +406,7 @@ Green Off-Grid
           accessibilityRole="button"
           accessibilityLabel="Sign out"
         >
-          <Text style={styles.decorIconText}>
-            A
-          </Text>
+          <Ionicons name="log-out-outline" size={22} color="#0F6464" />
         </Pressable>
       </View>
 
@@ -482,6 +483,32 @@ Green Off-Grid
               {metrics?.totalLogs ?? 0}
             </Text>
           </View>
+
+          <Pressable
+            style={styles.managementCard}
+            onPress={() => navigation.navigate(ROUTES.MARKETING_PRODUCTS)}
+          >
+            <View style={styles.managementHeader}>
+              <View>
+                <Text style={styles.cardTitle}>Catalogue management</Text>
+                <Text style={styles.cardDescription}>Create, edit, deactivate and delete marketplace and pre-owned products.</Text>
+              </View>
+              <Ionicons name="cube-outline" size={22} color="#24B8B8" />
+            </View>
+          </Pressable>
+
+          <Pressable
+            style={styles.managementCard}
+            onPress={() => navigation.navigate(ROUTES.MARKETING_COMBO_DEALS)}
+          >
+            <View style={styles.managementHeader}>
+              <View>
+                <Text style={styles.cardTitle}>Combo deals</Text>
+                <Text style={styles.cardDescription}>Create, edit and manage full solar-system bundles.</Text>
+              </View>
+              <Ionicons name="bag-outline" size={22} color="#24B8B8" />
+            </View>
+          </Pressable>
 
           <View style={styles.managementCard}>
             <View style={styles.managementHeader}>

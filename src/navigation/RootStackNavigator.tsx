@@ -33,10 +33,13 @@ import { MarketingPackagesScreen } from '../screens/Marketing/Packages/Marketing
 import { MarketingEnquiriesScreen } from '../screens/Marketing/MarketingEnquiriesScreen';
 import { MarketingOrdersScreen } from '../screens/Marketing/MarketingOrdersScreen';
 import { MarketingApplicationsScreen } from '../screens/Marketing/MarketingApplicationsScreen';
-
+import { ComboDealsManagementScreen } from '../screens/Marketing/ComboDealsManagementScreen';
 
 import { AddProductScreen } from '../screens/Marketing/Products/AddProductScreen';
 import { MarketingCarouselScreen } from '../screens/Marketing/MarketingCarouselScreen';
+import { AccessoriesOnlyScreen } from '../screens/Packages/AccessoriesOnlyScreen';
+import { ComboDealsScreen } from '../screens/Packages/ComboDealsScreen';
+import { PackagesOnlyScreen } from '../screens/Packages/PackagesOnlyScreen';
 
 import { AppDrawerNavigator } from './AppDrawerNavigator';
 import { ModalHostScreen } from './ModalHostScreen';
@@ -168,8 +171,40 @@ export function RootStackNavigator() {
       />
 
       <Stack.Screen
+        name={ROUTES.ADD_PREOWNED_PRODUCT}
+        component={AddProductScreen}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+
+      <Stack.Screen
+        name={ROUTES.MARKETING_COMBO_DEALS}
+        component={ComboDealsManagementScreen}
+        options={{ animation: 'slide_from_right' }}
+      />
+
+      <Stack.Screen
         name={ROUTES.MARKETING_CAROUSEL}
         component={MarketingCarouselScreen}
+        options={{ animation: 'slide_from_right' }}
+      />
+
+      <Stack.Screen
+        name={ROUTES.ACCESSORIES_ONLY}
+        component={AccessoriesOnlyScreen}
+        options={{ animation: 'slide_from_right' }}
+      />
+
+      <Stack.Screen
+        name={ROUTES.COMBO_DEALS}
+        component={ComboDealsScreen}
+        options={{ animation: 'slide_from_right' }}
+      />
+
+      <Stack.Screen
+        name={ROUTES.PACKAGES_ONLY}
+        component={PackagesOnlyScreen}
         options={{ animation: 'slide_from_right' }}
       />
 

@@ -17,9 +17,16 @@ export type RootStackParamList = {
   [ROUTES.MARKETING_ENQUIRIES]: undefined;
   [ROUTES.MARKETING_ORDERS]: undefined;
   [ROUTES.MARKETING_APPLICATIONS]: undefined;
+  [ROUTES.MARKETING_COMBO_DEALS]: undefined;
   [ROUTES.MARKETING_PRODUCTS]: undefined;
-  [ROUTES.ADD_PRODUCT]: { productId?: string } | undefined;
+  [ROUTES.ADD_PRODUCT]: {
+    productId?: string;
+    catalogue?: 'products' | 'preowned';
+  } | undefined;
+  [ROUTES.ADD_PREOWNED_PRODUCT]: { productId?: string } | undefined;
   [ROUTES.MARKETING_CAROUSEL]: undefined;
+  [ROUTES.ACCESSORIES_ONLY]: undefined;
+  [ROUTES.COMBO_DEALS]: undefined;
   
 
   [ROUTES.FAVOURITES]: undefined;
@@ -27,7 +34,11 @@ export type RootStackParamList = {
   [ROUTES.CART]: undefined;
 
   [ROUTES.PACKAGES]: undefined;
-  [ROUTES.PRODUCT_DETAILS]: { productId: string };
+  [ROUTES.PACKAGES_ONLY]: undefined;
+  [ROUTES.PRODUCT_DETAILS]: {
+    productId: string;
+    catalogue?: 'products' | 'preowned';
+  };
   [ROUTES.PACKAGE_DETAILS]: { packageId: string };
   [ROUTES.ENQUIRY]: {
     itemType?: 'product' | 'package' | 'order';

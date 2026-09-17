@@ -14,8 +14,12 @@ export const ROUTES = {
   MARKETING_ENQUIRIES: 'MarketingEnquiries',
   MARKETING_ORDERS: 'MarketingOrders',
   MARKETING_APPLICATIONS: 'MarketingApplications',
+  MARKETING_COMBO_DEALS: 'MarketingComboDeals',
   ADD_PRODUCT: 'AddProduct',
+  ADD_PREOWNED_PRODUCT: 'AddPreownedProduct',
   MARKETING_CAROUSEL: 'MarketingCarousel',
+  ACCESSORIES_ONLY: 'AccessoriesOnly',
+  COMBO_DEALS: 'ComboDeals',
 
   LOGIN: 'Login',
   FORGOT_PASSWORD: 'ForgotPassword',
@@ -27,6 +31,7 @@ export const ROUTES = {
   CART: 'Cart',
 
   PACKAGES: 'Marketplace',
+  PACKAGES_ONLY: 'PackagesOnly',
   PRODUCT_DETAILS: 'ProductDetails',
   PACKAGE_DETAILS: 'PackageDetails',
   ENQUIRY: 'Enquiry',

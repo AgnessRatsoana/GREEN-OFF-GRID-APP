@@ -11,6 +11,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { GlobalFloatingBottomNav } from './src/components/common/GlobalFloatingBottomNav';
 import { ManagementFloatingBottomNav } from './src/components/common/ManagementFloatingBottomNav';
+import { ROUTES } from './src/constants/routes';
 import {
   AppNavigation,
   navigationRef,
@@ -202,7 +203,9 @@ export default function App() {
             currentRouteName={
               currentRouteName
             }
-            isHidden={isDrawerOpen}
+            isHidden={
+              isDrawerOpen || currentRouteName === ROUTES.MAIN_DRAWER
+            }
             navigationRef={navigationRef}
           />
         ) : null}

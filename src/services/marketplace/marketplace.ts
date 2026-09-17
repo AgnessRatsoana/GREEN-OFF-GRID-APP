@@ -1,6 +1,8 @@
 
 import { getSupabaseClient } from '../auth/supabaseClient';
 
+export type ProductCatalogue = 'products' | 'preowned';
+
 export interface MarketplaceProduct {
   id: string;
   name: string;
@@ -62,6 +64,12 @@ type MarketplaceProductRow = {
 const PRODUCT_COLUMNS =
   'id,name,description,price,brand,category,sku,cost_price,quantity,image_url,is_active,created_at,updated_at';
 
+function getProductTable(catalogue: ProductCatalogue) {
+  return catalogue === 'preowned'
+    ? 'preowned_products'
+    : 'marketplace_products';
+}
+
 const mapProduct = (
   product: MarketplaceProductRow,
 ): MarketplaceProduct => ({
@@ -111,6 +119,37 @@ export async function fetchMarketplaceProducts(): Promise<
   );
 }
 
+export async function fetchPreOwnedProducts(): Promise<
+  MarketplaceProduct[]
+> {
+  return fetchProducts('preowned', true);
+}
+
+async function fetchProducts(
+  catalogue: ProductCatalogue,
+  activeOnly: boolean,
+): Promise<MarketplaceProduct[]> {
+  const supabase = getSupabaseClient();
+  let query = supabase
+    .from(getProductTable(catalogue))
+    .select(PRODUCT_COLUMNS)
+    .order('created_at', { ascending: true });
+
+  if (activeOnly) {
+    query = query.eq('is_active', true);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw new Error(`Unable to load ${catalogue} products: ${error.message}`);
+  }
+
+  return (data ?? []).map(
+    (product) => mapProduct(product as MarketplaceProductRow),
+  );
+}
+
 /**
  * Marketing/admin catalogue.
  *
@@ -138,16 +177,23 @@ export async function fetchAllMarketplaceProducts(): Promise<
   );
 }
 
+export async function fetchAllPreOwnedProducts(): Promise<
+  MarketplaceProduct[]
+> {
+  return fetchProducts('preowned', false);
+}
+
 /**
  * Fetch one product by ID.
  */
 export async function fetchMarketplaceProductById(
   id: string,
+  catalogue: ProductCatalogue = 'products',
 ): Promise<MarketplaceProduct> {
   const supabase = getSupabaseClient();
 
   const { data, error } = await supabase
-    .from('marketplace_products')
+    .from(getProductTable(catalogue))
     .select(PRODUCT_COLUMNS)
     .eq('id', id)
     .single();
@@ -170,11 +216,12 @@ export async function fetchMarketplaceProductById(
  */
 export async function createMarketplaceProduct(
   input: CreateMarketplaceProductInput,
+  catalogue: ProductCatalogue = 'products',
 ): Promise<MarketplaceProduct> {
   const supabase = getSupabaseClient();
 
   const { data, error } = await supabase
-    .from('marketplace_products')
+    .from(getProductTable(catalogue))
     .insert({
       name: input.name.trim(),
       description: input.description.trim(),
@@ -211,6 +258,7 @@ export async function createMarketplaceProduct(
 export async function updateMarketplaceProduct(
   id: string,
   input: UpdateMarketplaceProductInput,
+  catalogue: ProductCatalogue = 'products',
 ): Promise<MarketplaceProduct> {
   const supabase = getSupabaseClient();
 
@@ -257,7 +305,7 @@ export async function updateMarketplaceProduct(
   }
 
   const { data, error } = await supabase
-    .from('marketplace_products')
+    .from(getProductTable(catalogue))
     .update(updateData)
     .eq('id', id)
     .select(PRODUCT_COLUMNS)
@@ -283,10 +331,11 @@ export async function updateMarketplaceProduct(
  */
 export async function activateMarketplaceProduct(
   id: string,
+  catalogue: ProductCatalogue = 'products',
 ): Promise<MarketplaceProduct> {
   return updateMarketplaceProduct(id, {
     isActive: true,
-  });
+  }, catalogue);
 }
 
 /**
@@ -294,10 +343,11 @@ export async function activateMarketplaceProduct(
  */
 export async function deactivateMarketplaceProduct(
   id: string,
+  catalogue: ProductCatalogue = 'products',
 ): Promise<MarketplaceProduct> {
   return updateMarketplaceProduct(id, {
     isActive: false,
-  });
+  }, catalogue);
 }
 
 /**
@@ -316,11 +366,12 @@ export async function toggleMarketplaceProductStatus(
  */
 export async function deleteMarketplaceProduct(
   id: string,
+  catalogue: ProductCatalogue = 'products',
 ): Promise<void> {
   const supabase = getSupabaseClient();
 
   const { error } = await supabase
-    .from('marketplace_products')
+    .from(getProductTable(catalogue))
     .delete()
     .eq('id', id);
 

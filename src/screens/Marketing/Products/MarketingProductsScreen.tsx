@@ -32,6 +32,7 @@ import {
   deactivateMarketplaceProduct,
   deleteMarketplaceProduct,
   fetchAllMarketplaceProducts,
+  fetchAllPreOwnedProducts,
   type MarketplaceProduct,
 } from '../../../services/marketplace/marketplace';
 
@@ -80,6 +81,10 @@ export function MarketingProductsScreen() {
   const [searchQuery, setSearchQuery] =
     useState('');
 
+  const [catalogue, setCatalogue] = useState<
+    'all' | 'preowned'
+  >('all');
+
   const [isProcessing, setIsProcessing] =
     useState<string | null>(null);
 
@@ -95,8 +100,9 @@ export function MarketingProductsScreen() {
 
         setError(null);
 
-        const data =
-          await fetchAllMarketplaceProducts();
+        const data = catalogue === 'preowned'
+          ? await fetchAllPreOwnedProducts()
+          : await fetchAllMarketplaceProducts();
 
         setProducts(data);
 
@@ -134,7 +140,7 @@ export function MarketingProductsScreen() {
         }
       }
     },
-    [],
+    [catalogue],
   );
 
   /**
@@ -178,12 +184,9 @@ export function MarketingProductsScreen() {
     const query =
       searchQuery.trim().toLowerCase();
 
-    if (!query) {
-      return products;
-    }
-
     return products.filter((product) => {
-      return (
+      const matchesQuery =
+        !query ||
         product.name
           .toLowerCase()
           .includes(query) ||
@@ -195,8 +198,9 @@ export function MarketingProductsScreen() {
           .includes(query) ||
         product.sku
           .toLowerCase()
-          .includes(query)
-      );
+          .includes(query);
+
+      return matchesQuery;
     });
   }, [products, searchQuery]);
 
@@ -222,6 +226,11 @@ export function MarketingProductsScreen() {
    * Add product.
    */
   const handleAddProduct = () => {
+    if (catalogue === 'preowned') {
+      navigation.navigate(ROUTES.ADD_PREOWNED_PRODUCT);
+      return;
+    }
+
     navigation.navigate(ROUTES.ADD_PRODUCT);
   };
 
@@ -233,12 +242,16 @@ export function MarketingProductsScreen() {
   ) => {
     closeProductDetails();
 
-    navigation.navigate(
-      ROUTES.ADD_PRODUCT,
-      {
+    if (catalogue === 'preowned') {
+      navigation.navigate(ROUTES.ADD_PREOWNED_PRODUCT, {
         productId: product.id,
-      },
-    );
+      });
+      return;
+    }
+
+    navigation.navigate(ROUTES.ADD_PRODUCT, {
+      productId: product.id,
+    });
   };
 
   /**
@@ -255,9 +268,11 @@ export function MarketingProductsScreen() {
         product.isActive
           ? await deactivateMarketplaceProduct(
               product.id,
+              catalogue === 'preowned' ? 'preowned' : 'products',
             )
           : await activateMarketplaceProduct(
               product.id,
+              catalogue === 'preowned' ? 'preowned' : 'products',
             );
 
       /**
@@ -335,6 +350,7 @@ export function MarketingProductsScreen() {
 
       await deleteMarketplaceProduct(
         product.id,
+        catalogue === 'preowned' ? 'preowned' : 'products',
       );
 
       /**
@@ -894,13 +910,17 @@ export function MarketingProductsScreen() {
 
           <View>
             <Text style={styles.headerTitle}>
-              Marketplace Products
+              {catalogue === 'preowned'
+                ? 'Pre-owned Products'
+                : 'Marketplace Products'}
             </Text>
 
             <Text
               style={styles.headerSubtitle}
             >
-              Manage your product catalogue
+              {catalogue === 'preowned'
+                ? 'Manage your separate pre-owned catalogue'
+                : 'Manage your general product catalogue'}
             </Text>
           </View>
         </View>
@@ -916,7 +936,9 @@ export function MarketingProductsScreen() {
           />
 
           <Text style={styles.addButtonText}>
-            Add Product
+            {catalogue === 'preowned'
+              ? 'Add Pre-owned'
+              : 'Add Product'}
           </Text>
         </Pressable>
       </View>
@@ -951,6 +973,42 @@ export function MarketingProductsScreen() {
             />
           </Pressable>
         )}
+      </View>
+
+      <View style={styles.categoryFilterRow}>
+        <Pressable
+          style={[
+            styles.categoryFilterButton,
+            catalogue === 'all' && styles.categoryFilterButtonActive,
+          ]}
+          onPress={() => setCatalogue('all')}
+        >
+          <Text
+            style={[
+              styles.categoryFilterText,
+              catalogue === 'all' && styles.categoryFilterTextActive,
+            ]}
+          >
+            Products
+          </Text>
+        </Pressable>
+
+        <Pressable
+          style={[
+            styles.categoryFilterButton,
+            catalogue === 'preowned' && styles.categoryFilterButtonActive,
+          ]}
+          onPress={() => setCatalogue('preowned')}
+        >
+          <Text
+            style={[
+              styles.categoryFilterText,
+              catalogue === 'preowned' && styles.categoryFilterTextActive,
+            ]}
+          >
+            Pre-owned
+          </Text>
+        </Pressable>
       </View>
 
       {/* PRODUCT LIST */}
@@ -1460,6 +1518,37 @@ const styles = StyleSheet.create({
     fontSize: 15,
     outlineStyle: 'none',
   } as any,
+
+  categoryFilterRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginHorizontal: 20,
+    marginTop: 12,
+  },
+
+  categoryFilterButton: {
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: COLORS.card,
+  },
+
+  categoryFilterButtonActive: {
+    borderColor: COLORS.primary,
+    backgroundColor: '#CCFBF1',
+  },
+
+  categoryFilterText: {
+    color: COLORS.muted,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
+  categoryFilterTextActive: {
+    color: COLORS.primaryDark,
+  },
 
   listContent: {
     paddingHorizontal: 20,
