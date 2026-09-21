@@ -104,60 +104,60 @@ export function CartScreen() {
             const discountEligible = isBusiness && isBusinessDiscountEligible(item.quantity);
 
             return (
-            <View key={item.id} style={styles.itemCard}>
-              <Image
-                source={item.imageUrl ? { uri: item.imageUrl } : require('../../assets/images/demoAccesories.jpg')}
-                style={styles.itemImage}
-                contentFit="cover"
-              />
+              <View key={item.id} style={styles.itemCard}>
+                <Image
+                  source={item.imageUrl ? { uri: item.imageUrl } : require('../../assets/images/demoAccesories.jpg')}
+                  style={styles.itemImage}
+                  contentFit="cover"
+                />
 
-              <View style={styles.itemTextWrap}>
-                <Text style={styles.itemType}>Accessory</Text>
+                <View style={styles.itemTextWrap}>
+                  <Text style={styles.itemType}>Accessory</Text>
 
-                <Text style={styles.itemName}>{item.name}</Text>
+                  <Text style={styles.itemName}>{item.name}</Text>
 
-                <View style={styles.unitPriceRow}>
-                  {discountEligible ? (
-                    <Text style={styles.unitPriceStrike}>{formatCurrency(item.price)}</Text>
+                  <View style={styles.unitPriceRow}>
+                    {discountEligible ? (
+                      <Text style={styles.unitPriceStrike}>{formatCurrency(item.price)}</Text>
+                    ) : null}
+                    <Text style={styles.itemPrice}>{formatCurrency(unitPrice)}</Text>
+                  </View>
+
+                  {isBusiness && !discountEligible ? (
+                    <Text style={styles.discountHint} numberOfLines={2}>
+                      Bulk discount starts at {BUSINESS_DISCOUNT_MIN_QUANTITY} items.
+                    </Text>
                   ) : null}
-                  <Text style={styles.itemPrice}>{formatCurrency(unitPrice)}</Text>
-                </View>
 
-                {isBusiness && !discountEligible ? (
-                  <Text style={styles.discountHint}>
-                    Discount not applicable below {BUSINESS_DISCOUNT_MIN_QUANTITY} quantities
+                  <Text style={styles.quantityLabel}>Quantity</Text>
+
+                  <View style={styles.qtyControls}>
+                    <Pressable
+                      style={styles.qtyBtn}
+                      onPress={() => removeItem(item.id)}
+                    >
+                      <Ionicons name="remove" size={16} color={theme.colors.primaryAccent} />
+                    </Pressable>
+
+                    <Text style={styles.qtyValue}>
+                      {item.quantity}
+                    </Text>
+
+                    <Pressable
+                      style={styles.qtyBtn}
+                      onPress={() => increaseQty(item)}
+                    >
+                      <Ionicons name="add" size={16} color={theme.colors.primaryAccent} />
+                    </Pressable>
+                  </View>
+
+                  <Text style={styles.totalLabel}>Total</Text>
+
+                  <Text style={styles.itemTotal}>
+                    {formatCurrency(unitPrice * item.quantity)}
                   </Text>
-                ) : null}
-
-                <Text style={styles.quantityLabel}>Quantity</Text>
-
-                <View style={styles.qtyControls}>
-                  <Pressable
-                    style={styles.qtyBtn}
-                    onPress={() => removeItem(item.id)}
-                  >
-                    <Ionicons name="remove" size={16} color={theme.colors.primaryAccent} />
-                  </Pressable>
-
-                  <Text style={styles.qtyValue}>
-                    {item.quantity}
-                  </Text>
-
-                  <Pressable
-                    style={styles.qtyBtn}
-                    onPress={() => increaseQty(item)}
-                  >
-                    <Ionicons name="add" size={16} color={theme.colors.primaryAccent} />
-                  </Pressable>
                 </View>
-
-                <Text style={styles.totalLabel}>Total</Text>
-
-                <Text style={styles.itemTotal}>
-                  {formatCurrency(unitPrice * item.quantity)}
-                </Text>
               </View>
-            </View>
             );
           })
         )}
@@ -320,22 +320,28 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontWeight: '700',
   },
   itemCard: {
-    borderRadius: 16,
+    width: '100%',
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: theme.colors.border,
     backgroundColor: theme.colors.surface,
-    padding: appTheme.spacing.md,
+    padding: 12,
     flexDirection: 'row',
-    columnGap: appTheme.spacing.sm,
+    alignItems: 'flex-start',
+    columnGap: 12,
   },
+
   itemImage: {
-    width: 92,
-    height: 92,
-    borderRadius: 12,
-    backgroundColor: theme.colors.surface,
+    width: 88,
+    height: 88,
+    flexShrink: 0,
+    borderRadius: 14,
+    backgroundColor: '#F3F4F6',
   },
+
   itemTextWrap: {
     flex: 1,
+    minWidth: 0,
   },
   itemType: {
     color: theme.colors.primaryAccent,
@@ -347,59 +353,69 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     color: theme.colors.textPrimary,
     fontSize: 15,
     fontWeight: '700',
+    lineHeight: 20,
     marginTop: 4,
   },
   unitPriceRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     columnGap: 8,
-    marginTop: 4,
+    rowGap: 3,
+    marginTop: 5,
   },
+
   unitPriceStrike: {
     color: theme.colors.textSecondary,
     fontSize: 12,
     textDecorationLine: 'line-through',
   },
+
+
   discountHint: {
     color: '#8a6207',
     fontSize: 11,
     fontWeight: '600',
-    marginTop: 4,
-  },  itemPrice: {
-    color: theme.colors.textSecondary,
-    fontSize: 13,
-    marginTop: 4,
+    lineHeight: 16,
+    marginTop: 5,
+  },
+
+  itemPrice: {
+    color: theme.colors.primaryAccent,
+    fontSize: 14,
+    fontWeight: '800',
   },
   quantityLabel: {
     color: theme.colors.textSecondary,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
-    marginTop: 12,
+    marginTop: 10,
   },
 
   totalLabel: {
     color: theme.colors.textSecondary,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
-    marginTop: 12,
+    marginTop: 9,
   },
 
   itemTotal: {
     color: theme.colors.primaryAccent,
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '900',
     marginTop: 2,
   },
   qtyControls: {
     flexDirection: 'row',
     alignItems: 'center',
-    columnGap: 8,
-    marginTop: 6,
+    gap: 8,
+    marginTop: 5,
   },
+
   qtyBtn: {
     width: 30,
     height: 30,
-    borderRadius: 15,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: 'rgba(36,184,184,0.26)',
     alignItems: 'center',
@@ -410,7 +426,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     color: theme.colors.textPrimary,
     fontSize: 14,
     fontWeight: '800',
-    minWidth: 20,
+    minWidth: 22,
     textAlign: 'center',
   },
   recommendedRow: {
@@ -429,7 +445,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   recommendedImage: {
     width: '100%',
-    height: 110,
+    height: 120,
+    backgroundColor: '#F3F4F6',
   },
   recommendedContent: {
     padding: appTheme.spacing.sm,

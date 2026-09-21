@@ -18,7 +18,6 @@ import {
   Modal,
   Pressable,
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Switch,
@@ -26,6 +25,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
+
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   activateMarketplaceProduct,
@@ -267,13 +268,13 @@ export function MarketingProductsScreen() {
       const updatedProduct =
         product.isActive
           ? await deactivateMarketplaceProduct(
-              product.id,
-              catalogue === 'preowned' ? 'preowned' : 'products',
-            )
+            product.id,
+            catalogue === 'preowned' ? 'preowned' : 'products',
+          )
           : await activateMarketplaceProduct(
-              product.id,
-              catalogue === 'preowned' ? 'preowned' : 'products',
-            );
+            product.id,
+            catalogue === 'preowned' ? 'preowned' : 'products',
+          );
 
       /**
        * Update the product locally immediately.
@@ -281,7 +282,7 @@ export function MarketingProductsScreen() {
       setProducts((currentProducts) =>
         currentProducts.map((currentProduct) =>
           currentProduct.id ===
-          updatedProduct.id
+            updatedProduct.id
             ? updatedProduct
             : currentProduct,
         ),
@@ -575,7 +576,7 @@ export function MarketingProductsScreen() {
                 styles.actionButton,
                 styles.editButton,
                 processing &&
-                  styles.disabledButton,
+                styles.disabledButton,
               ]}
             >
               <Ionicons
@@ -601,7 +602,7 @@ export function MarketingProductsScreen() {
                 styles.actionButton,
                 styles.statusButton,
                 processing &&
-                  styles.disabledButton,
+                styles.disabledButton,
               ]}
             >
               {processing ? (
@@ -639,7 +640,7 @@ export function MarketingProductsScreen() {
               style={[
                 styles.deleteButton,
                 processing &&
-                  styles.disabledButton,
+                styles.disabledButton,
               ]}
             >
               <Ionicons
@@ -1020,10 +1021,11 @@ export function MarketingProductsScreen() {
         ListEmptyComponent={renderEmptyState}
         contentContainerStyle={[
           styles.listContent,
-          filteredProducts.length === 0 &&
-            styles.emptyListContent,
+          filteredProducts.length === 0 && styles.emptyListContent,
         ]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        removeClippedSubviews={false}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -1233,17 +1235,17 @@ export function MarketingProductsScreen() {
                     label="Cost Price"
                     value={
                       selectedProduct.costPrice ===
-                      null
+                        null
                         ? 'Not specified'
                         : `R ${Number(
-                            selectedProduct.costPrice,
-                          ).toLocaleString(
-                            'en-ZA',
-                            {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            },
-                          )}`
+                          selectedProduct.costPrice,
+                        ).toLocaleString(
+                          'en-ZA',
+                          {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          },
+                        )}`
                     }
                   />
 
@@ -1656,27 +1658,22 @@ const styles = StyleSheet.create({
   },
 
   productCard: {
-    marginBottom: 15,
+    width: '100%',
+    marginBottom: 16,
     borderRadius: 18,
     backgroundColor: COLORS.card,
     borderWidth: 1,
     borderColor: COLORS.border,
     overflow: 'hidden',
-    flexDirection: 'row',
   },
 
   productCardPressed: {
-    opacity: 0.92,
-    transform: [
-      {
-        scale: 0.995,
-      },
-    ],
+    opacity: 0.94,
   },
 
   productImageContainer: {
-    width: 145,
-    minHeight: 230,
+    width: '100%',
+    height: 190,
     backgroundColor: '#F3F4F6',
   },
 
@@ -1689,7 +1686,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 10,
   },
 
   noImageText: {
@@ -1700,7 +1696,7 @@ const styles = StyleSheet.create({
   },
 
   productContent: {
-    flex: 1,
+    width: '100%',
     padding: 15,
   },
 
@@ -1712,6 +1708,7 @@ const styles = StyleSheet.create({
 
   productTitleContainer: {
     flex: 1,
+    minWidth: 0,
   },
 
   productName: {
@@ -1729,6 +1726,7 @@ const styles = StyleSheet.create({
   },
 
   statusBadge: {
+    flexShrink: 0,
     paddingHorizontal: 9,
     paddingVertical: 6,
     borderRadius: 999,
@@ -1786,11 +1784,13 @@ const styles = StyleSheet.create({
     borderTopColor: COLORS.border,
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 20,
+    justifyContent: 'space-between',
+    gap: 12,
   },
 
   metaItem: {
     flex: 1,
+    minWidth: 0,
   },
 
   metaLabel: {
@@ -1803,7 +1803,7 @@ const styles = StyleSheet.create({
 
   productPrice: {
     marginTop: 4,
-    fontSize: 17,
+    fontSize: 16,
     color: COLORS.primary,
     fontWeight: '800',
   },
@@ -1823,13 +1823,14 @@ const styles = StyleSheet.create({
   },
 
   actionButton: {
-    minHeight: 39,
-    paddingHorizontal: 11,
+    flex: 1,
+    minHeight: 40,
+    paddingHorizontal: 8,
     borderRadius: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 5,
   },
 
   editButton: {
@@ -1853,8 +1854,9 @@ const styles = StyleSheet.create({
   },
 
   deleteButton: {
-    width: 39,
-    height: 39,
+    width: 40,
+    height: 40,
+    flexShrink: 0,
     borderRadius: 10,
     backgroundColor: '#FEF2F2',
     alignItems: 'center',
@@ -1876,6 +1878,7 @@ const styles = StyleSheet.create({
   },
 
   viewDetailsText: {
+    flex: 1,
     fontSize: 12,
     color: COLORS.primary,
     fontWeight: '700',

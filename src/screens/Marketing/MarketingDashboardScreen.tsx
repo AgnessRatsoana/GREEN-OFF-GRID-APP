@@ -12,13 +12,13 @@ import type {
 } from '@react-navigation/native-stack';
 import {
     Pressable,
-    SafeAreaView,
     ScrollView,
     StatusBar,
     StyleSheet,
     Text,
     View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ROUTES } from '../../constants/routes';
 import { RootStackParamList } from '../../navigation/types';
