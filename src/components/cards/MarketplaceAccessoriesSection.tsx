@@ -115,7 +115,11 @@ export function MarketplaceAccessoriesSection() {
             >
               <View style={styles.accessoryImageWrap}>
                 <Image
-                  source={require('../../assets/images/demoAccesories.jpg')}
+                  source={
+                    item.imageUrl
+                      ? { uri: item.imageUrl }
+                      : require('../../assets/images/demoAccesories.jpg')
+                  }
                   style={styles.accessoryImage}
                   contentFit="cover"
                 />
@@ -124,7 +128,7 @@ export function MarketplaceAccessoriesSection() {
                   style={[
                     styles.heartBtn,
                     isFavourite(item.id) &&
-                      styles.heartBtnActive,
+                    styles.heartBtnActive,
                   ]}
                   onPress={(e) => {
                     e.stopPropagation();
@@ -166,17 +170,23 @@ export function MarketplaceAccessoriesSection() {
               </View>
 
               <View style={styles.accessoryContent}>
-                <Text style={styles.productName}>
+                <Text
+                  style={styles.productName}
+                  numberOfLines={2}
+                  ellipsizeMode="tail"
+                >
                   {item.name}
                 </Text>
 
                 {item.description ? (
-                  <Text
-                    style={styles.productDescription}
-                  >
-                    {item.description}
-                  </Text>
-                ) : null}
+  <Text
+    style={styles.productDescription}
+    numberOfLines={2}
+    ellipsizeMode="tail"
+  >
+    {item.description}
+  </Text>
+) : null}
 
                 <Text style={styles.categoryText}>
                   {item.category || 'General'}
@@ -216,7 +226,7 @@ export function MarketplaceAccessoriesSection() {
                     style={[
                       styles.addButton,
                       isInCart(item.id) &&
-                        styles.addButtonAdded,
+                      styles.addButtonAdded,
                     ]}
                     onPress={(e) => {
                       e.stopPropagation();
