@@ -1,12 +1,32 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
+import {
+  useNavigation,
+  useRoute,
+  type RouteProp,
+  useFocusEffect,
+} from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Image } from 'expo-image';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ROUTES } from '../../constants/routes';
-import { PACKAGES } from '../../data/packages';
+import {
+  fetchMarketingPackages,
+  type MarketingPackage,
+} from '../../services/marketing/packages';
 import { RootStackParamList } from '../../navigation/types';
 import { useFavouritesStore } from '../../store/favouritesStore';
 import { appTheme } from '../../theme';
@@ -25,15 +45,61 @@ export function PackageDetailsScreen() {
   const theme = useAppTheme();
   const styles = createStyles(theme);
 
-  const pkg = PACKAGES.find((p) => p.id === route.params?.packageId);
+  const [pkg, setPkg] = useState<MarketingPackage | null>(null);
+const [loading, setLoading] = useState(true);
 
-  if (!pkg) {
-    return (
-      <View style={[styles.root, styles.center]}>
-        <Text style={styles.errorText}>Package not found.</Text>
-      </View>
+const loadPackage = useCallback(async () => {
+  try {
+    setLoading(true);
+
+    const data = await fetchMarketingPackages();
+
+    const found = data.find(
+      (item) => item.id === route.params?.packageId,
     );
+
+    setPkg(found ?? null);
+  } catch (error) {
+    console.error('PACKAGE DETAILS LOAD ERROR:', error);
+    setPkg(null);
+  } finally {
+    setLoading(false);
   }
+}, [route.params?.packageId]);
+
+useEffect(() => {
+  void loadPackage();
+}, [loadPackage]);
+
+useFocusEffect(
+  useCallback(() => {
+    void loadPackage();
+  }, [loadPackage]),
+);
+
+if (loading) {
+  return (
+    <View style={[styles.root, styles.center]}>
+      <ActivityIndicator
+        size="large"
+        color={theme.colors.primaryAccent}
+      />
+      <Text style={styles.errorText}>
+        Loading package...
+      </Text>
+    </View>
+  );
+}
+
+if (!pkg) {
+  return (
+    <View style={[styles.root, styles.center]}>
+      <Text style={styles.errorText}>
+        Package not found.
+      </Text>
+    </View>
+  );
+}
 
   const saved = isFavourite(pkg.id);
   const isTeal = pkg.buttonVariant === 'teal';
@@ -42,7 +108,15 @@ export function PackageDetailsScreen() {
     <View style={styles.root}>
       {/* Hero image */}
       <View style={styles.heroWrap}>
-        <Image source={pkg.imageSource} style={styles.heroImage} contentFit="cover" />
+       <Image
+  source={
+    pkg.imageUrl
+      ? { uri: pkg.imageUrl }
+      : require('../../assets/images/demoAccesories.jpg')
+  }
+  style={styles.heroImage}
+  contentFit="cover"
+/>
         <View style={styles.heroDim} />
 
         {/* Back button */}
@@ -103,7 +177,9 @@ export function PackageDetailsScreen() {
         {/* Price */}
         <View style={styles.priceCard}>
           <Text style={styles.fromLabel}>Starting from</Text>
-          <Text style={styles.price}>{pkg.price}</Text>
+         <Text style={styles.price}>
+  R {Number(pkg.price).toLocaleString()}
+</Text>
         </View>
 
         {/* Description */}

@@ -2,7 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Image } from 'expo-image';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -23,7 +29,11 @@ import {
   type MarketplaceProduct,
 } from '../../services/marketplace/marketplace';
 import { fetchComboDeals, type ComboDeal } from '../../services/marketing/comboDeals';
-import { PACKAGES } from '../../data/packages';
+import {
+  fetchMarketingPackages,
+  type MarketingPackage,
+} from '../../services/marketing/packages';
+import { useFocusEffect } from '@react-navigation/native';
 import { RootStackParamList } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
 import { FLOATING_NAV_CONTENT_INSET } from '../../components/common/FloatingBottomNav';
@@ -71,11 +81,15 @@ export function PackagesScreen() {
   // SUPABASE MARKETPLACE DATA
   // ---------------------------------------------------------
 
-  const [products, setProducts] = useState<MarketplaceProduct[]>([]);
-  const [preOwnedProducts, setPreOwnedProducts] = useState<MarketplaceProduct[]>([]);
-  const [comboDeals, setComboDeals] = useState<ComboDeal[]>([]);
-  const [loadingProducts, setLoadingProducts] = useState(true);
-  const [loadingComboDeals, setLoadingComboDeals] = useState(true);
+ const [products, setProducts] = useState<MarketplaceProduct[]>([]);
+const [preOwnedProducts, setPreOwnedProducts] = useState<MarketplaceProduct[]>([]);
+const [comboDeals, setComboDeals] = useState<ComboDeal[]>([]);
+const [packages, setPackages] = useState<MarketingPackage[]>([]);
+
+const [loadingProducts, setLoadingProducts] = useState(true);
+const [loadingComboDeals, setLoadingComboDeals] = useState(true);
+const [loadingPackages, setLoadingPackages] = useState(true);
+
   const [refreshing, setRefreshing] = useState(false);
   const [productsError, setProductsError] = useState<string | null>(null);
 
@@ -115,10 +129,32 @@ export function PackagesScreen() {
     }
   };
 
-  useEffect(() => {
-    void loadProducts();
-    void loadComboDeals();
-  }, []);
+  const loadPackages = useCallback(async () => {
+  try {
+    const data = await fetchMarketingPackages();
+
+    setPackages(
+      data.filter((item) => item.isActive),
+    );
+  } catch (error) {
+    console.error('PACKAGES LOAD ERROR:', error);
+    setPackages([]);
+  } finally {
+    setLoadingPackages(false);
+  }
+}, []);
+
+ useEffect(() => {
+  void loadProducts();
+  void loadComboDeals();
+  void loadPackages();
+}, [loadPackages]);
+
+useFocusEffect(
+  useCallback(() => {
+    void loadPackages();
+  }, [loadPackages]),
+);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -169,21 +205,21 @@ export function PackagesScreen() {
   }, [activeFilter, products, searchText]);
 
   const franchiseResults = useMemo(() => {
-    if (!searchText.trim()) {
-      return PACKAGES;
-    }
+  const query = searchText.trim().toLowerCase();
 
-    const query = searchText.trim().toLowerCase();
+  if (!query) {
+    return packages;
+  }
 
-    return PACKAGES.filter(
-      (pkg) =>
-        pkg.title.toLowerCase().includes(query) ||
-        pkg.description.toLowerCase().includes(query) ||
-        pkg.bullets.some((item) =>
-          item.toLowerCase().includes(query),
-        ),
-    );
-  }, [searchText]);
+  return packages.filter(
+    (pkg) =>
+      pkg.title.toLowerCase().includes(query) ||
+      pkg.description.toLowerCase().includes(query) ||
+      pkg.bullets.some((item) =>
+        item.toLowerCase().includes(query),
+      ),
+  );
+}, [packages, searchText]);
 
   const filteredPreOwnedProducts = useMemo(() => {
     const query = searchText.trim().toLowerCase();
@@ -236,12 +272,12 @@ export function PackagesScreen() {
   }, [comboDeals, selectedCategory]);
 
   const filteredPackages = useMemo(() => {
-    if (selectedCategory !== 'packages') {
-      return [] as typeof PACKAGES;
-    }
+  if (selectedCategory !== 'packages') {
+    return [] as MarketingPackage[];
+  }
 
-    return franchiseResults;
-  }, [franchiseResults, selectedCategory]);
+  return franchiseResults;
+}, [franchiseResults, selectedCategory]);
 
   // ---------------------------------------------------------
   // SEARCH ANIMATION
@@ -668,7 +704,15 @@ export function PackagesScreen() {
                   onPress={() => navigation.navigate(ROUTES.PACKAGE_DETAILS, { packageId: item.id })}
                 >
                   <View style={styles.accessoryImageWrap}>
-                    <Image source={item.imageSource} style={styles.accessoryImage} contentFit="cover" />
+                    <Image
+  source={
+    item.imageUrl
+      ? { uri: item.imageUrl }
+      : require('../../assets/images/demoAccesories.jpg')
+  }
+  style={styles.accessoryImage}
+  contentFit="cover"
+/>
                   </View>
                   <View style={styles.accessoryContent}>
                     <Text style={styles.productName} numberOfLines={2}>{item.title}</Text>
@@ -1028,7 +1072,15 @@ export function PackagesScreen() {
         {packagePreview.map((item) => (
           <Pressable key={item.id} style={styles.franchiseCard} onPress={() => navigation.navigate(ROUTES.PACKAGE_DETAILS, { packageId: item.id })}>
             <View style={styles.franchiseImageWrap}>
-              <Image source={item.imageSource} style={styles.franchiseImage} contentFit="cover" />
+              <Image
+  source={
+    item.imageUrl
+      ? { uri: item.imageUrl }
+      : require('../../assets/images/demoAccesories.jpg')
+  }
+  style={styles.accessoryImage}
+  contentFit="cover"
+/>
             </View>
             <View style={styles.franchiseContent}>
               <Text style={styles.franchiseTitle}>{item.title}</Text>
@@ -1038,7 +1090,9 @@ export function PackagesScreen() {
                 ))}
               </View>
               <Text style={styles.fromText}>From</Text>
-              <Text style={styles.priceText}>{item.price}</Text>
+              <Text style={styles.priceText}>
+  R {Number(item.price).toLocaleString()}
+</Text>
             </View>
           </Pressable>
         ))}
