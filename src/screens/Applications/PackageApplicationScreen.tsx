@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -16,7 +16,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AddressMapPreview } from '../../components/maps/AddressMapPreview';
 import { ROUTES } from '../../constants/routes';
-import { PACKAGES } from '../../data/packages';
+import {
+  fetchMarketingPackages,
+  type MarketingPackage,
+} from '../../services/marketing/packages';
 import { RootStackParamList } from '../../navigation/types';
 import { createApplication } from '../../services/applications/applications';
 import { appTheme } from '../../theme';
@@ -36,10 +39,31 @@ export function PackageApplicationScreen() {
   const route = useRoute<RouteProp<RootStackParamList, typeof ROUTES.APPLICATION_FORM>>();
   const insets = useSafeAreaInsets();
 
-  const pkg = useMemo(
-    () => PACKAGES.find((item) => item.id === route.params?.packageId),
-    [route.params?.packageId],
-  );
+  const [pkg, setPkg] = useState<MarketingPackage | null>(null);
+const [isLoadingPackage, setIsLoadingPackage] = useState(true);
+
+useEffect(() => {
+  const loadPackage = async () => {
+    try {
+      setIsLoadingPackage(true);
+
+      const packages = await fetchMarketingPackages();
+
+      const foundPackage = packages.find(
+        (item) => item.id === route.params?.packageId,
+      );
+
+      setPkg(foundPackage ?? null);
+    } catch (error) {
+      console.error('PACKAGE APPLICATION LOAD ERROR:', error);
+      setPkg(null);
+    } finally {
+      setIsLoadingPackage(false);
+    }
+  };
+
+  void loadPackage();
+}, [route.params?.packageId]);
 
   const [stage, setStage] = useState<Stage>('details');
   const [fullName, setFullName] = useState('');
@@ -63,13 +87,21 @@ export function PackageApplicationScreen() {
   const mapQuery = [address.trim(), city.trim(), province.trim(), 'South Africa'].filter(Boolean).join(', ');
 
 
-  if (!pkg) {
-    return (
-      <View style={styles.rootCenter}>
-        <Text style={styles.emptyText}>Package not found.</Text>
-      </View>
-    );
-  }
+ if (isLoadingPackage) {
+  return (
+    <View style={styles.rootCenter}>
+      <Text style={styles.emptyText}>Loading package...</Text>
+    </View>
+  );
+}
+
+if (!pkg) {
+  return (
+    <View style={styles.rootCenter}>
+      <Text style={styles.emptyText}>Package not found.</Text>
+    </View>
+  );
+}
 
   const nextStage = () => {
     if (stage === 'details' && detailsValid) {
@@ -148,207 +180,207 @@ export function PackageApplicationScreen() {
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-      <View style={styles.headerRow}>
-        <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={20} color={theme.colors.primaryAccent} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Application</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+        <View style={styles.headerRow}>
+          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={20} color={theme.colors.primaryAccent} />
+          </Pressable>
+          <Text style={styles.headerTitle}>Application</Text>
+          <View style={styles.headerSpacer} />
+        </View>
 
-      <View style={styles.packageBadgeWrap}>
-        <Text style={styles.packageBadge}>{pkg.title}</Text>
-      </View>
+        <View style={styles.packageBadgeWrap}>
+          <Text style={styles.packageBadge}>{pkg.title}</Text>
+        </View>
 
-      <View style={styles.progressWrap}>
-        {(['details', 'location', 'review'] as Stage[]).map((key) => {
-          const isActive = stage === key;
-          const isDone = ['details', 'location', 'review'].indexOf(key) < ['details', 'location', 'review'].indexOf(stage);
+        <View style={styles.progressWrap}>
+          {(['details', 'location', 'review'] as Stage[]).map((key) => {
+            const isActive = stage === key;
+            const isDone = ['details', 'location', 'review'].indexOf(key) < ['details', 'location', 'review'].indexOf(stage);
 
-          return (
-            <View key={key} style={styles.progressItem}>
-              <View style={[styles.progressDot, isActive && styles.progressDotActive, isDone && styles.progressDotDone]} />
-              <Text style={[styles.progressLabel, isActive && styles.progressLabelActive]}>{stageTitles[key]}</Text>
-            </View>
-          );
-        })}
-      </View>
-
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
-        showsVerticalScrollIndicator={false}
-      >
-        {stage === 'details' ? (
-          <View style={styles.formSection}>
-            <Text style={styles.sectionTitle}>Your information</Text>
-
-            <View>
-              <Text style={styles.fieldLabel}>Full name <Text style={styles.requiredStar}>*</Text></Text>
-              <TextInput
-                value={fullName}
-                onChangeText={setFullName}
-                placeholder="Full name"
-                style={styles.input}
-                placeholderTextColor="#7b8a8a"
-              />
-            </View>
-
-            <View>
-              <Text style={styles.fieldLabel}>Email address <Text style={styles.requiredStar}>*</Text></Text>
-              <TextInput
-                value={email}
-                onChangeText={setEmail}
-                placeholder="Email address"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                style={styles.input}
-                placeholderTextColor="#7b8a8a"
-              />
-            </View>
-
-            <View>
-              <Text style={styles.fieldLabel}>Contact number <Text style={styles.requiredStar}>*</Text></Text>
-              <TextInput
-                value={phone}
-                onChangeText={setPhone}
-                placeholder="Contact number"
-                keyboardType="phone-pad"
-                style={styles.input}
-                placeholderTextColor="#7b8a8a"
-              />
-            </View>
-
-            <View>
-              <Text style={styles.fieldLabel}>Business / brand name</Text>
-              <TextInput
-                value={businessName}
-                onChangeText={setBusinessName}
-                placeholder="Business / brand name"
-                style={styles.input}
-                placeholderTextColor="#7b8a8a"
-              />
-            </View>
-          </View>
-        ) : null}
-
-        {stage === 'location' ? (
-          <View style={styles.formSection}>
-            <Text style={styles.sectionTitle}>Location and demand</Text>
-
-            <View>
-              <Text style={styles.fieldLabel}>Street address <Text style={styles.requiredStar}>*</Text></Text>
-              <TextInput
-                value={address}
-                onChangeText={setAddress}
-                placeholder="Street address (e.g. 12 Main Road)"
-                style={styles.input}
-                placeholderTextColor="#7b8a8a"
-              />
-            </View>
-
-            <View>
-              <Text style={styles.fieldLabel}>City / town <Text style={styles.requiredStar}>*</Text></Text>
-              <TextInput
-                value={city}
-                onChangeText={setCity}
-                placeholder="City / town"
-                style={styles.input}
-                placeholderTextColor="#7b8a8a"
-              />
-            </View>
-
-            <View>
-              <Text style={styles.fieldLabel}>Province <Text style={styles.requiredStar}>*</Text></Text>
-              <TextInput
-                value={province}
-                onChangeText={setProvince}
-                placeholder="Province"
-                style={styles.input}
-                placeholderTextColor="#7b8a8a"
-              />
-            </View>
-
-            {address.trim().length > 0 && city.trim().length > 0 ? (
-              <View>
-                <AddressMapPreview query={mapQuery} />
-                <Pressable
-                  style={styles.addressCheckboxRow}
-                  onPress={() => setAddressConfirmed((prev) => !prev)}
-                >
-                  <Ionicons
-                    name={addressConfirmed ? 'checkbox' : 'square-outline'}
-                    size={22}
-                    color={addressConfirmed ? theme.colors.primaryAccent : theme.colors.textSecondary}
-                  />
-                  <Text style={styles.addressCheckboxText}>
-                    Confirm the map shows your correct location.
-                  </Text>
-                </Pressable>
+            return (
+              <View key={key} style={styles.progressItem}>
+                <View style={[styles.progressDot, isActive && styles.progressDotActive, isDone && styles.progressDotDone]} />
+                <Text style={[styles.progressLabel, isActive && styles.progressLabelActive]}>{stageTitles[key]}</Text>
               </View>
-            ) : null}
+            );
+          })}
+        </View>
 
-            <Text style={styles.smallLabel}>Project type</Text>
-            <View style={styles.segmentRow}>
-              {['Residential', 'Commercial', 'Industrial'].map((option) => (
-                <Pressable
-                  key={option}
-                  style={[styles.segmentButton, projectType === option && styles.segmentButtonActive]}
-                  onPress={() => setProjectType(option)}
-                >
-                  <Text style={[styles.segmentText, projectType === option && styles.segmentTextActive]}>{option}</Text>
-                </Pressable>
-              ))}
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+          showsVerticalScrollIndicator={false}
+        >
+          {stage === 'details' ? (
+            <View style={styles.formSection}>
+              <Text style={styles.sectionTitle}>Your information</Text>
+
+              <View>
+                <Text style={styles.fieldLabel}>Full name <Text style={styles.requiredStar}>*</Text></Text>
+                <TextInput
+                  value={fullName}
+                  onChangeText={setFullName}
+                  placeholder="Full name"
+                  style={styles.input}
+                  placeholderTextColor="#7b8a8a"
+                />
+              </View>
+
+              <View>
+                <Text style={styles.fieldLabel}>Email address <Text style={styles.requiredStar}>*</Text></Text>
+                <TextInput
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="Email address"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  style={styles.input}
+                  placeholderTextColor="#7b8a8a"
+                />
+              </View>
+
+              <View>
+                <Text style={styles.fieldLabel}>Contact number <Text style={styles.requiredStar}>*</Text></Text>
+                <TextInput
+                  value={phone}
+                  onChangeText={setPhone}
+                  placeholder="Contact number"
+                  keyboardType="phone-pad"
+                  style={styles.input}
+                  placeholderTextColor="#7b8a8a"
+                />
+              </View>
+
+              <View>
+                <Text style={styles.fieldLabel}>Business / brand name</Text>
+                <TextInput
+                  value={businessName}
+                  onChangeText={setBusinessName}
+                  placeholder="Business / brand name"
+                  style={styles.input}
+                  placeholderTextColor="#7b8a8a"
+                />
+              </View>
             </View>
+          ) : null}
 
-            <View>
-              <Text style={styles.fieldLabel}>Estimated budget</Text>
+          {stage === 'location' ? (
+            <View style={styles.formSection}>
+              <Text style={styles.sectionTitle}>Location and demand</Text>
+
+              <View>
+                <Text style={styles.fieldLabel}>Street address <Text style={styles.requiredStar}>*</Text></Text>
+                <TextInput
+                  value={address}
+                  onChangeText={setAddress}
+                  placeholder="Street address (e.g. 12 Main Road)"
+                  style={styles.input}
+                  placeholderTextColor="#7b8a8a"
+                />
+              </View>
+
+              <View>
+                <Text style={styles.fieldLabel}>City / town <Text style={styles.requiredStar}>*</Text></Text>
+                <TextInput
+                  value={city}
+                  onChangeText={setCity}
+                  placeholder="City / town"
+                  style={styles.input}
+                  placeholderTextColor="#7b8a8a"
+                />
+              </View>
+
+              <View>
+                <Text style={styles.fieldLabel}>Province <Text style={styles.requiredStar}>*</Text></Text>
+                <TextInput
+                  value={province}
+                  onChangeText={setProvince}
+                  placeholder="Province"
+                  style={styles.input}
+                  placeholderTextColor="#7b8a8a"
+                />
+              </View>
+
+              {address.trim().length > 0 && city.trim().length > 0 ? (
+                <View>
+                  <AddressMapPreview query={mapQuery} />
+                  <Pressable
+                    style={styles.addressCheckboxRow}
+                    onPress={() => setAddressConfirmed((prev) => !prev)}
+                  >
+                    <Ionicons
+                      name={addressConfirmed ? 'checkbox' : 'square-outline'}
+                      size={22}
+                      color={addressConfirmed ? theme.colors.primaryAccent : theme.colors.textSecondary}
+                    />
+                    <Text style={styles.addressCheckboxText}>
+                      Confirm the map shows your correct location.
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : null}
+
+              <Text style={styles.smallLabel}>Project type</Text>
+              <View style={styles.segmentRow}>
+                {['Residential', 'Commercial', 'Industrial'].map((option) => (
+                  <Pressable
+                    key={option}
+                    style={[styles.segmentButton, projectType === option && styles.segmentButtonActive]}
+                    onPress={() => setProjectType(option)}
+                  >
+                    <Text style={[styles.segmentText, projectType === option && styles.segmentTextActive]}>{option}</Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              <View>
+                <Text style={styles.fieldLabel}>Estimated budget</Text>
+                <TextInput
+                  value={budget}
+                  onChangeText={setBudget}
+                  placeholder="Estimated budget (e.g. R200 000)"
+                  style={styles.input}
+                  placeholderTextColor="#7b8a8a"
+                />
+              </View>
+            </View>
+          ) : null}
+
+          {stage === 'review' ? (
+            <View style={styles.formSection}>
+              <Text style={styles.sectionTitle}>Review your request</Text>
+
+              <View style={styles.reviewCard}>
+                <Text style={styles.reviewLabel}>Package</Text>
+                <Text style={styles.reviewValue}>{pkg.title}</Text>
+                <Text style={styles.reviewLabel}>Applicant</Text>
+                <Text style={styles.reviewValue}>{fullName || 'Not provided'}</Text>
+                <Text style={styles.reviewLabel}>Email</Text>
+                <Text style={styles.reviewValue}>{email || 'Not provided'}</Text>
+                <Text style={styles.reviewLabel}>Phone</Text>
+                <Text style={styles.reviewValue}>{phone || 'Not provided'}</Text>
+                <Text style={styles.reviewLabel}>Location</Text>
+                <Text style={styles.reviewValue}>{city || 'Not provided'}, {province || 'Not provided'}</Text>
+                <Text style={styles.reviewLabel}>Project type</Text>
+                <Text style={styles.reviewValue}>{projectType}</Text>
+                <Text style={styles.reviewLabel}>Budget</Text>
+                <Text style={styles.reviewValue}>{budget || 'Not provided'}</Text>
+              </View>
+
               <TextInput
-                value={budget}
-                onChangeText={setBudget}
-                placeholder="Estimated budget (e.g. R200 000)"
-                style={styles.input}
+                value={notes}
+                onChangeText={setNotes}
+                placeholder="Additional notes or requirements"
+                multiline
+                numberOfLines={5}
+                style={[styles.input, styles.textArea]}
                 placeholderTextColor="#7b8a8a"
               />
             </View>
-          </View>
-        ) : null}
+          ) : null}
 
-        {stage === 'review' ? (
-          <View style={styles.formSection}>
-            <Text style={styles.sectionTitle}>Review your request</Text>
-
-            <View style={styles.reviewCard}>
-              <Text style={styles.reviewLabel}>Package</Text>
-              <Text style={styles.reviewValue}>{pkg.title}</Text>
-              <Text style={styles.reviewLabel}>Applicant</Text>
-              <Text style={styles.reviewValue}>{fullName || 'Not provided'}</Text>
-              <Text style={styles.reviewLabel}>Email</Text>
-              <Text style={styles.reviewValue}>{email || 'Not provided'}</Text>
-              <Text style={styles.reviewLabel}>Phone</Text>
-              <Text style={styles.reviewValue}>{phone || 'Not provided'}</Text>
-              <Text style={styles.reviewLabel}>Location</Text>
-              <Text style={styles.reviewValue}>{city || 'Not provided'}, {province || 'Not provided'}</Text>
-              <Text style={styles.reviewLabel}>Project type</Text>
-              <Text style={styles.reviewValue}>{projectType}</Text>
-              <Text style={styles.reviewLabel}>Budget</Text>
-              <Text style={styles.reviewValue}>{budget || 'Not provided'}</Text>
-            </View>
-
-            <TextInput
-              value={notes}
-              onChangeText={setNotes}
-              placeholder="Additional notes or requirements"
-              multiline
-              numberOfLines={5}
-              style={[styles.input, styles.textArea]}
-              placeholderTextColor="#7b8a8a"
-            />
-          </View>
-        ) : null}
-
-        {submitted ? <Text style={styles.successMessage}>Application submitted. You can track the status from your dashboard.</Text> : null}
-      </ScrollView>
+          {submitted ? <Text style={styles.successMessage}>Application submitted. You can track the status from your dashboard.</Text> : null}
+        </ScrollView>
       </KeyboardAvoidingView>
 
       <View style={styles.footerActions}>

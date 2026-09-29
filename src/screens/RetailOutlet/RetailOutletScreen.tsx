@@ -7,7 +7,10 @@ import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, T
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ROUTES } from '../../constants/routes';
-import { PACKAGES } from '../../data/packages';
+import {
+  fetchMarketingPackages,
+  type MarketingPackage,
+} from '../../services/marketing/packages';
 import { RootStackParamList } from '../../navigation/types';
 import { fetchMyApplications, type Application } from '../../services/applications/applications';
 import { appTheme } from '../../theme';
@@ -28,18 +31,27 @@ export function RetailOutletScreen() {
   const insets = useSafeAreaInsets();
 
   const [applications, setApplications] = useState<Application[]>([]);
+  const [packages, setPackages] = useState<MarketingPackage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
   const theme = useAppTheme();
   const styles = createStyles(theme);
 
   // Load the customer's real applications from Supabase.
   const loadApplications = async (refresh = false) => {
     if (refresh) setIsRefreshing(true);
+
     try {
-      setApplications(await fetchMyApplications());
+      const [applicationData, packageData] = await Promise.all([
+        fetchMyApplications(),
+        fetchMarketingPackages(),
+      ]);
+
+      setApplications(applicationData);
+      setPackages(packageData);
     } catch {
-      // Keep existing list on failure.
+      // Keep existing data on failure.
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -54,9 +66,10 @@ export function RetailOutletScreen() {
   );
 
   const hasActiveApplication = applications.length > 0;
-  const recommendedPackage = !hasActiveApplication ? PACKAGES[0] : null;
+  const recommendedPackage = !hasActiveApplication ? packages[0] : null;
 
-  const getPackage = (packageId: string) => PACKAGES.find((pkg) => pkg.id === packageId);
+  const getPackage = (packageId: string) =>
+    packages.find((pkg) => pkg.id === packageId);
 
   return (
     <View style={styles.root}>
@@ -110,10 +123,22 @@ export function RetailOutletScreen() {
                     }
                   >
                     {pkg ? (
-                      <Image source={pkg.imageSource} style={styles.appliedImage} contentFit="cover" />
+                      <Image
+                        source={
+                          pkg.imageUrl
+                            ? { uri: pkg.imageUrl }
+                            : require('../../assets/images/demoAccesories.jpg')
+                        }
+                        style={styles.appliedImage}
+                        contentFit="cover"
+                      />
                     ) : (
                       <View style={[styles.appliedImage, styles.appliedImageFallback]}>
-                        <Ionicons name="cube-outline" size={22} color={theme.colors.primaryAccent} />
+                        <Ionicons
+                          name="cube-outline"
+                          size={22}
+                          color={theme.colors.primaryAccent}
+                        />
                       </View>
                     )}
                     <View style={styles.appliedContent}>
@@ -138,7 +163,7 @@ export function RetailOutletScreen() {
 
         <Text style={styles.sectionTitle}>Available packages</Text>
         <View style={styles.packageList}>
-          {PACKAGES.map((pkg) => {
+          {packages.map((pkg) => {
             const isTeal = pkg.buttonVariant === 'teal';
 
             return (
@@ -147,7 +172,15 @@ export function RetailOutletScreen() {
                 style={styles.packageCard}
                 onPress={() => navigation.navigate(ROUTES.PACKAGE_DETAILS, { packageId: pkg.id })}
               >
-                <Image source={pkg.imageSource} style={styles.packageImage} contentFit="cover" />
+                <Image
+                  source={
+                    pkg.imageUrl
+                      ? { uri: pkg.imageUrl }
+                      : require('../../assets/images/demoAccesories.jpg')
+                  }
+                  style={styles.packageImage}
+                  contentFit="cover"
+                />
                 <View style={styles.packageContent}>
                   <Text style={styles.packageTitle}>{pkg.title}</Text>
                   <Text style={styles.packagePrice}>{pkg.price}</Text>
