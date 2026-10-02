@@ -21,6 +21,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { loginWithSupabase } from '../../services/auth/authActions';
 import { saveAuthTokens } from '../../services/storage/secureStore';
 import { useAuthStore } from '../../store/authStore';
+import { useThemeStore } from '../../store/themeStore';
 import { appTheme } from '../../theme';
 import type { AppTheme } from '../../theme';
 import { useAppTheme } from '../../hooks/useAppTheme';
@@ -42,6 +43,9 @@ export function LoginScreen() {
   const [password, setPassword] =
     useState('');
 
+  const [isPasswordVisible, setIsPasswordVisible] =
+    useState(false);
+
   const [error, setError] =
     useState<string | null>(null);
 
@@ -49,6 +53,7 @@ export function LoginScreen() {
     useState(false);
 
   const theme = useAppTheme();
+  const themeMode = useThemeStore((s) => s.mode);
   const styles = createStyles(theme);
 
   const handleLogin = async () => {
@@ -409,7 +414,11 @@ navigation.reset({
         }
       >
         <Image
-          source={require('../../assets/images/Green-Off-Grid-Logo.jpg')}
+          source={
+            themeMode === 'dark'
+              ? require('../../assets/images/Green-Off-Grid-Logo-Dark.png')
+              : require('../../assets/images/Green-Off-Grid-Logo.png')
+          }
           style={styles.logo}
           contentFit="contain"
         />
@@ -442,16 +451,28 @@ navigation.reset({
           placeholderTextColor="#7b8a8a"
         />
 
-        <TextInput
-          placeholder="Password"
-          secureTextEntry
-          autoCapitalize="none"
-          autoCorrect={false}
-          value={password}
-          onChangeText={setPassword}
-          style={styles.input}
-          placeholderTextColor="#7b8a8a"
-        />
+        <View style={styles.passwordInputWrapper}>
+          <TextInput
+            placeholder="Password"
+            secureTextEntry={!isPasswordVisible}
+            autoCapitalize="none"
+            autoCorrect={false}
+            value={password}
+            onChangeText={setPassword}
+            style={styles.passwordInput}
+            placeholderTextColor="#7b8a8a"
+          />
+          <Pressable
+            style={styles.passwordToggle}
+            onPress={() => setIsPasswordVisible((prev) => !prev)}
+          >
+            <Ionicons
+              name={isPasswordVisible ? 'eye-off' : 'eye'}
+              size={20}
+              color={theme.colors.textSecondary}
+            />
+          </Pressable>
+        </View>
 
         {error ? (
           <Text
@@ -609,6 +630,36 @@ const createStyles = (theme: AppTheme) =>
       backgroundColor:
         theme.colors.surface,
       textAlign: 'center',
+    },
+
+    passwordInputWrapper: {
+      width: '100%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor:
+        theme.colors.border,
+      borderRadius: 16,
+      backgroundColor:
+        theme.colors.surface,
+    },
+
+    passwordInput: {
+      flex: 1,
+      paddingHorizontal:
+        appTheme.spacing.md,
+      paddingVertical:
+        appTheme.spacing.sm,
+      fontSize: 15,
+      color: theme.colors.textPrimary,
+      textAlign: 'center',
+    },
+
+    passwordToggle: {
+      paddingHorizontal:
+        appTheme.spacing.sm,
+      paddingVertical:
+        appTheme.spacing.sm,
     },
 
     errorText: {

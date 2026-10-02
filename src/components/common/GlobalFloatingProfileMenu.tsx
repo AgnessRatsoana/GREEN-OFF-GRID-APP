@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ROUTES } from '../../constants/routes';
 import { RootStackParamList } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
+import { useThemeStore } from '../../store/themeStore';
 import { FloatingProfileMenuButton } from './FloatingProfileMenuButton';
 
 type GlobalFloatingProfileMenuProps = {
@@ -20,6 +21,7 @@ export function GlobalFloatingProfileMenu({
 }: GlobalFloatingProfileMenuProps) {
   const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
+  const themeMode = useThemeStore((s) => s.mode);
 
   if (!currentRouteName) {
     return null;
@@ -55,7 +57,11 @@ export function GlobalFloatingProfileMenu({
         />
 
         <Image
-          source={require('../../assets/images/Green-Off-Grid-Logo.jpg')}
+          source={
+            themeMode === 'dark'
+              ? require('../../assets/images/Green-Off-Grid-Logo-Dark.png')
+              : require('../../assets/images/Green-Off-Grid-Logo.png')
+          }
           style={styles.logo}
           contentFit="contain"
         />

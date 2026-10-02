@@ -661,7 +661,7 @@ Green Off-Grid
               <View style={styles.logoContainer}>
                 <Image
                   source={require(
-                    '../../assets/images/Green-Off-Grid-Logo.jpg',
+                    '../../assets/images/Green-Off-Grid-Logo.png',
                   )}
                   style={styles.logo}
                   resizeMode="contain"

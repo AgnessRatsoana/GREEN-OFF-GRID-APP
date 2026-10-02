@@ -47,6 +47,7 @@ import { ModalHostScreen } from './ModalHostScreen';
 import { RootStackParamList } from './types';
 
 import { EmployeeProfileScreen } from '../screens/Authentication/EmployeeProfileScreen';
+import { AccountInfoScreen } from '../screens/Profile/AccountInfoScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -100,6 +101,14 @@ export function RootStackNavigator() {
         options={{
           animation: 'slide_from_right',
           gestureEnabled: false,
+        }}
+      />
+
+      <Stack.Screen
+        name={ROUTES.ACCOUNT_INFO}
+        component={AccountInfoScreen}
+        options={{
+          animation: 'slide_from_right',
         }}
       />
 

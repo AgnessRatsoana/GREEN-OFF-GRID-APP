@@ -17,6 +17,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '../../hooks/useAppTheme';
+import { ROUTES } from '../../constants/routes';
 import type { RootStackParamList } from '../../navigation/types';
 import { updateClientProfile } from '../../services/auth/authActions';
 import { pickProfileImage, uploadProfileImage } from '../../services/profile/avatar';
@@ -251,6 +252,17 @@ export function ProfileScreen() {
             </Pressable>
           ) : null}
         </View>
+
+        <Pressable
+          style={styles.accountInfoRow}
+          onPress={() => navigation.navigate(ROUTES.ACCOUNT_INFO)}
+        >
+          <View style={styles.accountInfoLabelWrap}>
+            <Ionicons name="shield-checkmark-outline" size={18} color={theme.colors.primaryAccent} />
+            <Text style={styles.accountInfoLabel}>Account Info</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={theme.colors.textSecondary} />
+        </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -421,5 +433,27 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.6,
+  },
+  accountInfoRow: {
+    marginTop: appTheme.spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: 16,
+    paddingHorizontal: appTheme.spacing.md,
+    paddingVertical: 14,
+  },
+  accountInfoLabelWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    columnGap: appTheme.spacing.sm,
+  },
+  accountInfoLabel: {
+    color: theme.colors.textPrimary,
+    fontSize: 15,
+    fontWeight: '700',
   },
 });

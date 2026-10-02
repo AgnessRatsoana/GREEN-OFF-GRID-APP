@@ -609,47 +609,65 @@ export function PackagesScreen() {
 
           {selectedCategory === 'combo' && filteredComboDeals.length ? (
             <View style={styles.accessoriesRow}>
-              {filteredComboDeals.map((deal) => (
-                <Pressable
-                  key={deal.id}
-                  style={styles.accessoryCard}
-                  onPress={() => navigation.navigate(ROUTES.COMBO_DETAILS, { comboId: deal.id })}
-                >
-                  <View style={styles.accessoryImageWrap}>
-                    <Image
-                      source={deal.imageUrl ? { uri: deal.imageUrl } : require('../../assets/images/demoAccesories.jpg')}
-                      style={styles.accessoryImage}
-                      contentFit="cover"
-                    />
-                  </View>
-                  <View style={styles.accessoryContent}>
-                    <Text style={styles.productName} numberOfLines={2}>{deal.title}</Text>
-                    {deal.description ? (
-                      <Text style={styles.productDescription} numberOfLines={3}>
-                        {deal.description}
-                      </Text>
-                    ) : null}
-                    <View style={styles.cardFooter}>
-                      <Text style={styles.priceText}>R {Number(deal.price).toLocaleString()}</Text>
+              {filteredComboDeals.map((deal) => {
+                const saved = isFavourite(deal.id);
+
+                return (
+                  <Pressable
+                    key={deal.id}
+                    style={styles.accessoryCard}
+                    onPress={() => navigation.navigate(ROUTES.COMBO_DETAILS, { comboId: deal.id })}
+                  >
+                    <View style={styles.accessoryImageWrap}>
+                      <Image
+                        source={deal.imageUrl ? { uri: deal.imageUrl } : require('../../assets/images/demoAccesories.jpg')}
+                        style={styles.accessoryImage}
+                        contentFit="cover"
+                      />
                       <Pressable
-                        style={[styles.addButton]}
+                        style={[styles.heartBtn, saved && styles.heartBtnActive]}
                         onPress={(e) => {
                           e.stopPropagation();
-                          addItem({
-                            id: deal.id,
-                            name: deal.title,
-                            price: deal.price,
-                            type: 'accessory',
-                            imageUrl: deal.imageUrl,
-                          });
+                          toggle(deal.id);
                         }}
+                        hitSlop={8}
                       >
-                        <Text style={styles.addButtonText}>Add</Text>
+                        <Ionicons name={saved ? 'heart' : 'heart-outline'} size={16} color={saved ? '#FFFFFF' : '#b89aff'} />
                       </Pressable>
+                      <View style={styles.ratingBadge}>
+                        <Ionicons name="star" size={11} color="#F4C542" />
+                        <Text style={styles.ratingBadgeText}>{deal.rating.toFixed(1)}</Text>
+                      </View>
                     </View>
-                  </View>
-                </Pressable>
-              ))}
+                    <View style={styles.accessoryContent}>
+                      <Text style={styles.productName} numberOfLines={2}>{deal.title}</Text>
+                      {deal.description ? (
+                        <Text style={styles.productDescription} numberOfLines={3}>
+                          {deal.description}
+                        </Text>
+                      ) : null}
+                      <View style={styles.cardFooter}>
+                        <Text style={styles.priceText}>R {Number(deal.price).toLocaleString()}</Text>
+                        <Pressable
+                          style={[styles.addButton]}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            addItem({
+                              id: deal.id,
+                              name: deal.title,
+                              price: deal.price,
+                              type: 'accessory',
+                              imageUrl: deal.imageUrl,
+                            });
+                          }}
+                        >
+                          <Text style={styles.addButtonText}>Add</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  </Pressable>
+                );
+              })}
             </View>
           ) : null}
 
@@ -1041,23 +1059,34 @@ export function PackagesScreen() {
                 </View>
               ) : comboPreview.length ? (
                 <View style={styles.accessoriesRow}>
-                  {comboPreview.map((deal) => (
-                    <Pressable key={deal.id} style={styles.accessoryCard} onPress={() => navigation.navigate(ROUTES.COMBO_DETAILS, { comboId: deal.id })}>
-                      <View style={styles.accessoryImageWrap}>
-                        <Image source={deal.imageUrl ? { uri: deal.imageUrl } : require('../../assets/images/demoAccesories.jpg')} style={styles.accessoryImage} contentFit="cover" />
-                      </View>
-                      <View style={styles.accessoryContent}>
-                        <Text style={styles.productName} numberOfLines={2}>{deal.title}</Text>
-                        {deal.description ? <Text style={styles.productDescription} numberOfLines={3}>{deal.description}</Text> : null}
-                        <View style={styles.cardFooter}>
-                          <Text style={styles.priceText}>R {Number(deal.price).toLocaleString()}</Text>
-                          <Pressable style={[styles.addButton]} onPress={(e) => { e.stopPropagation(); addItem({ id: deal.id, name: deal.title, price: deal.price, type: 'accessory', imageUrl: deal.imageUrl }); }}>
-                            <Text style={styles.addButtonText}>Add</Text>
+                  {comboPreview.map((deal) => {
+                    const saved = isFavourite(deal.id);
+
+                    return (
+                      <Pressable key={deal.id} style={styles.accessoryCard} onPress={() => navigation.navigate(ROUTES.COMBO_DETAILS, { comboId: deal.id })}>
+                        <View style={styles.accessoryImageWrap}>
+                          <Image source={deal.imageUrl ? { uri: deal.imageUrl } : require('../../assets/images/demoAccesories.jpg')} style={styles.accessoryImage} contentFit="cover" />
+                          <Pressable style={[styles.heartBtn, saved && styles.heartBtnActive]} onPress={(e) => { e.stopPropagation(); toggle(deal.id); }} hitSlop={8}>
+                            <Ionicons name={saved ? 'heart' : 'heart-outline'} size={16} color={saved ? '#FFFFFF' : '#b89aff'} />
                           </Pressable>
+                          <View style={styles.ratingBadge}>
+                            <Ionicons name="star" size={11} color="#F4C542" />
+                            <Text style={styles.ratingBadgeText}>{deal.rating.toFixed(1)}</Text>
+                          </View>
                         </View>
-                      </View>
-                    </Pressable>
-                  ))}
+                        <View style={styles.accessoryContent}>
+                          <Text style={styles.productName} numberOfLines={2}>{deal.title}</Text>
+                          {deal.description ? <Text style={styles.productDescription} numberOfLines={3}>{deal.description}</Text> : null}
+                          <View style={styles.cardFooter}>
+                            <Text style={styles.priceText}>R {Number(deal.price).toLocaleString()}</Text>
+                            <Pressable style={[styles.addButton]} onPress={(e) => { e.stopPropagation(); addItem({ id: deal.id, name: deal.title, price: deal.price, type: 'accessory', imageUrl: deal.imageUrl }); }}>
+                              <Text style={styles.addButtonText}>Add</Text>
+                            </Pressable>
+                          </View>
+                        </View>
+                      </Pressable>
+                    );
+                  })}
                 </View>
               ) : (
                 <Text style={styles.emptyText}>No combo deals available.</Text>

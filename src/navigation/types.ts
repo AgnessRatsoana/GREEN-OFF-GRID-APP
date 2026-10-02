@@ -58,6 +58,7 @@ export type RootStackParamList = {
   [ROUTES.ORDER_TRACKING]: { orderId: string };
 
   [ROUTES.EMPLOYEE_PROFILE]: undefined;
+  [ROUTES.ACCOUNT_INFO]: undefined;
 };
 
 export type MainDrawerParamList = {

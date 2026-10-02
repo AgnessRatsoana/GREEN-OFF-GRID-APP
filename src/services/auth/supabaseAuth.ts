@@ -135,6 +135,7 @@ async function getUserProfile(userId: string) {
     .select(`
   role,
   account_type,
+  account_status,
   full_name,
   avatar_url,
   business_name,
@@ -231,6 +232,14 @@ export async function loginWithSupabase(
   const profile = await getUserProfile(
     data.user.id
   );
+
+  if (profile?.account_status === 'deactivated') {
+    await supabase.auth.signOut();
+
+    throw new Error(
+      'This account has been deactivated. Please contact support to reactivate it.'
+    );
+  }
 
   /*
    * Create the application user using the DATABASE
@@ -455,6 +464,59 @@ export async function refreshSupabaseSession(
 
     user: mappedUser,
   };
+}
+
+/**
+ * Deactivate the signed-in user's own account.
+ *
+ * This does not delete any data. The account can only be
+ * reactivated by an administrator/support, and login is
+ * blocked while account_status is 'deactivated'.
+ */
+export async function deactivateAccount(
+  userId: string
+): Promise<void> {
+  const supabase = getSupabaseClient();
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ account_status: 'deactivated' })
+    .eq('id', userId);
+
+  if (error) {
+    throw new Error(`Unable to deactivate account: ${error.message}`);
+  }
+
+  try {
+    await appendActivityLog('auth.account_deactivated');
+  } catch {
+    // Metrics must never block authentication.
+  }
+
+  await supabase.auth.signOut();
+}
+
+/**
+ * Permanently delete the signed-in user's own account.
+ *
+ * Deleting the auth.users row requires the service-role key,
+ * so this calls the `delete-account` edge function rather than
+ * the client SDK directly. Deleting auth.users cascades to
+ * public.profiles via its foreign key.
+ */
+export async function deleteAccountPermanently(): Promise<void> {
+  const supabase = getSupabaseClient();
+
+  const { error } = await supabase.functions.invoke(
+    'delete-account',
+    { method: 'POST' }
+  );
+
+  if (error) {
+    throw new Error(`Unable to delete account: ${error.message}`);
+  }
+
+  await supabase.auth.signOut();
 }
 
 /**

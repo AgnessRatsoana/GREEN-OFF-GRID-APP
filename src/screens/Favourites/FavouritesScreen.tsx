@@ -14,10 +14,18 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ROUTES } from '../../constants/routes';
-import { PACKAGES } from '../../data/packages';
 import { RootStackParamList } from '../../navigation/types';
 import {
+  fetchComboDeals,
+  type ComboDeal,
+} from '../../services/marketing/comboDeals';
+import {
+  fetchMarketingPackages,
+  type MarketingPackage,
+} from '../../services/marketing/packages';
+import {
   fetchMarketplaceProducts,
+  fetchPreOwnedProducts,
   type MarketplaceProduct,
 } from '../../services/marketplace/marketplace';
 import { useCartStore } from '../../store/cartStore';
@@ -42,40 +50,52 @@ export function FavouritesScreen() {
   const theme = useAppTheme();
   const styles = createStyles(theme);
 
-  // Same Marketplace source used by PackagesScreen
+  // Same sources used by PackagesScreen/PackageDetailsScreen/HomeScreen,
+  // so favourite IDs (all Supabase IDs) resolve to the same items everywhere.
   const [products, setProducts] = useState<MarketplaceProduct[]>([]);
-  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [preOwnedProducts, setPreOwnedProducts] = useState<MarketplaceProduct[]>([]);
+  const [comboDeals, setComboDeals] = useState<ComboDeal[]>([]);
+  const [packages, setPackages] = useState<MarketingPackage[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
 
-    const loadProducts = async () => {
+    const loadAll = async () => {
       try {
-        setLoadingProducts(true);
+        setIsLoading(true);
 
-        const marketplaceProducts =
-          await fetchMarketplaceProducts();
+        const [
+          marketplaceProducts,
+          preOwned,
+          deals,
+          franchisePackages,
+        ] = await Promise.all([
+          fetchMarketplaceProducts().catch(() => []),
+          fetchPreOwnedProducts().catch(() => []),
+          fetchComboDeals().catch(() => []),
+          fetchMarketingPackages().catch(() => []),
+        ]);
 
         if (mounted) {
           setProducts(marketplaceProducts);
+          setPreOwnedProducts(preOwned);
+          setComboDeals(deals);
+          setPackages(franchisePackages);
         }
       } catch (error) {
         console.error(
-          'Failed to load favourite marketplace products:',
+          'Failed to load favourites:',
           error,
         );
-
-        if (mounted) {
-          setProducts([]);
-        }
       } finally {
         if (mounted) {
-          setLoadingProducts(false);
+          setIsLoading(false);
         }
       }
     };
 
-    void loadProducts();
+    void loadAll();
 
     return () => {
       mounted = false;
@@ -85,16 +105,16 @@ export function FavouritesScreen() {
   /*
    * IMPORTANT:
    *
-   * Marketplace products use the same Supabase IDs that are stored
-   * inside favouritesStore.
+   * Every catalogue (accessories, pre-owned, combo deals, packages)
+   * uses the same Supabase IDs that are stored inside favouritesStore.
    *
    * Therefore:
    *
-   * Marketplace -> toggle(item.id)
+   * Any screen -> toggle(item.id)
    *                 ↓
    *          favouritesStore
    *                 ↓
-   * Favourites -> products.filter(...)
+   * Favourites -> list.filter(...)
    *
    * This keeps all screens synchronized.
    */
@@ -102,15 +122,31 @@ export function FavouritesScreen() {
     favourites.includes(product.id),
   );
 
-  const savedPackages = PACKAGES.filter((pkg) =>
+  const savedPreOwnedProducts = preOwnedProducts.filter((product) =>
+    favourites.includes(product.id),
+  );
+
+  const savedCombos = comboDeals.filter((deal) =>
+    favourites.includes(deal.id),
+  );
+
+  const savedPackages = packages.filter((pkg) =>
     favourites.includes(pkg.id),
   );
 
   const totalSaved =
-    savedPackages.length + savedProducts.length;
+    savedPackages.length +
+    savedProducts.length +
+    savedPreOwnedProducts.length +
+    savedCombos.length;
 
   const showLoadingState =
-    loadingProducts && products.length === 0;
+    isLoading &&
+    products.length === 0 &&
+    preOwnedProducts.length === 0 &&
+    comboDeals.length === 0 &&
+    packages.length === 0;
+
 
   return (
     <View style={styles.root}>
@@ -229,7 +265,11 @@ export function FavouritesScreen() {
                       style={styles.accessoryImageWrap}
                     >
                       <Image
-                        source={require('../../assets/images/demoAccesories.jpg')}
+                        source={
+                          item.images[0] || item.imageUrl
+                            ? { uri: item.images[0] || item.imageUrl || undefined }
+                            : require('../../assets/images/demoAccesories.jpg')
+                        }
                         style={styles.accessoryImage}
                         contentFit="cover"
                       />
@@ -320,6 +360,7 @@ export function FavouritesScreen() {
                                 item.price,
                               ),
                               type: 'accessory',
+                              imageUrl: item.images[0] || item.imageUrl,
                             })
                           }
                         >
@@ -336,6 +377,197 @@ export function FavouritesScreen() {
                   </Pressable>
                 );
               })}
+            </View>
+          ) : null}
+
+          {/* =========================
+              PRE-OWNED PRODUCTS
+          ========================== */}
+
+          {savedPreOwnedProducts.length ? (
+            <Text style={styles.groupTitle}>
+              Pre-Owned Products
+            </Text>
+          ) : null}
+
+          {savedPreOwnedProducts.length ? (
+            <View style={styles.accessoriesRow}>
+              {savedPreOwnedProducts.map((item) => {
+                const rating =
+                  (
+                    item as MarketplaceProduct & {
+                      rating?: number;
+                    }
+                  ).rating ?? 4.8;
+
+                return (
+                  <Pressable
+                    key={item.id}
+                    style={styles.accessoryCard}
+                    onPress={() =>
+                      navigation.navigate(
+                        ROUTES.PRODUCT_DETAILS,
+                        {
+                          productId: item.id,
+                          catalogue: 'preowned',
+                        },
+                      )
+                    }
+                  >
+                    <View style={styles.accessoryImageWrap}>
+                      <Image
+                        source={
+                          item.images[0] || item.imageUrl
+                            ? { uri: item.images[0] || item.imageUrl || undefined }
+                            : require('../../assets/images/demoAccesories.jpg')
+                        }
+                        style={styles.accessoryImage}
+                        contentFit="cover"
+                      />
+
+                      <Pressable
+                        style={[styles.heartBtn, styles.heartBtnActive]}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          toggle(item.id);
+                        }}
+                        hitSlop={8}
+                      >
+                        <Ionicons name="heart" size={16} color="#FFFFFF" />
+                      </Pressable>
+
+                      <View style={styles.ratingBadge}>
+                        <Ionicons name="star" size={11} color="#F4C542" />
+                        <Text style={styles.ratingBadgeText}>{rating.toFixed(1)}</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.accessoryContent}>
+                      <Text style={styles.productName} numberOfLines={2}>
+                        {item.name}
+                      </Text>
+
+                      {item.description ? (
+                        <Text style={styles.productDescription} numberOfLines={2}>
+                          {item.description}
+                        </Text>
+                      ) : null}
+
+                      <Text style={styles.categoryText} numberOfLines={1}>
+                        {item.category || 'General'}
+                      </Text>
+
+                      <View style={styles.cardFooter}>
+                        <Text style={styles.priceText}>
+                          R {Number(item.price).toLocaleString()}
+                        </Text>
+
+                        <Pressable
+                          style={styles.addButton}
+                          onPress={() =>
+                            addItem({
+                              id: item.id,
+                              name: item.name,
+                              price: Number(item.price),
+                              type: 'accessory',
+                              imageUrl: item.images[0] || item.imageUrl,
+                            })
+                          }
+                        >
+                          <Text style={styles.addButtonText}>Add</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : null}
+
+          {/* =========================
+              COMBO DEALS
+          ========================== */}
+
+          {savedCombos.length ? (
+            <Text style={styles.groupTitle}>
+              Combo Deals
+            </Text>
+          ) : null}
+
+          {savedCombos.length ? (
+            <View style={styles.accessoriesRow}>
+              {savedCombos.map((item) => (
+                <Pressable
+                  key={item.id}
+                  style={styles.accessoryCard}
+                  onPress={() =>
+                    navigation.navigate(ROUTES.COMBO_DETAILS, {
+                      comboId: item.id,
+                    })
+                  }
+                >
+                  <View style={styles.accessoryImageWrap}>
+                    <Image
+                      source={
+                        item.images[0] || item.imageUrl
+                          ? { uri: item.images[0] || item.imageUrl || undefined }
+                          : require('../../assets/images/demoAccesories.jpg')
+                      }
+                      style={styles.accessoryImage}
+                      contentFit="cover"
+                    />
+
+                    <Pressable
+                      style={[styles.heartBtn, styles.heartBtnActive]}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        toggle(item.id);
+                      }}
+                      hitSlop={8}
+                    >
+                      <Ionicons name="heart" size={16} color="#FFFFFF" />
+                    </Pressable>
+
+                    <View style={styles.ratingBadge}>
+                      <Ionicons name="star" size={11} color="#F4C542" />
+                      <Text style={styles.ratingBadgeText}>{item.rating.toFixed(1)}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.accessoryContent}>
+                    <Text style={styles.productName} numberOfLines={2}>
+                      {item.title}
+                    </Text>
+
+                    {item.description ? (
+                      <Text style={styles.productDescription} numberOfLines={2}>
+                        {item.description}
+                      </Text>
+                    ) : null}
+
+                    <View style={styles.cardFooter}>
+                      <Text style={styles.priceText}>
+                        R {Number(item.price).toLocaleString()}
+                      </Text>
+
+                      <Pressable
+                        style={styles.addButton}
+                        onPress={() =>
+                          addItem({
+                            id: item.id,
+                            name: item.title,
+                            price: item.price,
+                            type: 'accessory',
+                            imageUrl: item.imageUrl,
+                          })
+                        }
+                      >
+                        <Text style={styles.addButtonText}>Add</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                </Pressable>
+              ))}
             </View>
           ) : null}
 
@@ -375,7 +607,11 @@ export function FavouritesScreen() {
                   style={styles.franchiseImageWrap}
                 >
                   <Image
-                    source={item.imageSource}
+                    source={
+                      item.imageUrl
+                        ? { uri: item.imageUrl }
+                        : require('../../assets/images/demoAccesories.jpg')
+                    }
                     style={styles.franchiseImage}
                     contentFit="cover"
                   />
@@ -431,7 +667,7 @@ export function FavouritesScreen() {
                     <Text
                       style={styles.ratingText}
                     >
-                      {item.rating}
+                      {item.rating.toFixed(1)}
                     </Text>
                   </View>
 
@@ -440,7 +676,7 @@ export function FavouritesScreen() {
                   </Text>
 
                   <Text style={styles.priceText}>
-                    {item.price}
+                    R {Number(item.price).toLocaleString()}
                   </Text>
 
                   <Pressable
@@ -462,6 +698,7 @@ export function FavouritesScreen() {
                     }}
                   >
                     <Text style={styles.btnText}>
+
                       {item.buttonLabel}
                     </Text>
                   </Pressable>

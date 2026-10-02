@@ -17,6 +17,7 @@ import { FloatingProfileMenuButton } from '../../components/common/FloatingProfi
 import { FLOATING_NAV_CONTENT_INSET } from '../../components/common/FloatingBottomNav';
 import { RootStackParamList } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
+import { useThemeStore } from '../../store/themeStore';
 import { appTheme } from '../../theme';
 import { useAppTheme } from '../../hooks/useAppTheme';
 
@@ -26,6 +27,7 @@ export function HomeScreen() {
   const { width } = useWindowDimensions();
   const user = useAuthStore((s) => s.user);
   const theme = useAppTheme();
+  const themeMode = useThemeStore((s) => s.mode);
 
   const textScale = useMemo(() => {
     if (width >= 430) {
@@ -59,7 +61,11 @@ export function HomeScreen() {
             profileImageUri={user?.avatarUrl || null}
           />
           <Image
-            source={require('../../assets/images/Green-Off-Grid-Logo.jpg')}
+            source={
+              themeMode === 'dark'
+                ? require('../../assets/images/Green-Off-Grid-Logo-Dark.png')
+                : require('../../assets/images/Green-Off-Grid-Logo.png')
+            }
             style={styles.logo}
             contentFit="contain"
           />

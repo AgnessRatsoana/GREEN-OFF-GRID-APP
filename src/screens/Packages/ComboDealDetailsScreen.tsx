@@ -12,6 +12,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { fetchComboDealById, fetchComboDeals, type ComboDeal } from '../../services/marketing/comboDeals';
 import { useAuthStore } from '../../store/authStore';
 import { useCartStore } from '../../store/cartStore';
+import { useFavouritesStore } from '../../store/favouritesStore';
 import { appTheme } from '../../theme';
 import type { AppTheme } from '../../theme';
 import { useAppTheme } from '../../hooks/useAppTheme';
@@ -29,6 +30,8 @@ export function ComboDealDetailsScreen() {
     const isBusiness = useAuthStore((s) => s.user?.accountType === 'business');
     const addItem = useCartStore((s) => s.addItem);
     const cartItems = useCartStore((s) => s.items);
+    const toggle = useFavouritesStore((s) => s.toggle);
+    const favourites = useFavouritesStore((s) => s.favourites);
 
     const [combo, setCombo] = useState<ComboDeal | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -115,6 +118,17 @@ export function ComboDealDetailsScreen() {
                     <Ionicons name="arrow-back" size={22} color={theme.colors.primaryAccent} />
                 </Pressable>
                 <Text style={styles.headerTitle}>Combo Details</Text>
+                <Pressable
+                    style={[styles.heartBtn, favourites.includes(combo.id) && styles.heartBtnActive]}
+                    onPress={() => toggle(combo.id)}
+                    hitSlop={8}
+                >
+                    <Ionicons
+                        name={favourites.includes(combo.id) ? 'heart' : 'heart-outline'}
+                        size={16}
+                        color={favourites.includes(combo.id) ? '#FFFFFF' : '#b89aff'}
+                    />
+                </Pressable>
             </View>
 
             <ScrollView
@@ -282,6 +296,20 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
         color: theme.colors.textPrimary,
         fontSize: 22,
         fontWeight: '800',
+    },
+    heartBtn: {
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        borderWidth: 1.5,
+        borderColor: '#b89aff',
+        backgroundColor: 'transparent',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    heartBtnActive: {
+        backgroundColor: '#b89aff',
+        borderColor: '#b89aff',
     },
     body: {
         padding: appTheme.spacing.md,

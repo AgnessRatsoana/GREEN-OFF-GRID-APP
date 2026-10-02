@@ -11,6 +11,7 @@ import type { RootStackParamList } from '../../navigation/types';
 import { fetchComboDeals, type ComboDeal } from '../../services/marketing/comboDeals';
 import { useAuthStore } from '../../store/authStore';
 import { useCartStore } from '../../store/cartStore';
+import { useFavouritesStore } from '../../store/favouritesStore';
 import { useAppTheme } from '../../hooks/useAppTheme';
 import { getBusinessPrice } from '../../utils/pricing';
 import { appTheme, type AppTheme } from '../../theme';
@@ -23,6 +24,8 @@ export function ComboDealsScreen() {
   const isBusiness = useAuthStore((s) => s.user?.accountType === 'business');
   const addItem = useCartStore((s) => s.addItem);
   const cartItems = useCartStore((s) => s.items);
+  const toggle = useFavouritesStore((s) => s.toggle);
+  const favourites = useFavouritesStore((s) => s.favourites);
 
   const [items, setItems] = useState<ComboDeal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,6 +69,7 @@ export function ComboDealsScreen() {
           {items.map((item) => {
             const isInCart = cartItems.some((entry) => entry.id === item.id);
             const price = isBusiness ? getBusinessPrice(item.price) : item.price;
+            const saved = favourites.includes(item.id);
             return (
               <Pressable
                 key={item.id}
@@ -74,6 +78,22 @@ export function ComboDealsScreen() {
               >
                 <View style={styles.imageWrap}>
                   <Image source={item.imageUrl ? { uri: item.imageUrl } : require('../../assets/images/demoAccesories.jpg')} style={styles.image} contentFit="cover" />
+
+                  <Pressable
+                    style={[styles.heartBtn, saved && styles.heartBtnActive]}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      toggle(item.id);
+                    }}
+                    hitSlop={8}
+                  >
+                    <Ionicons name={saved ? 'heart' : 'heart-outline'} size={16} color={saved ? '#FFFFFF' : '#b89aff'} />
+                  </Pressable>
+
+                  <View style={styles.ratingBadge}>
+                    <Ionicons name="star" size={11} color="#F4C542" />
+                    <Text style={styles.ratingBadgeText}>{item.rating.toFixed(1)}</Text>
+                  </View>
                 </View>
                 <View style={styles.body}>
                   <Text style={[styles.title, { color: theme.colors.textPrimary }]}>{item.title}</Text>
@@ -109,8 +129,38 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   loadingText: { color: theme.colors.textSecondary, fontSize: 14, fontWeight: '700' },
   list: { padding: appTheme.spacing.md, rowGap: 14 },
   card: { borderWidth: 1, borderRadius: 18, overflow: 'hidden', backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
-  imageWrap: { height: 180 },
+  imageWrap: { height: 180, position: 'relative' },
   image: { width: '100%', height: '100%' },
+  heartBtn: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#b89aff',
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heartBtnActive: {
+    backgroundColor: '#b89aff',
+    borderColor: '#b89aff',
+  },
+  ratingBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    columnGap: 3,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  ratingBadgeText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
   body: { padding: 14 },
   title: { fontSize: 18, lineHeight: 24, fontWeight: '800', color: theme.colors.textPrimary },
   description: { marginTop: 6, fontSize: 12, lineHeight: 18, color: theme.colors.textSecondary },

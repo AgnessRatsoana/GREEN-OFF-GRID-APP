@@ -2,13 +2,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Image } from 'expo-image';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ROUTES } from '../../constants/routes';
-import { MARKETPLACE_PRODUCTS } from '../../data/marketplace';
 import { RootStackParamList } from '../../navigation/types';
+import { fetchComboDeals, type ComboDeal } from '../../services/marketing/comboDeals';
+import {
+  fetchMarketplaceProducts,
+  fetchPreOwnedProducts,
+  type MarketplaceProduct,
+} from '../../services/marketplace/marketplace';
 import { useCartStore, type CartLine } from '../../store/cartStore';
 import { useAuthStore } from '../../store/authStore';
 import { appTheme } from '../../theme';
@@ -37,11 +42,39 @@ export function CartScreen() {
   const theme = useAppTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
 
+  const [products, setProducts] = useState<MarketplaceProduct[]>([]);
+  const [preOwnedProducts, setPreOwnedProducts] = useState<MarketplaceProduct[]>([]);
+  const [comboDeals, setComboDeals] = useState<ComboDeal[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadCatalogues = async () => {
+      const [marketplaceProducts, preOwned, deals] = await Promise.all([
+        fetchMarketplaceProducts().catch(() => []),
+        fetchPreOwnedProducts().catch(() => []),
+        fetchComboDeals().catch(() => []),
+      ]);
+
+      if (mounted) {
+        setProducts(marketplaceProducts);
+        setPreOwnedProducts(preOwned);
+        setComboDeals(deals);
+      }
+    };
+
+    void loadCatalogues();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const getUnitPrice = (item: CartLine) =>
     isBusiness ? getBusinessLineUnitPrice(item.price, item.quantity) : item.price;
 
   const cartIds = new Set(items.map((item) => item.id));
-  const recommendedProducts = MARKETPLACE_PRODUCTS.filter((product) => !cartIds.has(product.id)).slice(0, 4);
+  const recommendedProducts = products.filter((product) => !cartIds.has(product.id)).slice(0, 4);
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalAmount = items.reduce((sum, item) => sum + getUnitPrice(item) * item.quantity, 0);
@@ -51,6 +84,29 @@ export function CartScreen() {
   };
 
   const isRecommendedInCart = (id: string) => allItems.some((entry) => entry.id === id);
+
+  /*
+   * Cart lines don't track which catalogue they came from, so resolve
+   * the right details screen by checking the loaded catalogues.
+   */
+  const openCartItem = (id: string) => {
+    if (products.some((product) => product.id === id)) {
+      navigation.navigate(ROUTES.PRODUCT_DETAILS, { productId: id });
+      return;
+    }
+
+    if (preOwnedProducts.some((product) => product.id === id)) {
+      navigation.navigate(ROUTES.PRODUCT_DETAILS, { productId: id, catalogue: 'preowned' });
+      return;
+    }
+
+    if (comboDeals.some((deal) => deal.id === id)) {
+      navigation.navigate(ROUTES.COMBO_DETAILS, { comboId: id });
+      return;
+    }
+
+    navigation.navigate(ROUTES.PRODUCT_DETAILS, { productId: id });
+  };
 
   return (
     <View style={styles.root}>
@@ -104,7 +160,7 @@ export function CartScreen() {
             const discountEligible = isBusiness && isBusinessDiscountEligible(item.quantity);
 
             return (
-              <View key={item.id} style={styles.itemCard}>
+              <Pressable key={item.id} style={styles.itemCard} onPress={() => openCartItem(item.id)}>
                 <Image
                   source={item.imageUrl ? { uri: item.imageUrl } : require('../../assets/images/demoAccesories.jpg')}
                   style={styles.itemImage}
@@ -134,7 +190,10 @@ export function CartScreen() {
                   <View style={styles.qtyControls}>
                     <Pressable
                       style={styles.qtyBtn}
-                      onPress={() => removeItem(item.id)}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        removeItem(item.id);
+                      }}
                     >
                       <Ionicons name="remove" size={16} color={theme.colors.primaryAccent} />
                     </Pressable>
@@ -145,7 +204,10 @@ export function CartScreen() {
 
                     <Pressable
                       style={styles.qtyBtn}
-                      onPress={() => increaseQty(item)}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        increaseQty(item);
+                      }}
                     >
                       <Ionicons name="add" size={16} color={theme.colors.primaryAccent} />
                     </Pressable>
@@ -157,7 +219,7 @@ export function CartScreen() {
                     {formatCurrency(unitPrice * item.quantity)}
                   </Text>
                 </View>
-              </View>
+              </Pressable>
             );
           })
         )}
@@ -165,9 +227,17 @@ export function CartScreen() {
         <Text style={styles.sectionTitle}>Recommended products</Text>
         <View style={styles.recommendedRow}>
           {recommendedProducts.map((product) => (
-            <View key={product.id} style={styles.recommendedCard}>
+            <Pressable
+              key={product.id}
+              style={styles.recommendedCard}
+              onPress={() => navigation.navigate(ROUTES.PRODUCT_DETAILS, { productId: product.id })}
+            >
               <Image
-                source={require('../../assets/images/demoAccesories.jpg')}
+                source={
+                  product.images[0] || product.imageUrl
+                    ? { uri: product.images[0] || product.imageUrl || undefined }
+                    : require('../../assets/images/demoAccesories.jpg')
+                }
                 style={styles.recommendedImage}
                 contentFit="cover"
               />
@@ -176,16 +246,17 @@ export function CartScreen() {
                 <Text style={styles.recommendedPrice}>{formatCurrency(product.price)}</Text>
                 <Pressable
                   style={[styles.recommendedBtn, isRecommendedInCart(product.id) && styles.recommendedBtnAdded]}
-                  onPress={() =>
-                    addItem({ id: product.id, name: product.name, price: product.price, type: 'accessory' })
-                  }
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    addItem({ id: product.id, name: product.name, price: product.price, type: 'accessory', imageUrl: product.images[0] || product.imageUrl });
+                  }}
                 >
                   <Text style={styles.recommendedBtnText}>
                     {isRecommendedInCart(product.id) ? 'Added ✓' : 'Add'}
                   </Text>
                 </Pressable>
               </View>
-            </View>
+            </Pressable>
           ))}
         </View>
       </ScrollView>

@@ -4,6 +4,7 @@ export const ROUTES = {
 
   HOME: 'Home',
   PROFILE: 'Profile',
+  ACCOUNT_INFO: 'AccountInfo',
   EMPLOYEE_PROFILE: 'EmployeeProfile',
   MESSAGES: 'Messages',
 

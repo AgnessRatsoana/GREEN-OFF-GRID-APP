@@ -9,4 +9,6 @@ export {
   hydrateCurrentSession,
   handleRecoveryUrl,
   refreshSupabaseSession,
+  deactivateAccount,
+  deleteAccountPermanently,
 } from './supabaseAuth';

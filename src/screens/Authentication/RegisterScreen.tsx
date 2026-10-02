@@ -12,6 +12,7 @@ import { RootStackParamList } from '../../navigation/types';
 import { registerWithSupabase } from '../../services/auth/authActions';
 import { saveAuthTokens } from '../../services/storage/secureStore';
 import { useAuthStore } from '../../store/authStore';
+import { useThemeStore } from '../../store/themeStore';
 import { appTheme } from '../../theme';
 import type { AppTheme } from '../../theme';
 import { useAppTheme } from '../../hooks/useAppTheme';
@@ -31,7 +32,9 @@ export function RegisterScreen() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const theme = useAppTheme();
+  const themeMode = useThemeStore((s) => s.mode);
   const styles = createStyles(theme);
 
   const handleRegister = async () => {
@@ -91,7 +94,11 @@ export function RegisterScreen() {
 
       <View style={styles.headerSection}>
         <Image
-          source={require('../../assets/images/Green-Off-Grid-Logo.jpg')}
+          source={
+            themeMode === 'dark'
+              ? require('../../assets/images/Green-Off-Grid-Logo-Dark.png')
+              : require('../../assets/images/Green-Off-Grid-Logo.png')
+          }
           style={styles.logo}
           contentFit="contain"
         />
@@ -117,14 +124,26 @@ export function RegisterScreen() {
           style={styles.input}
           placeholderTextColor="#7b8a8a"
         />
-        <TextInput
-          placeholder="Password"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-          style={styles.input}
-          placeholderTextColor="#7b8a8a"
-        />
+        <View style={styles.passwordInputWrapper}>
+          <TextInput
+            placeholder="Password"
+            secureTextEntry={!isPasswordVisible}
+            value={password}
+            onChangeText={setPassword}
+            style={styles.passwordInput}
+            placeholderTextColor="#7b8a8a"
+          />
+          <Pressable
+            style={styles.passwordToggle}
+            onPress={() => setIsPasswordVisible((prev) => !prev)}
+          >
+            <Ionicons
+              name={isPasswordVisible ? 'eye-off' : 'eye'}
+              size={20}
+              color={theme.colors.textSecondary}
+            />
+          </Pressable>
+        </View>
 
         <Text style={styles.fieldLabel}>Account Type</Text>
         <View style={styles.accountTypeRow}>
@@ -246,6 +265,27 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     color: theme.colors.textPrimary,
     backgroundColor: theme.colors.surface,
     textAlign: 'center',
+  },
+  passwordInputWrapper: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: 16,
+    backgroundColor: theme.colors.surface,
+  },
+  passwordInput: {
+    flex: 1,
+    paddingHorizontal: appTheme.spacing.md,
+    paddingVertical: appTheme.spacing.sm,
+    fontSize: 15,
+    color: theme.colors.textPrimary,
+    textAlign: 'center',
+  },
+  passwordToggle: {
+    paddingHorizontal: appTheme.spacing.sm,
+    paddingVertical: appTheme.spacing.sm,
   },
   errorText: {
     color: '#d14444',

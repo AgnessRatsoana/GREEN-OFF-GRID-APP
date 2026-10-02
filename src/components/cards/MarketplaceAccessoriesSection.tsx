@@ -116,8 +116,8 @@ export function MarketplaceAccessoriesSection() {
               <View style={styles.accessoryImageWrap}>
                 <Image
                   source={
-                    item.imageUrl
-                      ? { uri: item.imageUrl }
+                    item.images[0] || item.imageUrl
+                      ? { uri: item.images[0] || item.imageUrl || undefined }
                       : require('../../assets/images/demoAccesories.jpg')
                   }
                   style={styles.accessoryImage}

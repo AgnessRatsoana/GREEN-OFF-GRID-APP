@@ -141,7 +141,11 @@ export function AccessoriesShowcaseSection() {
               onPress={() => openProduct(item.id)}
             >
               <Image
-                source={require('../../assets/images/demoAccesories.jpg')}
+                source={
+                  item.images[0] || item.imageUrl
+                    ? { uri: item.images[0] || item.imageUrl || undefined }
+                    : require('../../assets/images/demoAccesories.jpg')
+                }
                 style={styles.image}
                 contentFit="cover"
               />

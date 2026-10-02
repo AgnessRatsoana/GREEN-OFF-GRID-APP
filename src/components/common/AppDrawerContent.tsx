@@ -31,6 +31,7 @@ export function AppDrawerContent({ navigation }: DrawerContentComponentProps) {
       { key: ROUTES.PACKAGES, label: 'Marketplace', icon: 'storefront-outline' as const },
       { key: ROUTES.RETAIL_OUTLET, label: 'Retail Outlet', icon: 'business-outline' as const },
       { key: ROUTES.FAVOURITES, label: 'Favourites', icon: 'heart-outline' as const },
+      { key: ROUTES.CART, label: 'My Cart', icon: 'cart-outline' as const },
     ];
 
   const handleLogout = async () => {
@@ -84,7 +85,8 @@ export function AppDrawerContent({ navigation }: DrawerContentComponentProps) {
                     if (
                       item.key === ROUTES.PACKAGES ||
                     item.key === ROUTES.FAVOURITES ||
-                    item.key === ROUTES.RETAIL_OUTLET
+                    item.key === ROUTES.RETAIL_OUTLET ||
+                    item.key === ROUTES.CART
                     ) {
                     navigation.getParent()?.navigate(item.key as never);
                     navigation.closeDrawer();
