@@ -123,24 +123,24 @@ export function RetailOutletScreen() {
                     }
                   >
                     {pkg ? (
-                      <Image
-                        source={
-                          pkg.imageUrl
-                            ? { uri: pkg.imageUrl }
-                            : require('../../assets/images/demoAccesories.jpg')
-                        }
-                        style={styles.appliedImage}
-                        contentFit="cover"
-                      />
-                    ) : (
-                      <View style={[styles.appliedImage, styles.appliedImageFallback]}>
-                        <Ionicons
-                          name="cube-outline"
-                          size={22}
-                          color={theme.colors.primaryAccent}
-                        />
-                      </View>
-                    )}
+  <Image
+    source={
+      pkg.imageUrl
+        ? { uri: pkg.imageUrl }
+        : require('../../assets/images/demoAccesories.jpg')
+    }
+    style={styles.appliedImage}
+    contentFit="cover"
+  />
+) : (
+  <View style={[styles.appliedImage, styles.appliedImageFallback]}>
+    <Ionicons
+      name="cube-outline"
+      size={22}
+      color={theme.colors.primaryAccent}
+    />
+  </View>
+)}
                     <View style={styles.appliedContent}>
                       <Text style={styles.appliedTitle}>{application.package_title}</Text>
                       <Text style={styles.appliedDate}>
