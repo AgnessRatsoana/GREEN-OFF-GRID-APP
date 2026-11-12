@@ -1,3 +1,4 @@
+
 {
   "expo": {
     "name": "green-off-grid-Mobile-APP",
@@ -7,24 +8,21 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "za.co.greengridza.mobile"
     },
-
     "android": {
+      "package": "za.co.greengridza.mobile",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
       "predictiveBackGestureEnabled": false
     },
-
     "web": {
       "favicon": "./assets/favicon.png"
     },
-
     "plugins": [
       "expo-secure-store",
       "expo-font",
@@ -39,7 +37,20 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": false
+          }
+        }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "5be2b654-b336-4e8f-80bf-371f07fe2b0f"
+      }
+    }
   }
 }
